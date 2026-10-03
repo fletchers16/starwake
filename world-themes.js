@@ -1,3 +1,4 @@
+import { createSkyline } from './skyline.js';
 import { NOISE_GLSL, makeSwirlMaterial } from './swirl.js';
 import { crystalCluster, rockSlab, volcano, gradient, roughen } from './shapes.js';
 import { lavaCrustTexture, earthSurfaceTexture, earthCloudTexture, gasGiantTexture } from './textures.js';
@@ -176,7 +177,8 @@ const THEMES = {
     fogRamp: ['#1b6f8a', '#16305a'],
     sky: ['#040a18', '#0d2244', '#02050b'], fog: ['#0a1a33', 34, 165], stars: 1,
     build(THREE, ctx) {
-      const steel = new THREE.MeshStandardMaterial({ color: '#4a5d7a', metalness: 0.7, roughness: 0.4, emissive: '#13243d', flatShading: true });
+      const steel = new THREE.MeshStandardMaterial({ color: '#ffffff', vertexColors: true, metalness: 0.7, roughness: 0.4, emissive: '#0e1c30', flatShading: true });
+      const beamGeo = gradient(new THREE.BoxGeometry(0.9, 20, 0.9), '#1c2840', '#6f8bb4', 0.8);
       const neon = new THREE.MeshBasicMaterial({ color: ctx.course.accent });
       const sideX = (slot) => (slot % 2 ? 1 : -1) * (11.5 + hash(slot * 3) * 4);
       // Lattice pylons of the abandoned relay along both sides, some snapped off.
@@ -184,21 +186,27 @@ const THEMES = {
         const broken = hash(slot) < 0.22, side = slot % 2 ? 1 : -1;
         return { x: sideX(slot), y: broken ? -9 : -1, rz: side * (0.08 + hash(slot * 5) * 0.22), sy: broken ? 0.45 : 1 };
       };
-      const beams = makeTrackside(THREE, new THREE.BoxGeometry(0.9, 20, 0.9), steel, { count: 34, spacing: 8 }, pylon);
+      const beams = makeTrackside(THREE, beamGeo, steel, { count: 34, spacing: 8 }, pylon);
       const strips = makeTrackside(THREE, new THREE.BoxGeometry(0.16, 20, 0.16), neon, { count: 34, spacing: 8 }, (slot) => ({ ...pylon(slot), z: 0.5 }));
       // Overhead gantries spanning the route, with gaps where they have fallen.
-      const cross = makeTrackside(THREE, new THREE.BoxGeometry(28, 0.7, 0.9), steel, { count: 12, spacing: 24 }, (slot) => ({ x: (hash(slot) - 0.5) * 3, y: 8.5 + hash(slot * 2) * 2, rz: (hash(slot * 7) - 0.5) * 0.25, s: hash(slot * 9) < 0.3 ? 0 : 1 }));
+      const cross = makeTrackside(THREE, gradient(new THREE.BoxGeometry(28, 0.7, 0.9), '#334866', '#7a96bf'), steel, { count: 12, spacing: 24 }, (slot) => ({ x: (hash(slot) - 0.5) * 3, y: 8.5 + hash(slot * 2) * 2, rz: (hash(slot * 7) - 0.5) * 0.25, s: hash(slot * 9) < 0.3 ? 0 : 1 }));
       const crossGlow = makeTrackside(THREE, new THREE.BoxGeometry(28, 0.12, 0.12), neon, { count: 12, spacing: 24 }, (slot) => ({ x: (hash(slot) - 0.5) * 3, y: 8 + hash(slot * 2) * 2, z: 0.5, rz: (hash(slot * 7) - 0.5) * 0.25, s: hash(slot * 9) < 0.3 ? 0 : 1 }));
       // The broken transit spine running alongside.
-      const spine = makeTrackside(THREE, new THREE.CylinderGeometry(1.6, 1.6, 15, 10, 1, true), steel, { count: 14, spacing: 17 }, (slot) => ({ x: -19 + Math.sin(slot * 0.4) * 2, y: 5, rx: Math.PI / 2, rz: (hash(slot) - 0.5) * 0.25, s: hash(slot * 4) < 0.18 ? 0 : 1 }));
-      const beacons = makeTrackside(THREE, new THREE.SphereGeometry(0.35, 8, 6), new THREE.MeshBasicMaterial({ color: '#ff5d7a' }), { count: 34, spacing: 8 }, (slot) => ({ x: sideX(slot), y: 9, s: hash(slot) < 0.22 ? 0 : 1 }));
+      const spine = makeTrackside(THREE, gradient(new THREE.CylinderGeometry(1.6, 1.6, 15, 10, 1, true).rotateX(Math.PI / 2).rotateX(-Math.PI / 2), '#22304a', '#5f7aa3'), steel, { count: 14, spacing: 17 }, (slot) => ({ x: -19 + Math.sin(slot * 0.4) * 2, y: 5, rx: Math.PI / 2, rz: (hash(slot) - 0.5) * 0.25, s: hash(slot * 4) < 0.18 ? 0 : 1 }));
+      const beacons = makeTrackside(THREE, new THREE.SphereGeometry(0.35, 8, 6), new THREE.MeshBasicMaterial({ color: '#bff6ff' }), { count: 34, spacing: 8 }, (slot) => ({ x: sideX(slot), y: 9, s: hash(slot) < 0.22 ? 0 : 1 }));
       ctx.blink = beacons;
       const glowCloud = skyObject(new THREE.Sprite(new THREE.SpriteMaterial({ map: cloudTexture(THREE, 7, [ctx.course.secondary, ctx.course.accent]), transparent: true, opacity: 0.45, blending: THREE.AdditiveBlending })), [-30, 30, -200], 0.9);
       glowCloud.scale.set(260, 180, 1);
       const debris = makeParticles(THREE, ctx.glow, { count: 160, color: '#8fc3ff', size: 0.45, opacity: 0.6 });
-      return [beams, strips, cross, crossGlow, spine, beacons, glowCloud, debris];
+      // Distant megastructure city and broken orbital ring (Kenney Space Kit, CC0).
+      const skyline = skyObject(createSkyline(THREE, { accent: ctx.course.accent, glowTexture: ctx.glow }), [0, 0, -150], 0.9);
+      ctx.skyline = skyline;
+      return [beams, strips, cross, crossGlow, spine, beacons, glowCloud, debris, skyline];
     },
-    tick(ctx, { now }) { if (ctx.blink) ctx.blink.material.color.set(Math.sin(now * 0.006) > 0.2 ? '#ff5d7a' : '#2a0f18'); },
+    tick(ctx, { now }) {
+      if (ctx.blink) ctx.blink.material.color.set(Math.sin(now * 0.006) > 0.2 ? '#bff6ff' : '#14243a');
+      ctx.skyline?.userData.tick(now);
+    },
   },
 
   volcanic: {

@@ -77,7 +77,21 @@ Goal: make Starwake feel great to play, make each world look like its name, clea
 - [ ] **Remix button**: tweak the current forged course ("more hazards", "lower gravity").
 
 ## Morning summary
-_(updated every few rounds)_
+_(updated every few rounds; last update after round 5)_
+
+**Done so far (each round is its own git commit, so any of it can be reverted):**
+1. Every world looks like its name (lava sea and volcanoes on Io, amber ice canals on Titan, a curved Earth below, Jupiter and its rings, a neon station on the Rift, the nebula vortex in Helix).
+2. Each world has its own checkpoint gates and hazard rocks.
+3. Real multiplayer races: rivals appear live as named ghost ships; disconnects and a host leaving are handled.
+4. Invite links, a working copy/share button, and a live standings ticker.
+5. Skill matters now. Rings come in combo trails, the centre line is guarded, and the guide leads you to points. Idle flying scored 360 against 18,370 for good flying (idling used to win).
+
+**Things you need to do (I can't):**
+- Set `OPENAI_API_KEY` on Netlify so the AI World Forge works for judges.
+- Deploy, then test PvP on two real devices.
+- Submission (due Oct 30): title, cover image, description, URL. See `CONTEST.md`.
+
+**Up next:** the robustness bundle (HUD reset between heats), rankings that match results, a clear view of the track, onboarding and pause, solo vs PvP flow, the Forge result card, then the submission package.
 
 ## Ideas inbox
 The user's ideas (from their OpenAI brainstorm) were merged into the backlog above and marked *(user idea)*. Add new ideas here, then triage them into the backlog.

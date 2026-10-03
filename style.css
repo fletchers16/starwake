@@ -278,3 +278,5 @@ button:disabled{cursor:not-allowed;filter:saturate(.55);opacity:.58}
 .standings-ticker i{font-style:normal;color:#7f8ea4}
 @media(max-width:760px){.standings-ticker{top:auto;bottom:86px;right:12px;width:132px;font-size:8px}}
 .result-breakdown{display:grid;grid-template-columns:1fr auto;gap:5px 12px;margin:0 0 14px;font:9px 'DM Mono',monospace;letter-spacing:.08em;color:#8291a6}.result-breakdown b{color:#e8eff9;font-weight:500;text-align:right}
+.flight-craft{display:none!important}
+@media(max-width:760px){.standings-ticker{width:118px;right:8px}.standings-ticker div{padding:4px 6px;gap:5px}}

@@ -266,6 +266,8 @@ const THEMES = {
     sky: ['#0d0408', '#4a1410', '#ff6a1c'], fog: ['#3a120e', 22, 150], stars: 0.25,
     build(THREE, ctx) {
       const lava = lavaTexture(THREE);
+      // Mirrored tiling hides the seam where the lava texture repeats.
+      lava.wrapS = lava.wrapT = THREE.MirroredRepeatWrapping;
       lava.repeat.set(10, 10);
       const sea = groundPlane(THREE, new THREE.MeshStandardMaterial({ color: '#2a0d08', map: lava, emissive: '#ffffff', emissiveMap: lava, emissiveIntensity: 1.25, roughness: 0.9 }), -15, 0.05);
       const rock = new THREE.MeshStandardMaterial({ color: '#2b1712', roughness: 0.95, flatShading: true, emissive: '#3a0d04' });

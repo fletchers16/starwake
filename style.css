@@ -392,3 +392,7 @@ button:disabled{cursor:not-allowed;filter:saturate(.55);opacity:.58}
 .landmark-caption.show{animation:landmark-in 2.6s ease-out forwards}
 @keyframes landmark-in{0%{opacity:0;letter-spacing:.3em}12%{opacity:1;letter-spacing:.06em}80%{opacity:1}100%{opacity:0}}
 @media(max-width:760px){.landmark-caption b{font-size:18px}}
+/* HUD v2 wins over the legacy #app.racing toast / heat-label rules. */
+#app.racing .race-toast{top:38%;padding:0;border:0;background:none;box-shadow:none;backdrop-filter:none;max-width:none;font:600 13px 'DM Mono',monospace;letter-spacing:.16em}
+#app.racing .race-toast span{margin:0;font:600 26px 'Space Grotesk',sans-serif;letter-spacing:-.02em;color:#fff}
+#app.racing #heat-label{font:500 8px 'DM Mono',monospace!important;letter-spacing:.16em!important;color:rgba(226,236,248,.6)}

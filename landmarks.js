@@ -139,13 +139,18 @@ const BUILDERS = {
     } },
     { at: 0.8, name: 'STORM CELL', build(ctx) {
       const g = new THREE.Group();
-      for (let i = 0; i < 18; i++) {
-        const a = (i / 18) * Math.PI * 2, r = 14 + (i % 3) * 2;
-        const cloud = new THREE.Sprite(new THREE.SpriteMaterial({ map: ctx.glow, color: '#4a2a3a', transparent: true, opacity: 0.85, depthWrite: false }));
-        cloud.position.set(Math.cos(a) * r, Math.sin(a) * r * 0.8, -(i % 6) * 8);
-        cloud.scale.setScalar(14);
+      // A turning vortex of sulphur-lit smoke (Kenney smoke sprites), lit from inside by the lightning,
+      // rather than a ring of flat dark blobs that read as a black hole in the sky.
+      const clouds = [];
+      for (let i = 0; i < 12; i++) {
+        const a = (i / 12) * Math.PI * 2, r = 13 + ((i * 7) % 5);
+        const cloud = new THREE.Sprite(new THREE.SpriteMaterial({ map: ctx.smoke || ctx.glow, color: i % 3 ? '#c8703a' : '#ffb060', transparent: true, opacity: 0.3, depthWrite: false, blending: THREE.AdditiveBlending, rotation: i * 1.7 }));
+        cloud.userData = { a, r, z: -(i % 4) * 9, base: 12 + ((i * 5) % 7) };
+        cloud.scale.setScalar(cloud.userData.base);
         g.add(cloud);
+        clouds.push(cloud);
       }
+      let flash = 0;
       const boltGeom = new THREE.BufferGeometry();
       boltGeom.setAttribute('position', new THREE.BufferAttribute(new Float32Array(10 * 3), 3));
       const bolt = new THREE.Line(boltGeom, new THREE.LineBasicMaterial({ color: '#f2e6ff', transparent: true, opacity: 0 }));
@@ -153,7 +158,15 @@ const BUILDERS = {
       g.add(bolt);
       let next = 0;
       g.userData.tick = (now) => {
+        for (const c of clouds) {
+          const a = c.userData.a + now * 0.00012;
+          c.position.set(Math.cos(a) * c.userData.r, Math.sin(a) * c.userData.r * 0.8, c.userData.z);
+          c.material.rotation += 0.002;
+          c.material.opacity = 0.26 + flash * 0.4;
+        }
+        flash *= 0.9;
         if (now > next) {
+          flash = 1;
           next = now + 500 + Math.random() * 900;
           const a = Math.random() * Math.PI * 2, attr = boltGeom.attributes.position;
           for (let k = 0; k < 10; k++) attr.setXYZ(k, Math.cos(a) * (15 - k * 1.2) + (Math.random() - 0.5) * 2, Math.sin(a) * (15 - k * 1.2) + (Math.random() - 0.5) * 2, -Math.random() * 30);

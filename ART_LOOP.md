@@ -17,13 +17,29 @@ Started 2026-10-03 at the user's request. Runs **until the user stops it**.
 4. **Harden**: fix anything the frames reveal. Every 3rd round, spawn a cold playtest agent and triage its findings into the backlog.
 5. **Commit** as `Art N: …`, mark the idea done, add a **Log** line.
 
+## Style rules (adopted from research round 1)
+1. **Three hues per world.** Each world has a base, a complement and an accent, plus two global reserved colours: ring gold and danger red. Nothing else is saturated, and only the accent, rings and engines may bloom.
+2. **Four depth layers.** Hero (rim-lit), midground (ramp-shaded), far (fog band) and sky, with stepped value contrast. The far fog colour always equals the sky's horizon colour.
+3. **Silhouette first.** Every hero object, hazard and landmark must read as a solid shape against the fog with textures off. Use a rim or outline for that, not blanket emissive glow. Only hazards use red.
+
+## Performance budget (baseline 2026-10-03, dev `window.__starwake.stats()`)
+Baseline is 132–155 draw calls, 22k–35k triangles, about 4–6 ms CPU per frame across the six worlds. **Budget: under 220 calls, under 80k triangles, under 9 ms CPU.** Re-measure after every visual change.
+
 ## Idea backlog
 Status: `ready` · `needs-asset-approval` · `in-progress` · `done` · `rejected`
 
-_(filled by research rounds)_
+1. `ready` **Depth-ramp fog plus a matched horizon** (Firewatch). Patch `fog_fragment` to sample a per-world 3-band ramp by depth, with the far band equal to the sky horizon. Sources: ctrl500.com Firewatch article; halisavakis.com multi-coloured fog. Asset: none.
+2. `ready` **Palette discipline plus a grade pass** (Sayonara Wild Hearts). Tighten each world to three hues; add a ShaderPass after bloom for vignette, subtle grain and split-tone; raise the bloom threshold so only rings, engines and the accent bloom. Asset: none.
+3. `ready` **Fresnel rim light on hero objects** (Redout). Add a `rim.js` onBeforeCompile helper and apply it to the ship, landmarks and rocks; cut blanket emissive. Asset: none.
+4. `ready` **Inverted-hull ink outline** on obstacles (danger red) and landmarks (dark ink). Use creased normals for flat geometry. Asset: none.
+5. `ready` **Speed language**: screen-edge radial speed lines in the grade pass driven by speed, plus velocity-stretched dust quads. Sources: Codrops high-speed light trails; Anime-Speed-Lines. Asset: optional (idea 7).
+6. `ready` **Two-tone ramp shading on scenery** (MeshToonMaterial with a 3-step gradientMap per world); exempt Titan ice, Earth and the ship. Asset: none.
+7. `needs-asset-approval` **Soft particle sprites** from the Kenney Particle Pack (CC0, https://kenney.nl/assets/particle-pack, about a 9.8 MB zip; vendor about 6 PNGs at 128 px, under 100 KB total) for Io plumes, Titan haze, pickup bursts and speed streaks.
+8. `needs-asset-approval` **Low-poly station modules** from the Kenney Space Kit (CC0, https://kenney.nl/assets/space-kit, about 6.5 MB zip; vendor 3–5 GLBs) to give the Neon Rift and Earthfall landmarks real modelled detail.
 
 ## Asset log
 | File | Source | License | Size | Approved | Used in |
 |---|---|---|---|---|---|
 
 ## Log
+- Research round 1 (subagent): diagnosis: too many similar-saturation hues, everything glowing, no depth layering or silhouettes. Seven ideas and CC0 candidates triaged above; style rules adopted. Performance baseline measured (and fixed the measurement: `renderer.info` auto-resets per pass, so the dev `stats()` hook now accumulates across the composer).

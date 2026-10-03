@@ -28,6 +28,16 @@ Baseline is 132–155 draw calls, 22k–35k triangles, about 4–6 ms CPU per fr
 ## Idea backlog
 Status: `ready` · `needs-asset-approval` · `in-progress` · `done` · `rejected`
 
+**From art playtest 2 (after Art 6; scores: Rift 5, Io 7, Titan 5, Helix 3, Earthfall 4, Jovian 5):**
+19. `ready` **Visual bug bundle.** Jupiter reads as see-through (its ring isn't concentric with the planet, so the ring's hole cuts across it). Earth has a hard-edged pale disc under the ship in every frame, and its continents are blocky. Titan's canyon walls render pure black (albedo too dark).
+20. `ready` **Helix Deep rebuild** (worst world, 3/10). The nebula sprites form a visible grid (use scattered, rotated, size-varied puffs or an fbm sky), and the flat vector spiral and The Eye read as clip art (use a volumetric swirl).
+21. `ready` **Flat-card effects** (Aurora Curtain, Methane Falls, Cassini Gap) need curved ribbon geometry with soft noise-alpha edges.
+22. `ready` **Neon Rift void** (60% of the frame is empty black). Add a distant megastructure or skyline backdrop, light the beams, make the finish banner readable.
+23. `ready` **Crafted hazards.** Hazards are still primitive polyhedra; Titan's blockers are blue with only a red outline (breaks one-danger-red). Use crafted shapes with a red emissive core.
+24. `ready` **Per-instance variation.** Add ±8% hue/value instance colour jitter on crystals, rocks and scenery.
+25. `ready` **Small generated details.** Europa's scribble texture, uniform lava cell scale, the striped intro planet, and stock-looking briefing icons.
+26. `ready` **Gameplay hardening.** Hull 0/4 has no consequence (a heat can be won with zero hull); solo mode polls the game function constantly; verify Skip Intro with a real pointer click (the playtest saw a freeze, possibly a throttled-tab artifact).
+
 **From art playtest 1 (after Art 3), ranked by how much they make it look generated:**
 10. `done` (Art 4) **Camera framing.** The camera follows only 24% of the ship's lateral offset, so the ship sits at screen edges or off-screen (worst in portrait and mobile). Follow most of the offset with a tighter lerp, keep the ship inside a centre box, cap roll around 8°.
 11. `done` (Art 5) **Texture artifacts.** Io's lava is visibly mirror-tiled like a kaleidoscope, Earth's cloud swooshes are jagged, Jupiter's band edges are notched. Use higher-resolution, seamless noise, mipmaps and anisotropy; add land masses and soft clouds to Earth.
@@ -66,3 +76,4 @@ Status: `ready` · `needs-asset-approval` · `in-progress` · `done` · `rejecte
 - Art 5: procedural textures rebuilt on seamless periodic noise (`textures.js`). Io lava is a domain-warped Voronoi crust with variable-width glowing seams and faint inner cracks (no mirroring, repeat 6×). Earth has fractal continents with beaches, depth-shaded oceans and polar caps, plus a separate drifting cloud sphere. Gas giants (Jupiter, Saturn, Jupiter seen from Io) have turbulence-warped smooth bands with a storm oval (no stair-step notches). Removed the old canvas texture functions. Generation costs lava 106 ms, Earth 26, clouds 17, giant 17, once per world load. Verified on Io, Earthfall and Jupiter; no errors; 124–133 calls.
 - Art 6: crafted shapes (`shapes.js`: crystal clusters of hex shards with pointed tips, seeded `roughen`, vertical vertex-colour `gradient`, rock slabs, volcano). Titan's trackside spires are now crystal clusters (deep blue base to frosted tips) with roughened rock-slab canyon walls; Io's volcanoes are roughened cones from dark base to hot rim. Crystal Cathedral, Frozen Gate (roughened pillars, span, icicles) and Pele's Arch (roughened basalt with gradient, rough boulder feet) rebuilt. Verified on Titan and Io; no errors. Titan peaks at 200 calls with the Cathedral in view (budget 220); merge its spires into an InstancedMesh if it gets closer to budget.
 - Vendored the approved Kenney CC0 files into `public/assets/kenney/` (licenses re-checked on both pages and in the bundled License.txt). Only the files used are kept: 6 particle sprites downscaled to 128 px (66 KB) and 7 self-contained GLB models (93 KB).
+- Art playtest 2 (subagent, after Art 6): Pele's Arch is the best frame; the Jovian ring banding, Titan crystals, ship framing and UI are good. New items 19–26. 94–204 calls; no JS errors.

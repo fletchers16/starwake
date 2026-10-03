@@ -21,7 +21,7 @@ const hash = (n) => { const x = Math.sin(n * 91.7 + 13.1) * 43758.5453; return x
 
 export function createSkyline(THREE, { accent = '#71f5dc', glowTexture } = {}) {
   const group = new THREE.Group();
-  const hull = addRim(new THREE.MeshStandardMaterial({ color: '#0d1626', metalness: 0.6, roughness: 0.55, flatShading: true }), { strength: 0.8, power: 2.2 });
+  const hull = addRim(new THREE.MeshStandardMaterial({ color: '#1c2c48', emissive: '#0a1a30', emissiveIntensity: 0.6, metalness: 0.5, roughness: 0.55, flatShading: true }), { strength: 1.3, power: 1.8 });
   const strip = new THREE.MeshBasicMaterial({ color: accent, fog: false });
   const beaconMat = new THREE.SpriteMaterial({ map: glowTexture, color: '#bff6ff', transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, fog: false });
   const beacons = [];
@@ -63,7 +63,7 @@ export function createSkyline(THREE, { accent = '#71f5dc', glowTexture } = {}) {
       const height = Math.max(4, top - box.min.y);
       stripParts.push(clean(new THREE.BoxGeometry(0.5, height * 0.8, 0.5).translate(model.position.x + (hash(i * 13) - 0.5) * scale * 0.6, box.min.y + height * 0.45, model.position.z + scale * 0.3)));
       const beacon = new THREE.Sprite(beaconMat.clone());
-      beacon.scale.setScalar(5);
+      beacon.scale.setScalar(7);
       beacon.position.set(model.position.x, top + 2, model.position.z);
       beacon.userData.phase = hash(i * 17) * 6.28;
       group.add(beacon);

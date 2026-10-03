@@ -76,10 +76,12 @@ function makeSky(THREE) {
       uNebA: { value: new THREE.Color('#c06bff') },
       uNebB: { value: new THREE.Color('#3fb6ff') },
       uTime: { value: 0 },
+      uGlow: { value: new THREE.Color('#000000') },
+      uGlowStrength: { value: 0 },
     },
     vertexShader: 'varying vec3 vDir; void main(){ vDir = normalize(position); gl_Position = projectionMatrix * modelViewMatrix * vec4(position,1.0); }',
     fragmentShader: `${NOISE_GLSL}
-      uniform vec3 top; uniform vec3 mid; uniform vec3 bottom; uniform float flash; uniform float uNebula; uniform vec3 uNebA; uniform vec3 uNebB; uniform float uTime; varying vec3 vDir;
+      uniform vec3 top; uniform vec3 mid; uniform vec3 bottom; uniform float flash; uniform float uNebula; uniform vec3 uNebA; uniform vec3 uNebB; uniform float uTime; uniform vec3 uGlow; uniform float uGlowStrength; varying vec3 vDir;
       void main(){ float y = vDir.y; vec3 c = y > 0.0 ? mix(mid, top, smoothstep(0.0, 0.55, y)) : mix(mid, bottom, smoothstep(0.0, 0.35, -y));
         if (uNebula > 0.0) {
           // Painted nebula: continuous fbm wisps across the whole sky instead of sprite blobs.
@@ -89,6 +91,8 @@ function makeSky(THREE) {
           c += mix(uNebB, uNebA, hue) * m * uNebula;
           c += mix(uNebA, vec3(1.0), 0.5) * smoothstep(0.7, 0.9, n * detail * 1.6) * 0.25 * uNebula;
         }
+        // Horizon glow band gives each world a lit skyline instead of a black edge.
+        c += uGlow * uGlowStrength * exp(-abs(y + 0.02) * 9.0);
         gl_FragColor = vec4(c + flash * vec3(0.55, 0.5, 0.75), 1.0); }`,
   });
   const mesh = new THREE.Mesh(new THREE.SphereGeometry(400, 32, 16), material);
@@ -151,6 +155,29 @@ function makeParticles(THREE, texture, { count, color, size, opacity, spread = [
   return points;
 }
 
+/** Distant jagged ridgeline ring (mountains or cliffs) silhouetted against the horizon glow. */
+function ridgeline(THREE, { color, radius = 190, base = -40, height = 34, seed = 1, segments = 160, glow = null }) {
+  const pos = [], idx = [];
+  for (let i = 0; i <= segments; i++) {
+    const a = (i / segments) * Math.PI * 2;
+    const n = Math.abs(Math.sin(a * 3 + seed) * 0.5 + Math.sin(a * 7.3 + seed * 2) * 0.3 + Math.sin(a * 17.1 + seed * 3) * 0.2);
+    const top = base + height * (0.35 + 0.65 * n) * (0.7 + 0.3 * hash(i + seed));
+    const x = Math.cos(a) * radius, z = Math.sin(a) * radius;
+    pos.push(x, base - 30, z, x, top, z);
+    if (i < segments) { const k = i * 2; idx.push(k, k + 1, k + 2, k + 1, k + 3, k + 2); }
+  }
+  const g = new THREE.BufferGeometry();
+  g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+  g.setIndex(idx);
+  const colors = [];
+  const dark = new THREE.Color(color), lit = new THREE.Color(glow || color);
+  for (let i = 0; i < pos.length / 3; i++) { const c = i % 2 ? dark : lit.clone().lerp(dark, 0.4); colors.push(c.r, c.g, c.b); }
+  g.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
+  const mesh = new THREE.Mesh(g, new THREE.MeshBasicMaterial({ vertexColors: true, side: THREE.DoubleSide, fog: false }));
+  mesh.frustumCulled = false;
+  return mesh;
+}
+
 /** Large sky object that tracks the camera so it reads as infinitely far away. */
 function skyObject(object, offset, follow = 0.92) {
   object.userData.update = ({ cameraX, cameraY }) => object.position.set(offset[0] + cameraX * follow, offset[1] + cameraY * follow * 0.6, offset[2]);
@@ -173,6 +200,7 @@ function groundPlane(THREE, material, y, uvScale = 0.02) {
 
 const THEMES = {
   relay: {
+    horizonGlow: ['#1c6fd0', 0.3],
     nebula: { strength: 0.35, a: '#2a62d8', b: '#18c9b2' },
     fogRamp: ['#1b6f8a', '#16305a'],
     sky: ['#040a18', '#0d2244', '#02050b'], fog: ['#0a1a33', 34, 165], stars: 1,
@@ -210,6 +238,7 @@ const THEMES = {
   },
 
   volcanic: {
+    horizonGlow: ['#ff5a1f', 0.6],
     fogRamp: ['#c2481c', '#5a1a16'],
     sky: ['#0d0408', '#4a1410', '#ff6a1c'], fog: ['#3a120e', 22, 150], stars: 0.25,
     build(THREE, ctx) {
@@ -241,7 +270,9 @@ const THEMES = {
       bolt.frustumCulled = false;
       ctx.bolt = bolt;
       ctx.nextBolt = 0;
-      return [sea, volcanoes, plumes, ash, embers, jupiter, bolt];
+      // Dark volcanic ranges on the horizon, lit from below by the lava glow.
+      const ridges = skyObject(ridgeline(THREE, { color: '#140806', glow: '#7a2410', base: -40, height: 58, seed: 3 }), [0, 0, 0], 1);
+      return [sea, volcanoes, plumes, ash, embers, jupiter, bolt, ridges];
     },
     tick(ctx, { now, cameraX }, THREE) {
       const flash = Math.max(0, 1 - (now - ctx.boltAt) / 180);
@@ -264,6 +295,7 @@ const THEMES = {
   },
 
   ice: {
+    horizonGlow: ['#ffc070', 0.22],
     fogRamp: ['#e6ad68', '#bb7c44'],
     sky: ['#4a3420', '#c08447', '#6b4a2c'], fog: ['#a8743f', 10, 118], stars: 0,
     build(THREE, ctx) {
@@ -291,7 +323,9 @@ const THEMES = {
       ring.rotation.x = 1.25;
       saturn.add(ring);
       saturn.rotation.z = 0.35;
-      return [spires, cliffs, canal, haze, snow, skyObject(saturn, [-60, 58, -190])];
+      // Hazy far cliffs so the canyon opens onto a skyline, not a flat haze.
+      const ridges = skyObject(ridgeline(THREE, { color: '#7d5634', glow: '#a8743f', base: -30, height: 62, seed: 9 }), [0, 0, 0], 1);
+      return [spires, cliffs, canal, haze, snow, skyObject(saturn, [-60, 58, -190]), ridges];
     },
   },
 
@@ -373,6 +407,7 @@ const THEMES = {
   },
 
   jupiter: {
+    horizonGlow: ['#d07436', 0.28],
     fogRamp: ['#b9814f', '#5a3a24'],
     sky: ['#070504', '#2a1a10', '#140c08'], fog: ['#24170f', 44, 180], stars: 0.8,
     build(THREE, ctx) {
@@ -447,6 +482,8 @@ export function createWorldEnvironment(THREE, scene) {
       sky.material.uniforms.mid.value.set(course?.forged ? course.fog : mid);
       sky.material.uniforms.bottom.value.set(bottom);
       sky.material.uniforms.uNebula.value = theme.nebula?.strength || 0;
+      sky.material.uniforms.uGlow.value.set(theme.horizonGlow?.[0] || '#000000');
+      sky.material.uniforms.uGlowStrength.value = theme.horizonGlow?.[1] || 0;
       if (theme.nebula) { sky.material.uniforms.uNebA.value.set(course?.forged ? course.accent : theme.nebula.a); sky.material.uniforms.uNebB.value.set(course?.forged ? course.secondary : theme.nebula.b); }
       // Depth ramp: near and mid bands per world; the far band is the fog colour, and the sky horizon matches it.
       const far = new THREE.Color(course?.forged ? course.fog : theme.fog[0]);

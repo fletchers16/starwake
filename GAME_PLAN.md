@@ -2,6 +2,8 @@
 
 Goal: make Starwake feel great to play, make each world look like its name, clean up content and progression, and make it polished and stable.
 
+**Contest:** Handshake × OpenAI Multiplayer Game Challenge, due **2026-10-30 11:59 PM PT** (see `CONTEST.md`). Judging is 25% each for Execution, Creativity, Usefulness and Polish. Multiplayer reliability and demo-readiness on the deployed URL come first.
+
 ## How each round works
 1. Take the top unchecked item in **Backlog**. If it's too big, split it and do the first slice.
 2. Build it. Match the surrounding code style. Prefer new modules (e.g. `world-themes.js`) over making `game.js`'s long lines longer.
@@ -31,6 +33,11 @@ Goal: make Starwake feel great to play, make each world look like its name, clea
 - [ ] **Collect feedback**: ring pop particles, a rising pitch for consecutive rings (a combo counter with a score multiplier), a Star Core burst.
 - [ ] **Controls**: tune acceleration and damping so steering feels responsive but weighty; check keyboard and touch drag; keep the ship from blocking the view of the track ahead.
 - [ ] **Race flow**: a punchier 3-2-1-GO countdown, lap-complete fanfare, a final-10-seconds tension cue, a clear finish moment.
+
+### Contest-critical (multiplayer + submission)
+- [ ] **Multiplayer hardening**: run a 2-browser PvP session end to end (create → join by code → 3 heats → results), using two tabs with separate storage locally. Live opponent ghosts and positions in race, clear handling of disconnects and a host leaving, and graceful errors. Validate scores server-side as far as is cheap.
+- [ ] **Multiplayer feel**: show the other human pilots' names over their ships, a live standings ticker, and a lobby that makes "share this code" obvious (copy button, share link with the code in the URL).
+- [ ] **Submission package**: generate a cover image (in-game screenshot composition), write the project description (OpenAI World Forge + multiplayer), and a deploy checklist (Netlify, `OPENAI_API_KEY`, two-device test).
 
 ### Content and progression
 - [ ] **Audit the economy**: RP ranks, credits, ship prices, module prices and stickers. Make the first unlock reachable in 2–3 races and give each later unlock a clear goal.

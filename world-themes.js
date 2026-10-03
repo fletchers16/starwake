@@ -36,6 +36,29 @@ function canvasTexture(THREE, width, height, draw, repeat = false) {
 }
 
 // Shared soft round sprite for glows, dust, and embers.
+/**
+ * Distant planet seen through atmosphere: opaque (so rings and nearer objects occlude it
+ * properly, unlike a transparent sphere) but faded toward a haze colour, with soft
+ * day/night shading toward `light` so it reads as a lit sphere, not a flat disc.
+ */
+function hazyPlanetMaterial(THREE, map, { haze = '#000000', amount = 0.4, light = [0.5, 0.6, 0.6], night = 0.25 } = {}) {
+  return new THREE.ShaderMaterial({
+    fog: false,
+    uniforms: { map: { value: map }, haze: { value: new THREE.Color(haze) }, amount: { value: amount }, light: { value: new THREE.Vector3(...light).normalize() }, night: { value: night } },
+    vertexShader: 'varying vec2 vUv; varying vec3 vN; varying vec3 vW; void main(){ vUv = uv; vN = normalize(mat3(modelMatrix) * normal); vec4 w = modelMatrix * vec4(position, 1.0); vW = w.xyz; gl_Position = projectionMatrix * viewMatrix * w; }',
+    fragmentShader: `uniform sampler2D map; uniform vec3 haze; uniform float amount; uniform vec3 light; uniform float night;
+      varying vec2 vUv; varying vec3 vN; varying vec3 vW;
+      void main(){
+        vec3 n = normalize(vN), v = normalize(cameraPosition - vW);
+        vec3 c = texture2D(map, vUv).rgb * mix(night, 1.0, smoothstep(-0.2, 0.5, dot(n, light)));
+        float limb = pow(1.0 - max(dot(n, v), 0.0), 2.0);
+        gl_FragColor = vec4(mix(c, haze, clamp(amount + limb * 0.5, 0.0, 1.0)), 1.0);
+        #include <tonemapping_fragment>
+        #include <colorspace_fragment>
+      }`,
+  });
+}
+
 function glowTexture(THREE) {
   return canvasTexture(THREE, 64, 64, (ctx, w) => {
     const g = ctx.createRadialGradient(w / 2, w / 2, 0, w / 2, w / 2, w / 2);
@@ -263,7 +286,7 @@ const THEMES = {
       const ash = makeParticles(THREE, ctx.glow, { count: 260, color: '#9a8478', size: 0.28, opacity: 0.55, fall: 4, additive: false });
       const embers = makeParticles(THREE, ctx.glow, { count: 120, color: '#ff8a2a', size: 0.35, opacity: 0.9, fall: -3 });
       // Jupiter looms over Io.
-      const jupiter = skyObject(new THREE.Mesh(new THREE.SphereGeometry(48, 40, 24), new THREE.MeshBasicMaterial({ map: gasGiantTexture(THREE, ['#a5674a', '#e0b07c', '#c48a62', '#f0d2a4'], { storm: { u: 0.66, v: 0.62, rx: 0.07, ry: 0.06, color: '#b0503a' } }), transparent: true, opacity: 0.55 })), [55, 70, -190]);
+      const jupiter = skyObject(new THREE.Mesh(new THREE.SphereGeometry(48, 40, 24), hazyPlanetMaterial(THREE, gasGiantTexture(THREE, ['#a5674a', '#e0b07c', '#c48a62', '#f0d2a4'], { storm: { u: 0.66, v: 0.62, rx: 0.07, ry: 0.06, color: '#b0503a' } }), { haze: '#3a140a', amount: 0.35, light: [-0.6, 0.2, 0.7], night: 0.18 })), [55, 70, -190]);
       const boltGeometry = new THREE.BufferGeometry();
       boltGeometry.setAttribute('position', new THREE.BufferAttribute(new Float32Array(32 * 3), 3));
       const bolt = new THREE.Line(boltGeometry, new THREE.LineBasicMaterial({ color: '#f4e8ff', transparent: true, opacity: 0, fog: false }));
@@ -318,8 +341,11 @@ const THEMES = {
       const snow = makeParticles(THREE, ctx.glow, { count: 220, color: '#fff3dc', size: 0.16, opacity: 0.8, fall: 1.5, additive: false });
       // Saturn, faint through the haze.
       const saturn = new THREE.Group();
-      saturn.add(new THREE.Mesh(new THREE.SphereGeometry(26, 32, 20), new THREE.MeshBasicMaterial({ map: gasGiantTexture(THREE, ['#e8cf9a', '#d6b47a', '#f2e0b4'], { seed: 41 }), transparent: true, opacity: 0.32 })));
-      const ring = new THREE.Mesh(new THREE.RingGeometry(34, 52, 64), new THREE.MeshBasicMaterial({ color: '#f2dfb2', transparent: true, opacity: 0.22, side: THREE.DoubleSide }));
+      saturn.add(new THREE.Mesh(new THREE.SphereGeometry(26, 32, 20), hazyPlanetMaterial(THREE, gasGiantTexture(THREE, ['#e8cf9a', '#d6b47a', '#f2e0b4'], { seed: 41 }), { haze: '#b07a48', amount: 0.5, light: [0.7, 0.3, 0.6], night: 0.35 })));
+      // Banded ring (A ring, Cassini Division, B ring) mapped radially; the opaque planet hides its far side.
+      const saturnRingTex = canvasTexture(THREE, 256, 4, (c, w) => { for (let x = 0; x < w; x++) { const t = x / w, gap = t > 0.55 && t < 0.62 ? 0.08 : 1; c.fillStyle = `rgba(242,223,178,${(0.35 + 0.45 * hash(x * 0.21) * (0.6 + 0.4 * Math.sin(t * 40))) * gap})`; c.fillRect(x, 0, 1, 4); } });
+      const ring = new THREE.Mesh(new THREE.RingGeometry(34, 52, 96, 1), new THREE.MeshBasicMaterial({ map: saturnRingTex, color: '#d8b888', transparent: true, opacity: 0.75, side: THREE.DoubleSide, depthWrite: false, fog: false }));
+      { const uv = ring.geometry.attributes.uv, pos = ring.geometry.attributes.position, v = new THREE.Vector3(); for (let i = 0; i < uv.count; i++) { v.fromBufferAttribute(pos, i); uv.setXY(i, (v.length() - 34) / 18, 0.5); } }
       ring.rotation.x = 1.25;
       saturn.add(ring);
       saturn.rotation.z = 0.35;
@@ -439,7 +465,8 @@ const THEMES = {
     build(THREE, ctx) {
       // Jupiter fills the sky, with its ring plane sweeping across.
       const giant = new THREE.Group();
-      giant.add(new THREE.Mesh(new THREE.SphereGeometry(95, 64, 40), new THREE.MeshStandardMaterial({ map: gasGiantTexture(THREE, ['#8f563c', '#e3b47a', '#c58d63', '#f1d6a8', '#a86a48', '#d9a777'], { storm: { u: 0.66, v: 0.62, rx: 0.07, ry: 0.06, color: '#b5482f' } }), roughness: 0.9, emissive: '#3a1c10', emissiveIntensity: 0.5 })));
+      // Own sun-lit shader: the race's warm lights turned a standard material rust-red and hid the bands.
+      giant.add(new THREE.Mesh(new THREE.SphereGeometry(95, 64, 40), hazyPlanetMaterial(THREE, gasGiantTexture(THREE, ['#c9a27a', '#f2e6cc', '#b07a52', '#f6ecd6', '#9c6a48', '#e8d2a8', '#d8b890'], { storm: { u: 0.66, v: 0.62, rx: 0.06, ry: 0.035, color: '#c0583a' }, width: 1024, height: 512 }), { haze: '#2a1a10', amount: 0.08, light: [0.6, 0.35, 0.7], night: 0.12 })));
       giant.rotation.z = -0.18;
       // The planet sits on the ring plane (equator at y=-9) with its ring centred on it, so the ring's gap hugs the planet.
       const planet = skyObject(giant, [-60, -9, -230], 0.92);
@@ -453,7 +480,8 @@ const THEMES = {
       // Ring particles the route skims through.
       const ringDust = makeParticles(THREE, ctx.glow, { count: 340, color: '#f0d8b0', size: 0.32, opacity: 0.7, spread: [90, 3.5, 170], additive: false });
       ringDust.position.y = -7;
-      const chunks = makeTrackside(THREE, new THREE.IcosahedronGeometry(1.2, 0), new THREE.MeshStandardMaterial({ color: '#cbb592', roughness: 0.8, flatShading: true }), { count: 40, spacing: 7 }, (slot) => ({ x: (hash(slot) - 0.5) * 60, y: -8 + (hash(slot * 2) - 0.5) * 2, s: 0.3 + hash(slot * 3) * 1.2, rx: slot, ry: slot * 1.3 }));
+      // Roughened ice-and-rock chunks with a shaded gradient, not uniform icosahedrons.
+      const chunks = makeTrackside(THREE, gradient(roughen(new THREE.IcosahedronGeometry(1.2, 1), 0.55, 21), '#7a6a58', '#efe4cf', 1.4), new THREE.MeshStandardMaterial({ color: '#ffffff', vertexColors: true, roughness: 0.85, flatShading: true }), { count: 40, spacing: 7 }, (slot) => ({ x: (hash(slot) - 0.5) * 60, y: -8 + (hash(slot * 2) - 0.5) * 2, s: 0.3 + hash(slot * 3) * 1.2, rx: slot, ry: slot * 1.3 }));
       return [planet, ringPlane, ringDust, chunks];
     },
     tick(ctx, { now }) { ctx.pieces[0].userData.spin.rotation.y = now * 0.00002; },

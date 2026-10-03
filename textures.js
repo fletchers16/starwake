@@ -165,3 +165,22 @@ export function moonTexture(THREE, width = 512, height = 256) {
     }
   });
 }
+
+/** Europa: pale water ice crossed by long reddish-brown lineae (thin noise ridges), no scribbles. */
+export function europaTexture(THREE, width = 512, height = 256) {
+  return makeTexture(THREE, width, height, (data, w, h) => {
+    for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
+      const u = x / w, v = y / h;
+      let c = mix3([214, 206, 190], [240, 236, 226], fbm(u, v, { octaves: 4, base: 6, seed: 71 }));
+      // Lineae: zero-crossings of two warped noise fields give long, gently curving cracks.
+      for (const [seed, width_, strength] of [[73, 0.008, 0.45], [79, 0.005, 0.35], [83, 0.016, 0.18]]) {
+        const n = fbm(u, v, { octaves: 3, base: 3, seed });
+        const line = Math.max(0, 1 - Math.abs(n - 0.5) / width_);
+        c = mix3(c, [168, 104, 72], line * strength);
+      }
+      c = mix3(c, [176, 132, 104], Math.max(0, fbm(u, v, { octaves: 3, base: 4, seed: 89 }) - 0.58) * 2.2);
+      const i = (y * w + x) * 4;
+      data[i] = c[0]; data[i + 1] = c[1]; data[i + 2] = c[2]; data[i + 3] = 255;
+    }
+  });
+}

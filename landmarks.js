@@ -1,6 +1,7 @@
 import { makeSwirlMaterial } from './swirl.js';
 import { crystalCluster, roughen, gradient } from './shapes.js';
 import { rimObject } from './rim.js';
+import { europaTexture } from './textures.js';
 /**
  * Named set pieces the race route flies through or past ("attractions").
  * Each world gets three, placed at fixed lap fractions so every pilot sees the
@@ -358,13 +359,8 @@ const BUILDERS = {
     } },
     { at: 0.52, name: 'EUROPA FLYBY', build() {
       const g = new THREE.Group();
-      const tex = canvasTexture(THREE, 512, 256, (c, w, h) => {
-        c.fillStyle = '#e8e0d0';
-        c.fillRect(0, 0, w, h);
-        c.strokeStyle = 'rgba(150,80,50,.55)';
-        for (let i = 0; i < 60; i++) { c.lineWidth = 1 + Math.random() * 2; c.beginPath(); let x = Math.random() * w, y = Math.random() * h; c.moveTo(x, y); for (let k = 0; k < 5; k++) { x += (Math.random() - 0.5) * 120; y += (Math.random() - 0.5) * 40; c.lineTo(x, y); } c.stroke(); }
-      });
-      const moon = new THREE.Mesh(new THREE.SphereGeometry(22, 48, 32), new THREE.MeshStandardMaterial({ map: tex, roughness: 0.85 }));
+      const tex = europaTexture(THREE);
+      const moon = new THREE.Mesh(new THREE.SphereGeometry(22, 48, 32), new THREE.MeshStandardMaterial({ map: tex, roughness: 0.85, emissive: '#ffffff', emissiveMap: tex, emissiveIntensity: 0.25 }));
       moon.position.set(-42, 12, -30);
       g.add(moon);
       g.userData.tick = (now) => { moon.rotation.y = now * 0.00006; };

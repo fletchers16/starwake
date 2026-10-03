@@ -11,22 +11,24 @@ import * as THREE from 'three';
 
 export const rimColor = { value: new THREE.Color('#7fb6ff') };
 
-export function addRim(material, { strength = 0.5, power = 2.6 } = {}) {
+export function addRim(material, { strength = 0.5, power = 2.6, color = null } = {}) {
   if (!material || material.userData.rim || !(material.isMeshStandardMaterial || material.isMeshPhysicalMaterial)) return material;
   material.userData.rim = true;
   const previous = material.onBeforeCompile;
   const previousKey = material.customProgramCacheKey?.bind(material);
   const s = strength.toFixed(2), p = power.toFixed(2);
+  // A fixed colour (e.g. danger red on hazards) gets its own uniform; otherwise follow the world's rim colour.
+  const uniform = color ? { value: new THREE.Color(color) } : rimColor;
   material.onBeforeCompile = (shader, renderer) => {
     previous?.call(material, shader, renderer);
-    shader.uniforms.rimColor = rimColor;
+    shader.uniforms.rimColor = uniform;
     shader.fragmentShader = shader.fragmentShader
       .replace('#include <common>', '#include <common>\nuniform vec3 rimColor;')
       .replace('#include <emissivemap_fragment>', `#include <emissivemap_fragment>
         float rimFacing = 1.0 - abs( dot( normalize( normal ), normalize( vViewPosition ) ) );
         totalEmissiveRadiance += rimColor * pow( rimFacing, ${p} ) * ${s};`);
   };
-  material.customProgramCacheKey = () => `rim${s}_${p}:${previousKey ? previousKey() : ''}`;
+  material.customProgramCacheKey = () => `rim${s}_${p}${color ? 'c' : ''}:${previousKey ? previousKey() : ''}`;
   material.needsUpdate = true;
   return material;
 }

@@ -1,4 +1,7 @@
 import { addRim } from './rim.js';
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
+import { roughen, gradient } from './shapes.js';
 /**
  * Hazard meshes with one consistent visual language: anything that hurts is
  * drawn in the course's hazard colour with a glowing core, and nothing is
@@ -22,7 +25,16 @@ export function makeMine(THREE, item, course) {
   group.add(core);
   const halo = new THREE.Mesh(new THREE.SphereGeometry(r * 0.62, 16, 12), new THREE.MeshBasicMaterial({ color: DANGER, transparent: true, opacity: 0.18, depthWrite: false, blending: THREE.AdditiveBlending }));
   group.add(halo);
-  const cage = new THREE.LineSegments(new THREE.EdgesGeometry(new THREE.IcosahedronGeometry(r * 0.8, 0)), new THREE.LineBasicMaterial({ color: DANGER, transparent: true, opacity: 0.9 }));
+  // Solid spikes (a sea-mine silhouette) instead of a wireframe cage.
+  const cage = new THREE.Group();
+  const spikeMat = addRim(new THREE.MeshStandardMaterial({ color: '#241a1e', emissive: DANGER, emissiveIntensity: 0.25, metalness: 0.8, roughness: 0.35, flatShading: true }), { strength: 0.9, color: DANGER });
+  const dirs = [[1,0,0],[-1,0,0],[0,1,0],[0,-1,0],[0,0,1],[0,0,-1],[0.7,0.7,0],[-0.7,-0.7,0]];
+  const spikes = dirs.map(([x, y, z]) => {
+    const dir = new THREE.Vector3(x, y, z).normalize();
+    const m = new THREE.Matrix4().compose(dir.clone().multiplyScalar(r * 0.62), new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 1, 0), dir), new THREE.Vector3(1, 1, 1));
+    return new THREE.ConeGeometry(r * 0.12, r * 0.55, 5).toNonIndexed().applyMatrix4(m);
+  });
+  cage.add(new THREE.Mesh(mergeGeometries(spikes), spikeMat));
   group.add(cage);
   const ring = new THREE.Mesh(new THREE.TorusGeometry(r * 1.08, 0.04, 6, 48), glowMat(THREE, DANGER, 0.7));
   group.add(ring);
@@ -69,27 +81,79 @@ export function makeFence(THREE, item, course) {
   return group;
 }
 
-/** Asteroid-field rock: chunky low-poly in the world's material, outlined in the hazard colour. */
+/** Soft radial glow, shared by every hazard's danger halo. */
+let haloTexture = null;
+function halo(THREE) {
+  if (haloTexture) return haloTexture;
+  const c = document.createElement('canvas');
+  c.width = c.height = 64;
+  const g = c.getContext('2d'), grad = g.createRadialGradient(32, 32, 0, 32, 32, 32);
+  grad.addColorStop(0, 'rgba(255,255,255,1)'); grad.addColorStop(0.35, 'rgba(255,255,255,.35)'); grad.addColorStop(1, 'rgba(255,255,255,0)');
+  g.fillStyle = grad; g.fillRect(0, 0, 64, 64);
+  haloTexture = new THREE.CanvasTexture(c);
+  return haloTexture;
+}
+
+// A small pool of roughened rock shapes per family (plus the Kenney meteor once
+// loaded), so every rock looks different without building a new geometry per rock.
+const rockPool = new Map();
+let meteorGeometry = null;
+new GLTFLoader().loadAsync('/assets/kenney/models/meteor.glb').then((gltf) => {
+  const parts = [];
+  gltf.scene.updateMatrixWorld(true);
+  gltf.scene.traverse((o) => {
+    if (!o.isMesh) return;
+    const g = o.geometry.clone().applyMatrix4(o.matrixWorld);
+    for (const key of Object.keys(g.attributes)) if (key !== 'position' && key !== 'normal') g.deleteAttribute(key);
+    parts.push(g.index ? g.toNonIndexed() : g);
+  });
+  if (!parts.length) return;
+  const merged = mergeGeometries(parts);
+  merged.computeBoundingSphere();
+  const { center, radius } = merged.boundingSphere;
+  merged.translate(-center.x, -center.y, -center.z).scale(1 / radius, 1 / radius, 1 / radius);
+  meteorGeometry = merged;
+}).catch(() => {});
+
+function rockShape(THREE, family, seed, look) {
+  const key = `${family}:${seed % 5}`;
+  if (!rockPool.has(key)) {
+    const base = family === 'box' ? new THREE.BoxGeometry(1.3, 1.3, 1.3, 2, 2, 2) : family === 'octa' ? new THREE.OctahedronGeometry(1, 1) : family === 'icosa' ? new THREE.IcosahedronGeometry(1, 1) : new THREE.DodecahedronGeometry(1, 1);
+    const shade = new THREE.Color(look?.color || '#5a5060');
+    rockPool.set(key, gradient(roughen(base, 0.32, 101 + (seed % 5) * 7), shade.clone().multiplyScalar(0.45), shade.clone().lerp(new THREE.Color('#ffffff'), 0.25), 1));
+  }
+  return rockPool.get(key);
+}
+
+/** Asteroid-field rock: crafted low-poly rock (or Kenney meteor) whose edges glow danger red, with a pulsing red core halo. */
 export function makeRock(THREE, item, course, look) {
   const group = new THREE.Group();
   const r = Number(item.radius) || 0.85;
-  const family = look?.geometry;
-  const geometry = family === 'box' ? new THREE.BoxGeometry(1.3, 1.3, 1.3) : family === 'octa' ? new THREE.OctahedronGeometry(1, 0) : family === 'icosa' ? new THREE.IcosahedronGeometry(1, 0) : new THREE.DodecahedronGeometry(1, 0);
-  const material = look
-    ? new THREE.MeshStandardMaterial({ color: look.color, emissive: look.emissive, emissiveIntensity: look.emissiveIntensity * 0.7, metalness: look.metalness, roughness: look.roughness, transparent: !!look.opacity, opacity: look.opacity || 1, flatShading: true })
-    : new THREE.MeshStandardMaterial({ color: '#3a3440', roughness: 0.8, flatShading: true });
-  const body = new THREE.Mesh(geometry, addRim(material, { strength: 0.55 }));
+  const seed = Math.abs(Math.floor((item.distance || 0) * 7.3 + (item.x || 0) * 31 + (item.y || 0) * 17));
+  const useMeteor = meteorGeometry && seed % 3 === 0 && look?.geometry !== 'octa';
+  let geometry = useMeteor ? meteorGeometry : rockShape(THREE, look?.geometry, seed, look);
+  const material = new THREE.MeshStandardMaterial({
+    color: useMeteor ? (look?.color || '#5a5060') : '#ffffff', vertexColors: !useMeteor,
+    emissive: look?.emissive || '#000000', emissiveIntensity: (look?.emissiveIntensity || 0) * 0.5,
+    metalness: look?.metalness ?? 0.2, roughness: look?.roughness ?? 0.8, flatShading: true,
+    transparent: !!look?.opacity, opacity: look?.opacity || 1,
+  });
+  addRim(material, { strength: 1.1, power: 2.0, color: DANGER });
+  const body = new THREE.Mesh(geometry, material);
   const stretch = look?.stretch || [1, 0.9, 1];
-  body.scale.set(stretch[0] * r, stretch[1] * r, stretch[2] * r);
+  const jitter = 0.85 + ((seed % 100) / 100) * 0.35;
+  body.scale.set(stretch[0] * r * jitter, stretch[1] * r * (0.9 + ((seed >> 3) % 20) / 100), stretch[2] * r * jitter);
   group.add(body);
-  const edges = new THREE.LineSegments(new THREE.EdgesGeometry(geometry, 25), new THREE.LineBasicMaterial({ color: DANGER, transparent: true, opacity: 0.75 }));
-  edges.scale.copy(body.scale).multiplyScalar(1.015);
-  group.add(edges);
-  const seed = (item.distance || 0) * 0.13 + (item.x || 0);
-  group.rotation.set(seed, seed * 1.7, 0);
+  const glowSprite = new THREE.Sprite(new THREE.SpriteMaterial({ map: halo(THREE), color: DANGER, transparent: true, opacity: 0.35, depthWrite: false, blending: THREE.AdditiveBlending }));
+  glowSprite.scale.setScalar(r * 2.6);
+  glowSprite.position.z = -r * 0.3;
+  group.add(glowSprite);
+  const phase = (seed % 628) / 100, spin = 0.0003 + (seed % 7) * 0.0001;
+  group.rotation.set(phase, phase * 1.7, 0);
   group.userData.animate = (now) => {
-    group.rotation.y = seed * 1.7 + now * 0.0005;
-    group.rotation.x = seed + now * 0.0003;
+    group.rotation.y = phase * 1.7 + now * spin * 1.6;
+    group.rotation.x = phase + now * spin;
+    glowSprite.material.opacity = 0.22 + 0.18 * Math.sin(now * 0.006 + phase);
   };
   return group;
 }

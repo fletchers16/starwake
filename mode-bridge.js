@@ -1,0 +1,136 @@
+import { mountModeHub } from './mode-hub.js';
+
+const app = document.querySelector('#app');
+if (!app) throw new Error('Starwake app root was not found');
+
+const root = document.createElement('div');
+root.id = 'mode-hub-root';
+app.append(root);
+
+let launched = false;
+let savedProfile = {};
+try { savedProfile = JSON.parse(localStorage.getItem('starwake-profile') || '{}'); } catch {}
+let selectedPrompt = String(savedProfile.coursePrompt || '');
+let selectedSeed = Number(savedProfile.courseSeed) >>> 0;
+let selectedCourseId = String(savedProfile.courseId || 'neon-rift');
+
+const hub = mountModeHub({
+  root,
+  deferReveal: true,
+  initialCourse: selectedCourseId,
+  initialForged: savedProfile.forgedCourse || null,
+  onAction: handleHubAction,
+});
+
+function courseSeedFor(courseId) {
+  if (courseId === selectedCourseId && selectedSeed) return selectedSeed;
+  let seed = 2166136261;
+  for (const char of String(courseId || 'neon-rift')) {
+    seed = Math.imul(seed ^ char.charCodeAt(0), 16777619) >>> 0;
+  }
+  return seed || 1;
+}
+
+function selectCourse(courseId, prompt = '', seed = 0, course = null) {
+  const nextCourseId = courseId || 'neon-rift';
+  if (nextCourseId !== selectedCourseId && !prompt) {
+    selectedPrompt = '';
+    selectedSeed = 0;
+  }
+  selectedCourseId = nextCourseId;
+  if (prompt) selectedPrompt = prompt;
+  selectedSeed = Number(seed) >>> 0;
+  window.dispatchEvent(new CustomEvent('starwake:select-course', {
+    detail: {
+      courseId: selectedCourseId,
+      prompt: selectedPrompt,
+      seed: selectedSeed || courseSeedFor(selectedCourseId),
+      course,
+    },
+  }));
+}
+
+function handleHubAction(payload) {
+  if (!payload) return;
+  if (payload.action === 'designer') {
+    selectedCourseId = payload.courseId || selectedCourseId;
+    selectedPrompt = payload.prompt || '';
+    selectedSeed = Number(payload.seed) >>> 0;
+    selectCourse(selectedCourseId, selectedPrompt, selectedSeed, payload.course || null);
+    return;
+  }
+
+  if (payload.action === 'pve' || payload.action === 'pvp-create') {
+    const prompt = payload.courseId === selectedCourseId ? selectedPrompt : '';
+    selectCourse(payload.courseId, prompt, prompt ? courseSeedFor(payload.courseId) : 0);
+    window.starwakeCreateLobby?.(payload.action === 'pve');
+    return;
+  }
+
+  if (payload.action === 'pvp-join') {
+    const input = document.querySelector('#join-code');
+    if (input) input.value = String(payload.roomCode || '').toUpperCase();
+    window.starwakeJoinLobby?.();
+    return;
+  }
+
+  if (payload.action === 'freeplay') {
+    const seed = courseSeedFor(payload.courseId || selectedCourseId);
+    window.dispatchEvent(new CustomEvent('starwake:start-freeflight', { detail: { seed } }));
+  }
+}
+
+function applyHubVisibility() {
+  if (!launched) return;
+  const active = document.querySelector('.screen.active');
+  if (active?.id === 'home-screen') {
+    active.classList.remove('active');
+    root.hidden = false;
+    return;
+  }
+  if (active) root.hidden = true;
+}
+
+window.addEventListener('starwake:launch-complete', () => {
+  launched = true;
+  window.setTimeout(applyHubVisibility, 0);
+});
+
+const screenObserver = new MutationObserver(applyHubVisibility);
+for (const screen of document.querySelectorAll('.screen')) {
+  screenObserver.observe(screen, { attributes: true, attributeFilter: ['class'] });
+}
+
+const garageLink = document.createElement('button');
+garageLink.className = 'sw-hub-garage';
+garageLink.type = 'button';
+garageLink.textContent = '✧  SHIP GARAGE';
+garageLink.setAttribute('aria-label', 'Open ship garage');
+root.append(garageLink);
+garageLink.addEventListener('click', () => document.querySelector('#garage-button')?.click());
+
+const freeFlightExit = document.createElement('button');
+freeFlightExit.className = 'sw-freeflight-exit';
+freeFlightExit.type = 'button';
+freeFlightExit.textContent = '← RETURN TO FLIGHT DECK';
+freeFlightExit.hidden = true;
+document.querySelector('#race-screen')?.append(freeFlightExit);
+freeFlightExit.addEventListener('click', () => {
+  freeFlightExit.hidden = true;
+  app.classList.remove('free-flight');
+  window.starwakeStopFreeFlight?.();
+});
+window.addEventListener('starwake:start-freeflight', () => {
+  freeFlightExit.hidden = false;
+  app.classList.add('free-flight');
+});
+
+window.addEventListener('starwake:freeflight-exit', () => {
+  freeFlightExit.hidden = true;
+  app.classList.remove('free-flight');
+  window.starwakeStopFreeFlight?.();
+});
+
+// Keep the hub mounted for the full session; its event listeners are shared
+// with the existing lobby and race screens.
+window.starwakeModeHub = hub;

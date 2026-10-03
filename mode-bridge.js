@@ -129,7 +129,8 @@ garageLink.className = 'sw-hub-garage';
 garageLink.type = 'button';
 garageLink.textContent = '✧  SHIP GARAGE';
 garageLink.setAttribute('aria-label', 'Open ship garage');
-root.append(garageLink);
+// Inline under the launch button so it never floats over the course cards.
+(root.querySelector('.sw-hub-launch') || root).after(garageLink);
 garageLink.addEventListener('click', () => document.querySelector('#garage-button')?.click());
 
 const freeFlightExit = document.createElement('button');

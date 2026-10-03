@@ -248,3 +248,11 @@
 .sw-forge-chips u{text-decoration:none;padding:3px 6px;border:1px solid rgba(177,202,236,.18);font:6px 'DM Mono',monospace;letter-spacing:.1em;color:#a9b6c8}
 .sw-forge-race{justify-self:start;margin-top:6px;padding:7px 10px;background:var(--map-tone);color:#071619;font:600 8px 'DM Mono',monospace;letter-spacing:.12em}
 .sw-forge-offline{color:#ffb86b!important}
+/* Round 14 hub layout fixes */
+.sw-map-art svg ellipse { fill: none; stroke: currentColor; stroke-width: 1; opacity: .7; }
+.sw-hub-garage { position: static; display: block; width: 100%; margin-top: 8px; text-align: center; padding: 11px 13px; }
+@media (max-width: 760px) {
+  /* #app clips overflow, so sticky can't work; pin the launch bar to the viewport instead. */
+  #mode-hub-root:not([hidden]) .sw-hub-launch { position: fixed; left: 12px; right: 12px; bottom: 10px; width: auto; z-index: 30; box-shadow: 0 10px 30px rgba(0,0,0,.55); }
+  #mode-hub-root .sw-hub { padding-bottom: 92px; }
+}

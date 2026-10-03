@@ -34,8 +34,8 @@ Status: `ready` · `needs-asset-approval` · `in-progress` · `done` · `rejecte
 4. `ready` **Inverted-hull ink outline** on obstacles (danger red) and landmarks (dark ink). Use creased normals for flat geometry. Asset: none.
 5. `ready` **Speed language**: screen-edge radial speed lines in the grade pass driven by speed, plus velocity-stretched dust quads. Sources: Codrops high-speed light trails; Anime-Speed-Lines. Asset: optional (idea 7).
 6. `ready` **Two-tone ramp shading on scenery** (MeshToonMaterial with a 3-step gradientMap per world); exempt Titan ice, Earth and the ship. Asset: none.
-7. `needs-asset-approval` **Soft particle sprites** from the Kenney Particle Pack (CC0, https://kenney.nl/assets/particle-pack, about a 9.8 MB zip; vendor about 6 PNGs at 128 px, under 100 KB total) for Io plumes, Titan haze, pickup bursts and speed streaks.
-8. `needs-asset-approval` **Low-poly station modules** from the Kenney Space Kit (CC0, https://kenney.nl/assets/space-kit, about 6.5 MB zip; vendor 3–5 GLBs) to give the Neon Rift and Earthfall landmarks real modelled detail.
+7. `ready` (download approved by the user 2026-10-03) **Soft particle sprites** from the Kenney Particle Pack (CC0, https://kenney.nl/assets/particle-pack, about a 9.8 MB zip; vendor about 6 PNGs at 128 px, under 100 KB total) for Io plumes, Titan haze, pickup bursts and speed streaks.
+8. `ready` (download approved by the user 2026-10-03) **Low-poly station modules** from the Kenney Space Kit (CC0, https://kenney.nl/assets/space-kit, about 6.5 MB zip; vendor 3–5 GLBs) to give the Neon Rift and Earthfall landmarks real modelled detail.
 
 ## Asset log
 | File | Source | License | Size | Approved | Used in |
@@ -43,3 +43,4 @@ Status: `ready` · `needs-asset-approval` · `in-progress` · `done` · `rejecte
 
 ## Log
 - Research round 1 (subagent): diagnosis: too many similar-saturation hues, everything glowing, no depth layering or silhouettes. Seven ideas and CC0 candidates triaged above; style rules adopted. Performance baseline measured (and fixed the measurement: `renderer.info` auto-resets per pass, so the dev `stats()` hook now accumulates across the composer).
+- 2026-10-03: the user approved downloading the Kenney Particle Pack and Kenney Space Kit (CC0). Re-check the license on each page at download time; vendor only the files used.

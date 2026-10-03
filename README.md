@@ -11,6 +11,10 @@ Starwake is a sci-fi flight racer with a cinematic cockpit intro, a PvE/PvP race
 - Ships are sidegrades: speed, handling, hull, fuel, and width change together. Wider ships can take more hits and carry more fuel, but are harder to steer through gaps.
 - Race routes change direction in three dimensions. Shared course and route seeds keep a lobby's layout consistent across devices.
 
+## Attractions
+
+Every lap flies through three named landmarks per world, such as The Broken Halo ring station on Neon Rift, Pele's Arch on Io and the Cassini Gap at Jupiter, with an "ENTERING …" caption as you approach.
+
 ## Flight deck
 
 - Choose PvE to race sim pilots, or PvP to create a room or join with a five-character code.

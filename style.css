@@ -386,3 +386,9 @@ button:disabled{cursor:not-allowed;filter:saturate(.55);opacity:.58}
 .lobby-objective .brief-card{grid-template-columns:48px 1fr;padding:10px;gap:4px 10px}.lobby-objective .brief-card .brief-icon{grid-row:span 2}.lobby-objective .brief-icon svg{width:44px;height:28px}
 .lobby-objective .brief-card span{font-size:11px}.lobby-objective .brief-foot{font-size:11px}
 @media(max-width:700px){.brief-cards{grid-template-columns:1fr}.brief-card{grid-template-columns:56px 1fr;gap:4px 12px}.brief-card .brief-icon{grid-row:span 2}.brief-panel{padding:20px}}
+.landmark-caption{position:absolute;z-index:8;left:50%;top:22%;transform:translateX(-50%);display:grid;justify-items:center;gap:4px;pointer-events:none;opacity:0;text-shadow:0 2px 16px rgba(0,0,0,.6)}
+.landmark-caption small{font:500 9px 'DM Mono',monospace;letter-spacing:.32em;color:var(--cyan)}
+.landmark-caption b{font:600 26px 'Space Grotesk',sans-serif;letter-spacing:.06em;color:#f4f9ff}
+.landmark-caption.show{animation:landmark-in 2.6s ease-out forwards}
+@keyframes landmark-in{0%{opacity:0;letter-spacing:.3em}12%{opacity:1;letter-spacing:.06em}80%{opacity:1}100%{opacity:0}}
+@media(max-width:760px){.landmark-caption b{font-size:18px}}

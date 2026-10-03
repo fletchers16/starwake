@@ -1,3 +1,4 @@
+import { buildLandmarks } from './landmarks.js';
 /**
  * Per-world environments: sky, fog, ground, and scrolling set pieces that make
  * each course look like its name.
@@ -455,6 +456,9 @@ export function createWorldEnvironment(THREE, scene) {
       ctx = { course, glow, sky, theme, boltAt: -1e9 };
       ctx.pieces = theme.build(THREE, ctx);
       ctx.pieces.forEach((piece) => root.add(piece));
+      // Named attractions the route flies through (see landmarks.js).
+      ctx.landmarks = buildLandmarks(THREE, course, ctx);
+      ctx.landmarks.objects.forEach((object) => { root.add(object); ctx.pieces.push(object); });
       const [top, mid, bottom] = theme.sky;
       // Forged courses keep the world's look but take their own palette.
       sky.material.uniforms.top.value.set(course?.forged ? course.sky : top);
@@ -477,6 +481,8 @@ export function createWorldEnvironment(THREE, scene) {
       ctx.theme.tick?.(ctx, frame, THREE);
     },
     setVisible(visible) { root.visible = visible; },
+    /** Next landmark within range ahead, for the "ENTERING …" caption. */
+    upcomingLandmark(distance, lapLength) { return ctx?.landmarks?.upcoming(distance, lapLength) || null; },
     /** Shift the whole environment along z (Free Flight moves the camera instead of scrolling). */
     setOrigin(z) { root.position.z = z; },
     dispose() { clear(); scene.remove(root); },

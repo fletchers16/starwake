@@ -1,3 +1,4 @@
+import { crystalCluster, roughen, gradient } from './shapes.js';
 import { rimObject } from './rim.js';
 /**
  * Named set pieces the race route flies through or past ("attractions").
@@ -93,15 +94,15 @@ const BUILDERS = {
   volcanic: (THREE) => [
     { at: 0.2, name: "PELE'S ARCH", build() {
       const g = new THREE.Group();
-      const basalt = solid(THREE, '#3a302c', '#ff6a1a', 0.04, { roughness: 0.95 });
-      const arch = new THREE.Mesh(new THREE.TorusGeometry(17, 3.2, 7, 24, Math.PI), basalt);
+      const basalt = solid(THREE, '#ffffff', '#ff6a1a', 0.04, { roughness: 0.95, vertexColors: true });
+      const arch = new THREE.Mesh(gradient(roughen(new THREE.TorusGeometry(17, 3.2, 7, 24, Math.PI), 1.1, 9), '#2a1d18', '#5e4436', 1), basalt);
       arch.position.y = -6;
       g.add(arch);
       const seam = new THREE.Mesh(new THREE.TorusGeometry(14, 0.25, 6, 32, Math.PI), glow(THREE, '#ff7a2a'));
       seam.position.y = -6;
       g.add(seam);
       for (const side of [-1, 1]) {
-        const foot = new THREE.Mesh(new THREE.DodecahedronGeometry(5, 0), basalt);
+        const foot = new THREE.Mesh(gradient(roughen(new THREE.DodecahedronGeometry(5, 1), 1.2, side + 40), '#1e1410', '#4e382c'), basalt);
         foot.position.set(side * 17, -8, 0);
         g.add(foot);
       }
@@ -166,10 +167,11 @@ const BUILDERS = {
   ice: (THREE) => [
     { at: 0.22, name: 'CRYSTAL CATHEDRAL', build() {
       const g = new THREE.Group();
-      const ice = solid(THREE, '#dff3ff', '#7cc4f0', 0.45, { metalness: 0.1, roughness: 0.08, transparent: true, opacity: 0.9 });
+      const ice = solid(THREE, '#ffffff', '#5a8db0', 0.25, { metalness: 0.1, roughness: 0.08, vertexColors: true });
+      const shard = gradient(crystalCluster(17, 5).scale(14, 34, 14).translate(0, -17, 0), '#4a78a0', '#f6fcff', 0.8);
       for (let i = 0; i < 6; i++) {
         for (const side of [-1, 1]) {
-          const spire = new THREE.Mesh(new THREE.ConeGeometry(2.2, 34, 5), ice);
+          const spire = new THREE.Mesh(shard, ice);
           spire.position.set(side * 12, 6, -i * 10);
           spire.rotation.z = side * 0.42;
           g.add(spire);
@@ -196,17 +198,18 @@ const BUILDERS = {
     } },
     { at: 0.78, name: 'FROZEN GATE', build() {
       const g = new THREE.Group();
-      const ice = solid(THREE, '#cfe8ff', '#5a8db0', 0.4, { metalness: 0.1, roughness: 0.1 });
+      const ice = solid(THREE, '#ffffff', '#3d6f94', 0.25, { metalness: 0.1, roughness: 0.1, vertexColors: true });
+      const pillarGeo = gradient(roughen(new THREE.CylinderGeometry(2.6, 3.4, 40, 7, 6), 0.9, 21), '#456f96', '#eaf6ff', 1);
       for (const side of [-1, 1]) {
-        const pillar = new THREE.Mesh(new THREE.CylinderGeometry(2.6, 3.4, 40, 6), ice);
+        const pillar = new THREE.Mesh(pillarGeo, ice);
         pillar.position.set(side * 13, 2, 0);
         g.add(pillar);
       }
-      const span = new THREE.Mesh(new THREE.BoxGeometry(30, 2.6, 3.4), ice);
+      const span = new THREE.Mesh(gradient(roughen(new THREE.BoxGeometry(30, 2.6, 3.4, 8, 2, 2), 0.6, 33), '#9cc4e4', '#f2f9ff'), ice);
       span.position.y = 13;
       g.add(span);
       for (let i = 0; i < 9; i++) {
-        const icicle = new THREE.Mesh(new THREE.ConeGeometry(0.5, 3 + (i % 3) * 1.5, 5), ice);
+        const icicle = new THREE.Mesh(gradient(new THREE.ConeGeometry(0.5, 3 + (i % 3) * 1.5, 5), '#f2f9ff', '#b8d8ef'), ice);
         icicle.rotation.x = Math.PI;
         icicle.position.set(-11 + i * 2.7, 10.5 - (i % 3) * 0.7, 0);
         g.add(icicle);

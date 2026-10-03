@@ -1,3 +1,4 @@
+import { crystalCluster, rockSlab, volcano, gradient } from './shapes.js';
 import { lavaCrustTexture, earthSurfaceTexture, earthCloudTexture, gasGiantTexture } from './textures.js';
 import { rimColor, rimObject } from './rim.js';
 import { createFogRamp } from './fog-ramp.js';
@@ -193,8 +194,8 @@ const THEMES = {
       const lava = lavaCrustTexture(THREE);
       lava.repeat.set(6, 6);
       const sea = groundPlane(THREE, new THREE.MeshStandardMaterial({ color: '#2a0d08', map: lava, emissive: '#ffffff', emissiveMap: lava, emissiveIntensity: 1.25, roughness: 0.9 }), -15, 0.05);
-      const rock = new THREE.MeshStandardMaterial({ color: '#2b1712', roughness: 0.95, flatShading: true, emissive: '#3a0d04' });
-      const volcanoes = makeTrackside(THREE, new THREE.ConeGeometry(9, 22, 7), rock, { count: 12, spacing: 32 }, (slot) => {
+      const rock = new THREE.MeshStandardMaterial({ color: '#ffffff', vertexColors: true, roughness: 0.95, flatShading: true, emissive: '#3a0d04', emissiveIntensity: 0.4 });
+      const volcanoes = makeTrackside(THREE, volcano(9, 22, 5), rock, { count: 12, spacing: 32 }, (slot) => {
         const side = slot % 2 ? 1 : -1;
         return { x: side * (34 + hash(slot) * 20), y: -6 + hash(slot * 2) * 4, s: 0.6 + hash(slot * 3) * 0.8, ry: hash(slot) * 6 };
       });
@@ -243,13 +244,16 @@ const THEMES = {
     fogRamp: ['#e6ad68', '#bb7c44'],
     sky: ['#4a3420', '#c08447', '#6b4a2c'], fog: ['#a8743f', 10, 118], stars: 0,
     build(THREE, ctx) {
-      const ice = new THREE.MeshStandardMaterial({ color: '#cfe8ff', metalness: 0.1, roughness: 0.15, emissive: '#5a8db0', emissiveIntensity: 0.35, transparent: true, opacity: 0.92, flatShading: true });
+      const ice = new THREE.MeshStandardMaterial({ color: '#ffffff', vertexColors: true, metalness: 0.1, roughness: 0.15, emissive: '#3d6f94', emissiveIntensity: 0.25, flatShading: true });
+      // Crystal clusters with a deep-blue base fading to frosted tips (replaces single-colour cones).
+      const crystal = gradient(crystalCluster(7, 5).scale(10, 14, 10).translate(0, -7, 0), '#4f7fa8', '#f4fbff', 0.8);
+      const slab = gradient(rockSlab(8, 30, 14, 3), '#21170f', '#6e5442', 1.4);
       // Canal walls of ice spires on both sides.
-      const spires = makeTrackside(THREE, new THREE.ConeGeometry(1.6, 14, 5), ice, { count: 56, spacing: 5 }, (slot) => {
+      const spires = makeTrackside(THREE, crystal, ice, { count: 56, spacing: 5 }, (slot) => {
         const side = slot % 2 ? 1 : -1;
         return { x: side * (12.5 + hash(slot) * 5), y: -6 + hash(slot * 2) * 3, s: 0.6 + hash(slot * 3) * 1.1, rz: side * -(0.05 + hash(slot * 4) * 0.25), ry: hash(slot) * 6 };
       });
-      const cliffs = makeTrackside(THREE, new THREE.BoxGeometry(8, 30, 14), new THREE.MeshStandardMaterial({ color: '#5a4436', roughness: 1, flatShading: true }), { count: 24, spacing: 12 }, (slot) => {
+      const cliffs = makeTrackside(THREE, slab, new THREE.MeshStandardMaterial({ color: '#ffffff', vertexColors: true, roughness: 1, flatShading: true }), { count: 24, spacing: 12 }, (slot) => {
         const side = slot % 2 ? 1 : -1;
         return { x: side * (22 + hash(slot) * 4), y: -4, ry: hash(slot) * 0.5, rz: side * 0.08 };
       });

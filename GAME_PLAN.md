@@ -10,12 +10,13 @@ Goal: make Starwake feel great to play, make each world look like its name, clea
 3. Verify in the browser pane (dev server `starwake`, http://127.0.0.1:5180): play a heat on the affected worlds, check the console for errors, and take a screenshot. `npx vite build` must pass.
 4. Commit with a clear message (`Round N: …`), check the item off, and add a line to **Log**.
 5. On rounds 4 and 8, a fresh playtest agent plays every mode cold and re-ranks the backlog.
-6. Stop after round 10 and write a summary for the user.
+6. **Don't stop at round 10.** The user asked (2026-10-03) for the loop to keep running overnight. Keep going through the backlog, then add and build new high-value items (contest criteria first). Every 5 rounds, refresh the **Morning summary** section. Never deploy, push, or post anything externally; local commits only.
+7. Playtest agent: run it on rounds 4 and 8, then every 5 rounds after that.
 
 ## Backlog (ranked)
 
 ### Contest-critical (multiplayer + submission)
-- [ ] **Multiplayer hardening**: run a 2-browser PvP session end to end (create → join by code → 3 heats → results), using two tabs with separate storage locally. Live opponent ghosts and positions in race, clear handling of disconnects and a host leaving, and graceful errors. Validate scores server-side as far as is cheap.
+- [x] **Multiplayer hardening**: run a 2-browser PvP session end to end (create → join by code → 3 heats → results), using two tabs with separate storage locally. Live opponent ghosts and positions in race, clear handling of disconnects and a host leaving, and graceful errors. Validate scores server-side as far as is cheap.
 - [ ] **Multiplayer feel**: show the other human pilots' names over their ships, a live standings ticker, and a lobby that makes "share this code" obvious (copy button, share link with the code in the URL).
 - [ ] **Submission package**: generate a cover image (in-game screenshot composition), write the project description (OpenAI World Forge + multiplayer), and a deploy checklist (Netlify, `OPENAI_API_KEY`, two-device test).
 
@@ -64,6 +65,9 @@ Goal: make Starwake feel great to play, make each world look like its name, clea
 - [ ] **Forge card track preview**: draw the forged path as a mini-map.
 - [ ] **Remix button**: tweak the current forged course ("more hazards", "lower gravity").
 
+## Morning summary
+_(updated every few rounds)_
+
 ## Ideas inbox
 The user's ideas (from their OpenAI brainstorm) were merged into the backlog above and marked *(user idea)*. Add new ideas here, then triage them into the backlog.
 
@@ -71,3 +75,4 @@ The user's ideas (from their OpenAI brainstorm) were merged into the backlog abo
 - Round 0 (2026-10-02): git baseline; plan written. Playtest finding: Neon Rift, Io Storm and Titan Veil look nearly identical in race (black void, same corner planet and ring tunnel; only the tint changes).
 - Round 1: added `world-themes.js`, a per-world sky dome, fog, ground and scrolling set pieces. Rift: neon station pylons, gantries, transit spine. Io: lava sea, volcanoes, plumes, ash and embers, lightning, Jupiter overhead. Titan: amber haze, ice-spire canal walls, methane canal, Saturn. Helix: nebula clouds, spiral vortex, drifting rock. Earth: curved planet below with atmosphere rim, sun, satellites. Jupiter: banded giant, ring plane, ring dust and chunks. Forged courses use the theme for their `kind`. Also fixed per-frame theme rebuilds on the home screen and raised the camera far plane to 450.
 - Round 2: themed checkpoint gates (`buildWorldFrame`): hex relay gate, basalt arch with lava seams, octagonal crystal gate with ice spikes, spinning energy ring, orbital ring with solar wings, ring-chunk gate. Hazard rocks per world (`hazardLook`): metal debris, lava rock, ice crystals, nebula stone, satellite wreckage, ring ice. Saved the contest rules to `CONTEST.md` and added contest-critical items (multiplayer hardening, submission package).
+- Round 3: multiplayer hardening. Added a dev middleware that runs the real Netlify functions with in-memory Blobs (`vite.config.js`, `dev/blobs-shim.js`). Server: live in-race telemetry (per-player keys, no write contention), a `leave` action, host handoff after 25s of silence, auto-resolving heats 12s after the clock with DNF scores from last telemetry, telemetry and score clamping, a guard against early fake completes, and joining humans displacing sim pilots. Client: other humans render as named ghost ships with interpolation, placement uses raw distance (fixes a 1500 m cap that tied everyone), a room-closed / lost-connection exit, a pagehide leave beacon, and DNF labels. Verified with a 2-tab race (ghost visible, disconnect resolved) and a 3-heat API run.

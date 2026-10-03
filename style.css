@@ -267,3 +267,4 @@ button:disabled{cursor:not-allowed;filter:saturate(.55);opacity:.58}
   #app.racing .vector-readout>i{width:26px;height:26px}
   #app.racing .vector-readout>strong{font-size:18px}
 }
+.result-row .dnf { color: #ff8a8a; font-style: normal; }

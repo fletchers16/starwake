@@ -115,13 +115,27 @@ export function mountModeHub({ root, onAction = () => {}, initialCourse = 'neon-
     root.dispatchEvent(new CustomEvent('starwake:hub-action', { bubbles: true, detail: normalized }));
     try { onAction(normalized); } catch (error) { console.error('[Starwake mode hub] onAction failed', error); }
   };
+  let offlineMatch = null;
+  // Top-down sketch of a forged lap: progress runs left to right, lateral offset up and down.
+  const trackSketch = (path = []) => {
+    const pts = path.map(([t, x, y]) => `${(8 + t * 204).toFixed(1)},${(30 - x * 20).toFixed(1)}`).join(' ');
+    const dots = path.slice(1, -1).map(([t, x, y]) => `<circle cx="${(8 + t * 204).toFixed(1)}" cy="${(30 - x * 20).toFixed(1)}" r="${(1.6 + (y + 1) * 1.1).toFixed(1)}"/>`).join('');
+    return `<svg class="sw-forge-map" viewBox="0 0 220 60" aria-hidden="true"><polyline points="${pts}"/>${dots}</svg>`;
+  };
+  const level = (value, max) => (value <= max * 0.15 ? 'NONE' : value <= max * 0.5 ? 'LOW' : value <= max * 0.8 ? 'MED' : 'HIGH');
   const renderForged = () => {
     const card = $('#sw-forge-result');
-    card.hidden = !forged;
-    if (!forged) return;
-    card.dataset.course = forged.id;
-    card.style.setProperty('--map-tone', forged.accent);
-    card.innerHTML = `<small>${esc(forged.planet)} · ${esc(forged.world)}</small><b>${esc(forged.name)}</b><span>${esc(forged.summary)}</span><i>${esc(forged.forces?.description || '')}</i>`;
+    card.hidden = !forged && !offlineMatch;
+    if (forged) {
+      card.dataset.course = forged.id;
+      card.style.setProperty('--map-tone', forged.accent);
+      const gravity = level(-Number(forged.forces?.gravity || 0), 0.36), wind = level(Number(forged.forces?.lateralDrift || 0), 0.18);
+      card.innerHTML = `<small>AI-FORGED · ${esc(forged.planet)} · ${esc(forged.world)}</small><b>${esc(forged.name)}</b><span>${esc(forged.summary)}</span>${trackSketch(forged.track?.path)}<em class="sw-forge-chips"><u>GRAVITY ${gravity}</u><u>CROSSWIND ${wind}</u><u>${forged.hazards?.length || 0} HAZARD ZONES</u></em><strong class="sw-forge-race" data-action="race-forged">RACE THIS WORLD ↗</strong>`;
+    } else if (offlineMatch) {
+      card.dataset.course = offlineMatch.id;
+      card.style.setProperty('--map-tone', offlineMatch.tone);
+      card.innerHTML = `<small class="sw-forge-offline">OFFLINE FORGE · AI NOT CONNECTED ON THIS SERVER</small><b>${esc(offlineMatch.name)}</b><span>The AI designer is unavailable, so your idea was matched to the closest hand-built world, with a variant seeded from your words.</span><strong class="sw-forge-race" data-action="race-forged">RACE THIS WORLD ↗</strong>`;
+    }
   };
   const chooseCourse = (id) => {
     if (!MAPS.some(m => m.id === id) && forged?.id !== id) return;
@@ -134,6 +148,14 @@ export function mountModeHub({ root, onAction = () => {}, initialCourse = 'neon-
     $('#sw-hub-launch-course').textContent = courseName(id);
   };
   const handleClick = (event) => {
+    // Checked first: the forge card is itself a course button.
+    if (event.target.closest('[data-action="race-forged"]')) {
+      const id = forged?.id || offlineMatch?.id;
+      if (!id) return;
+      chooseCourse(id);
+      emit({ action: selectedMode === 'pvp' ? 'pvp-create' : 'pve', mode: selectedMode });
+      return;
+    }
     const modeButton = event.target.closest('[data-mode]');
     if (modeButton && root.contains(modeButton)) {
       selectedMode = modeButton.dataset.mode;
@@ -153,6 +175,7 @@ export function mountModeHub({ root, onAction = () => {}, initialCourse = 'neon-
     }
     if (action === 'freeflight') emit({ action: 'freeplay', destination: 'freeflight', prototype: true });
     if (action === 'forge') buildFromPrompt();
+
   };
 
   async function requestForge(prompt) {
@@ -172,6 +195,7 @@ export function mountModeHub({ root, onAction = () => {}, initialCourse = 'neon-
     status.textContent = 'FORGING YOUR WORLD…';
     try {
       forged = await requestForge(prompt);
+      offlineMatch = null;
       renderForged();
       chooseCourse(forged.id);
       status.textContent = `FORGED · ${forged.name} · READY TO RACE`;
@@ -180,6 +204,9 @@ export function mountModeHub({ root, onAction = () => {}, initialCourse = 'neon-
       // No AI available (local preview or missing key): fall back to the
       // closest authored course with a prompt-seeded variant.
       const map = mapForPrompt(prompt);
+      forged = null;
+      offlineMatch = map;
+      renderForged();
       chooseCourse(map.id);
       status.textContent = error.offline
         ? `OFFLINE FORGE · ${map.name} VARIANT ${seed.toString(16).slice(-6).toUpperCase()}`

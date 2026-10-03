@@ -241,3 +241,10 @@
 .sw-callsign span{color:var(--hub-cyan)}
 .sw-callsign input{min-width:0;border:0;outline:0;background:transparent;color:#eef5ff;font:600 13px 'DM Mono',monospace;letter-spacing:.12em;text-transform:uppercase}
 @media(max-width:520px){.sw-callsign small{display:none}}
+.sw-forge-map{display:block;width:100%;height:46px;margin:4px 0 2px}
+.sw-forge-map polyline{fill:none;stroke:var(--map-tone);stroke-width:1.6;stroke-linejoin:round;filter:drop-shadow(0 0 4px var(--map-tone))}
+.sw-forge-map circle{fill:#eaf3ff;opacity:.85}
+.sw-forge-chips{display:flex;flex-wrap:wrap;gap:5px;font-style:normal}
+.sw-forge-chips u{text-decoration:none;padding:3px 6px;border:1px solid rgba(177,202,236,.18);font:6px 'DM Mono',monospace;letter-spacing:.1em;color:#a9b6c8}
+.sw-forge-race{justify-self:start;margin-top:6px;padding:7px 10px;background:var(--map-tone);color:#071619;font:600 8px 'DM Mono',monospace;letter-spacing:.12em}
+.sw-forge-offline{color:#ffb86b!important}

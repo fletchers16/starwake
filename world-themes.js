@@ -337,7 +337,14 @@ const THEMES = {
       // A huge curved Earth below: the route rides low orbit above it.
       const planet = new THREE.Group();
       // Unlit: the race's local point lights would otherwise pool bright cyan on the surface under the ship.
-      planet.add(new THREE.Mesh(new THREE.SphereGeometry(150, 72, 48), new THREE.MeshBasicMaterial({ map: earthSurfaceTexture(THREE), color: '#c8d4e6' })));
+      // Lit only by the Sun (a fixed direction toward the sun sprite): a real day side and soft terminator,
+      // and immune to the race's local point lights, which pooled bright cyan on a standard material.
+      planet.add(new THREE.Mesh(new THREE.SphereGeometry(150, 72, 48), new THREE.ShaderMaterial({
+        fog: false,
+        uniforms: { map: { value: earthSurfaceTexture(THREE) }, sun: { value: new THREE.Vector3(0.32, 0.86, -0.43).normalize() } },
+        vertexShader: 'varying vec2 vUv; varying vec3 vN; void main(){ vUv = uv; vN = normalize(mat3(modelMatrix) * normal); gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }',
+        fragmentShader: 'uniform sampler2D map; uniform vec3 sun; varying vec2 vUv; varying vec3 vN; void main(){ vec3 c = texture2D(map, vUv).rgb; float l = 0.16 + 1.05 * smoothstep(-0.08, 0.55, dot(normalize(vN), sun)); gl_FragColor = vec4(c * l, 1.0); \n#include <tonemapping_fragment>\n#include <colorspace_fragment>\n}',
+      })));
       // Soft cloud layer on its own sphere so it can drift over the continents.
       const clouds = new THREE.Mesh(new THREE.SphereGeometry(151.5, 72, 48), new THREE.MeshBasicMaterial({ map: earthCloudTexture(THREE), transparent: true, depthWrite: false, opacity: 0.9 }));
       planet.add(clouds);
@@ -376,7 +383,7 @@ const THEMES = {
       // The planet sits on the ring plane (equator at y=-9) with its ring centred on it, so the ring's gap hugs the planet.
       const planet = skyObject(giant, [-60, -9, -230], 0.92);
       planet.userData.spin = giant.children[0];
-      const ringTex = canvasTexture(THREE, 512, 8, (c, w) => { for (let x = 0; x < w; x++) { c.fillStyle = `rgba(230,205,160,${0.15 + hash(x * 0.37) * 0.55 * (Math.sin(x * 0.09) * 0.5 + 0.5)})`; c.fillRect(x, 0, 1, 8); } });
+      const ringTex = canvasTexture(THREE, 512, 8, (c, w) => { for (let x = 0; x < w; x++) { c.fillStyle = `rgba(230,205,160,${0.5 + hash(x * 0.37) * 0.45 * (Math.sin(x * 0.09) * 0.5 + 0.5)})`; c.fillRect(x, 0, 1, 8); } });
       const rings = new THREE.Mesh(new THREE.RingGeometry(112, 300, 160, 1), new THREE.MeshBasicMaterial({ map: ringTex, transparent: true, side: THREE.DoubleSide, depthWrite: false }));
       const uv = rings.geometry.attributes.uv, pos = rings.geometry.attributes.position, v = new THREE.Vector3();
       for (let i = 0; i < uv.count; i++) { v.fromBufferAttribute(pos, i); uv.setXY(i, (v.length() - 112) / 188, 0.5); }

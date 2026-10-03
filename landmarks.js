@@ -297,15 +297,23 @@ const BUILDERS = {
       const tex = canvasTexture(THREE, 256, 64, (c, w, h) => {
         const grad = c.createLinearGradient(0, 0, 0, h);
         grad.addColorStop(0, 'rgba(120,255,190,0)');
-        grad.addColorStop(0.5, 'rgba(120,255,190,.7)');
+        grad.addColorStop(0.55, 'rgba(120,255,190,.55)');
         grad.addColorStop(1, 'rgba(120,160,255,0)');
         c.fillStyle = grad;
+        c.fillRect(0, 0, w, h);
+        // Fade the curtain's ends so it never shows a hard vertical edge.
+        c.globalCompositeOperation = 'destination-in';
+        const ends = c.createLinearGradient(0, 0, w, 0);
+        ends.addColorStop(0, 'rgba(0,0,0,0)'); ends.addColorStop(0.25, 'rgba(0,0,0,1)'); ends.addColorStop(0.75, 'rgba(0,0,0,1)'); ends.addColorStop(1, 'rgba(0,0,0,0)');
+        c.fillStyle = ends;
         c.fillRect(0, 0, w, h);
       });
       const curtains = [];
       for (let i = 0; i < 3; i++) {
-        const curtain = new THREE.Mesh(new THREE.PlaneGeometry(80, 26, 40, 1), new THREE.MeshBasicMaterial({ map: tex, transparent: true, opacity: 0.55, side: THREE.DoubleSide, depthWrite: false, blending: THREE.AdditiveBlending }));
-        curtain.position.set(0, 8, -i * 14);
+        // Ribbons hang above the route rather than walling off the whole sky.
+        const curtain = new THREE.Mesh(new THREE.PlaneGeometry(70, 12, 40, 1), new THREE.MeshBasicMaterial({ map: tex, transparent: true, opacity: 0.22, side: THREE.DoubleSide, depthWrite: false, blending: THREE.AdditiveBlending }));
+        curtain.position.set((i - 1) * 6, 15 + i * 2, -i * 16);
+        curtain.rotation.y = (i - 1) * 0.25;
         g.add(curtain);
         curtains.push(curtain);
       }

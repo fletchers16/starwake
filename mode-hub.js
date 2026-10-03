@@ -96,7 +96,7 @@ export function mountModeHub({ root, onAction = () => {}, initialCourse = 'neon-
         <section class="sw-hub-side" aria-label="Explore and create">
           <article class="sw-hub-destination sw-freeflight">
             <div class="sw-destination-visual" aria-hidden="true"><span class="sw-planet"></span><span class="sw-orbit sw-orbit-a"></span><span class="sw-orbit sw-orbit-b"></span><i class="sw-flight-path"></i><b>∞</b></div>
-            <div class="sw-destination-copy"><small>02 — FREE FLIGHT</small><h2>Keep going.</h2><p>Stream into endless procedural domains as you explore. <b>Exploration prototype</b> — generated sectors stream ahead; persistence and seamless server streaming are not yet connected.</p><button type="button" data-action="freeflight">ENTER FREE FLIGHT <span>↗</span></button></div>
+            <div class="sw-destination-copy"><small>02 — FREE FLIGHT</small><h2>Keep going.</h2><p>No clock, no rivals. Roam your selected world freely and chase glowing signal shards for a new best.</p><button type="button" data-action="freeflight">ENTER FREE FLIGHT <span>↗</span></button></div>
           </article>
           <article class="sw-hub-destination sw-designer">
             <div class="sw-designer-heading"><small>03 — WORLD FORGE</small><span>AI COURSE DESIGNER</span></div><h2>Describe a new world.</h2><p>OpenAI designs the track shape, palette, gravity, crosswinds, and hazards from your words. Your whole lobby races the forged course.</p>

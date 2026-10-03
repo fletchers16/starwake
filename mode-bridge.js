@@ -85,7 +85,10 @@ function handleHubAction(payload) {
   }
 
   if (payload.action === 'freeplay') {
-    const seed = courseSeedFor(payload.courseId || selectedCourseId);
+    // Free Flight roams the course selected on the hub.
+    const courseId = payload.courseId || selectedCourseId;
+    selectCourse(courseId, courseId === selectedCourseId ? selectedPrompt : '', courseId === selectedCourseId ? selectedSeed : 0);
+    const seed = courseSeedFor(courseId);
     window.dispatchEvent(new CustomEvent('starwake:start-freeflight', { detail: { seed } }));
   }
 }

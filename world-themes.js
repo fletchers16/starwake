@@ -472,6 +472,8 @@ export function createWorldEnvironment(THREE, scene) {
       ctx.theme.tick?.(ctx, frame, THREE);
     },
     setVisible(visible) { root.visible = visible; },
+    /** Shift the whole environment along z (Free Flight moves the camera instead of scrolling). */
+    setOrigin(z) { root.position.z = z; },
     dispose() { clear(); scene.remove(root); },
   };
 }

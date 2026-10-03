@@ -307,3 +307,7 @@ button:disabled{cursor:not-allowed;filter:saturate(.55);opacity:.58}
 #app.flash-perfect .race-screen:before{background:linear-gradient(90deg,rgba(255,60,140,.18),rgba(80,240,255,.14),rgba(255,210,90,.18));mix-blend-mode:screen}
 @keyframes screen-flash{from{opacity:1}to{opacity:0}}
 @media(prefers-reduced-motion:reduce){#app.flash-lap .race-screen:before,#app.flash-perfect .race-screen:before{animation-duration:.2s}}
+.stat-block strong em{font-style:normal;font-size:9px;margin-left:5px}.stat-block em.up{color:#7dffb2}.stat-block em.down{color:#ff8a8a}
+.module-option .module-status{margin-top:4px;font:8px 'DM Mono',monospace;letter-spacing:.08em;color:#7f8ea4}
+.module-option.selected .module-status{color:var(--cyan)}
+.module-option.affordable{border-color:rgba(255,193,132,.5)}.module-option.affordable .module-status{color:#ffc184}

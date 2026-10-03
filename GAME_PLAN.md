@@ -33,16 +33,21 @@ Goal: make Starwake feel great to play, make each world look like its name, clea
 
 ### Game feel
 - [ ] **Camera**: FOV kick and stretch on boost, a short shake on hit, camera roll following the bank, a slight lag behind the ship.
-- [ ] **Speed sense**: a field of near-ship streaks and dust scaled by speed; an exhaust trail.
+- [ ] **High-tech flight effects** *(user idea)*: holographic HUD lines, energy exhaust trails, warp-stretch streaks on boost, shield shimmer on hits, scanline/chromatic flash on big moments. Speed streaks and dust scaled by speed.
 - [ ] **Hit feedback**: red vignette flash, shake, a brief slowdown, an animated hull-pip loss, a crunch sound, a few frames of invulnerability with a ship blink.
 - [ ] **Collect feedback**: ring pop particles, a rising pitch for consecutive rings (a combo counter with a score multiplier), a Star Core burst.
 - [ ] **Controls**: tune acceleration and damping so steering feels responsive but weighty; check keyboard and touch drag; keep the ship from blocking the view of the track ahead.
+- [ ] **Finish line** *(user idea)*: a big, unmistakable finish/lap gate per world with a light tunnel, a checkered holo-banner and a fly-through burst.
+- [ ] **Ghost rivals** *(user idea, Mario Kart style)*: bots and other players render as translucent glowing ghost copies of their actual ships, with name tags and a trailing ribbon.
 - [ ] **Race flow**: a punchier 3-2-1-GO countdown, lap-complete fanfare, a final-10-seconds tension cue, a clear finish moment.
 
 ### Content and progression
 - [ ] **Audit the economy**: RP ranks, credits, ship prices, module prices and stickers. Make the first unlock reachable in 2–3 races and give each later unlock a clear goal.
 - [ ] **Results screen**: score breakdown (rings, cores, laps, hull, time), RP and credits earned with a progress bar toward the next rank or unlock, personal best and sticker callouts.
-- [ ] **Garage cleanup**: clear stat bars, a ship preview, an owned/equipped state, and module effects you can feel in play.
+- [ ] **Fix the upgrade system + garage** *(user idea)*: clear stat bars, owned/equipped states, modules with effects you can feel in play, prices that make sense.
+- [ ] **Ship micro-figure select** *(user idea)*: a racing-game-style ship picker with a rotating 3D micro-figure of each ship on a lit pedestal, also on the hub before launching.
+- [ ] **Interactive color scheme** *(user idea)*: ship paint/trail color picker, and UI accents that shift with the selected world and react to boosts and hits.
+- [ ] **Titles + PB achievement stickers** *(user idea)*: rank and credits clearly build toward named titles; PB times earn collectible stickers shown in a sticker book and on the profile.
 - [ ] **Per-course personal bests and medals** (bronze/silver/gold score targets) shown on the hub map cards.
 - [ ] **Remove dead UI**: the legacy home-screen controls hidden behind the hub (duplicate World Forge, course arrows). Make sure nothing still depends on them.
 
@@ -52,9 +57,15 @@ Goal: make Starwake feel great to play, make each world look like its name, clea
 - [ ] **Performance**: dispose geometry and materials between races (check for leaks across 5 races), cap pixel ratio, code-split three.js so the main chunk drops under 500 KB.
 - [ ] **Robustness**: offline and multiplayer error states, a pause on tab blur, no console errors through a full 3-heat PvE session.
 
+### More worlds
+- [ ] **New courses** *(user idea)*: more planet / atmosphere / galaxy themes with different obstacle mixes (e.g. Venus acid clouds, Saturn's Cassini gap, a black-hole accretion disk, Mars dust canyons).
+
 ### AI (stretch)
 - [ ] **Forge card track preview**: draw the forged path as a mini-map.
 - [ ] **Remix button**: tweak the current forged course ("more hazards", "lower gravity").
+
+## Ideas inbox
+The user's ideas (from their OpenAI brainstorm) were merged into the backlog above and marked *(user idea)*. Add new ideas here, then triage them into the backlog.
 
 ## Log
 - Round 0 (2026-10-02): git baseline; plan written. Playtest finding: Neon Rift, Io Storm and Titan Veil look nearly identical in race (black void, same corner planet and ring tunnel; only the tint changes).

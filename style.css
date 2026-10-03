@@ -311,3 +311,4 @@ button:disabled{cursor:not-allowed;filter:saturate(.55);opacity:.58}
 .module-option .module-status{margin-top:4px;font:8px 'DM Mono',monospace;letter-spacing:.08em;color:#7f8ea4}
 .module-option.selected .module-status{color:var(--cyan)}
 .module-option.affordable{border-color:rgba(255,193,132,.5)}.module-option.affordable .module-status{color:#ffc184}
+@media(max-width:760px){.toast{bottom:92px}}

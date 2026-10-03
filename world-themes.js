@@ -468,3 +468,142 @@ export function createWorldEnvironment(THREE, scene) {
     dispose() { clear(); scene.remove(root); },
   };
 }
+
+/** Hazard rock look per world: geometry family, material, and stretch. */
+const HAZARD_LOOKS = {
+  relay: { geometry: 'box', color: '#5d6f8c', emissive: '#1d3350', emissiveIntensity: 0.4, metalness: 0.85, roughness: 0.3, stretch: [1.4, 0.55, 0.8] },
+  volcanic: { geometry: 'dodeca', color: '#2a1410', emissive: '#ff4a12', emissiveIntensity: 0.55, metalness: 0.1, roughness: 0.95, stretch: [1, 0.9, 1] },
+  ice: { geometry: 'octa', color: '#d8f0ff', emissive: '#6fb6e8', emissiveIntensity: 0.45, metalness: 0.1, roughness: 0.08, opacity: 0.88, stretch: [0.7, 1.55, 0.7] },
+  nebula: { geometry: 'dodeca', color: '#3a2a55', emissive: '#b26bff', emissiveIntensity: 0.35, metalness: 0.2, roughness: 0.8, stretch: [1.1, 0.95, 1] },
+  earth: { geometry: 'box', color: '#c9ced8', emissive: '#1d3d7a', emissiveIntensity: 0.3, metalness: 0.9, roughness: 0.25, stretch: [1.5, 0.35, 1] },
+  jupiter: { geometry: 'icosa', color: '#d9c49e', emissive: '#6b4a2a', emissiveIntensity: 0.25, metalness: 0.05, roughness: 0.85, stretch: [1.15, 0.85, 1] },
+};
+
+export function hazardLook(kind) {
+  return HAZARD_LOOKS[kind] || null;
+}
+
+/**
+ * Checkpoint gate styled for the world. Returns a Group centred on the route;
+ * the caller positions it and sets userData.
+ */
+export function buildWorldFrame(THREE, course, { radius = 8, index = 0 } = {}) {
+  const group = new THREE.Group();
+  const accent = index % 5 === 0 ? '#f4fffd' : course.accent;
+  const secondary = course.secondary;
+  const glow = (color, opacity = 1) => new THREE.MeshBasicMaterial({ color, transparent: opacity < 1, opacity });
+  const metal = (color, emissive, intensity = 0.3) => new THREE.MeshStandardMaterial({ color, emissive, emissiveIntensity: intensity, metalness: 0.8, roughness: 0.3, flatShading: true });
+  const ring = (r, tube, segments, material, arc = Math.PI * 2, radial = 8) => {
+    const mesh = new THREE.Mesh(new THREE.TorusGeometry(r, tube, radial, segments, arc), material);
+    group.add(mesh);
+    return mesh;
+  };
+  const around = (count, fn) => { for (let i = 0; i < count; i++) fn(i, (i / count) * Math.PI * 2); };
+
+  switch (course.kind) {
+    case 'volcanic': {
+      // Basalt arch, open at the bottom, with glowing lava seams.
+      const arc = Math.PI * 1.4, start = -Math.PI * 0.2;
+      const basalt = new THREE.MeshStandardMaterial({ color: '#2b1712', emissive: '#ff4a12', emissiveIntensity: 0.18, roughness: 0.95, flatShading: true });
+      const rock = ring(radius, 0.75, 14, basalt, arc, 5);
+      rock.rotation.z = start;
+      const seam = ring(radius - 0.55, 0.07, 48, glow('#ff7a2a'), arc);
+      seam.rotation.z = start;
+      around(9, (i) => {
+        const a = start + (i / 8) * arc, chunk = new THREE.Mesh(new THREE.DodecahedronGeometry(0.9 + hash(i + index) * 0.5, 0), basalt);
+        chunk.position.set(Math.cos(a) * radius, Math.sin(a) * radius, 0);
+        chunk.rotation.set(i, i * 2, i * 3);
+        group.add(chunk);
+      });
+      for (const side of [-1, 1]) {
+        const ember = new THREE.Mesh(new THREE.SphereGeometry(0.3, 8, 6), glow(accent));
+        ember.position.set(side * Math.cos(start) * radius, Math.sin(start) * radius - 0.6, 0.4);
+        group.add(ember);
+      }
+      break;
+    }
+    case 'ice': {
+      // Octagonal crystal gate ringed with inward ice spikes.
+      const ice = new THREE.MeshStandardMaterial({ color: '#dff3ff', emissive: '#7cc4f0', emissiveIntensity: 0.4, metalness: 0.1, roughness: 0.06, transparent: true, opacity: 0.85, flatShading: true });
+      ring(radius, 0.32, 8, ice, Math.PI * 2, 4).rotation.z = Math.PI / 8;
+      ring(radius - 0.45, 0.05, 8, glow(accent, 0.8), Math.PI * 2, 4).rotation.z = Math.PI / 8;
+      around(16, (i, a) => {
+        const spike = new THREE.Mesh(new THREE.ConeGeometry(0.28, 1.2 + hash(i * 3 + index) * 1.4, 4), ice);
+        const r = radius + 0.4;
+        spike.position.set(Math.cos(a) * r, Math.sin(a) * r, 0);
+        spike.rotation.z = a + (i % 2 ? Math.PI / 2 : -Math.PI / 2);
+        group.add(spike);
+      });
+      break;
+    }
+    case 'nebula': {
+      // Floating energy ring: two counter-tilted glowing bands and orbiting motes.
+      ring(radius, 0.12, 96, glow(accent)).rotation.x = 0.18;
+      ring(radius + 0.35, 0.05, 96, glow(secondary, 0.7)).rotation.y = 0.22;
+      ring(radius + 1.1, 0.5, 64, new THREE.MeshBasicMaterial({ color: secondary, transparent: true, opacity: 0.12, depthWrite: false, blending: THREE.AdditiveBlending }));
+      around(10, (i, a) => {
+        const mote = new THREE.Mesh(new THREE.OctahedronGeometry(0.22, 0), glow(i % 2 ? accent : '#ffffff'));
+        mote.position.set(Math.cos(a) * (radius + 0.7), Math.sin(a) * (radius + 0.7), 0);
+        group.add(mote);
+      });
+      group.userData.spin = 0.004;
+      break;
+    }
+    case 'earth': {
+      // Orbital station ring with solar wings on each side.
+      const hull = metal('#d6dbe4', '#22446e', 0.25);
+      ring(radius, 0.3, 48, hull, Math.PI * 2, 6).scale.y = 1.15;
+      ring(radius - 0.4, 0.06, 64, glow(accent, 0.85)).scale.y = 1.15;
+      const panel = new THREE.MeshStandardMaterial({ color: '#1d3d8a', emissive: '#0d2a66', emissiveIntensity: 0.6, metalness: 0.6, roughness: 0.25 });
+      for (const side of [-1, 1]) {
+        const arm = new THREE.Mesh(new THREE.BoxGeometry(2.4, 0.18, 0.18), hull);
+        arm.position.set(side * (radius + 1.2), 0, 0);
+        group.add(arm);
+        for (let k = 0; k < 2; k++) {
+          const wing = new THREE.Mesh(new THREE.BoxGeometry(2.6, 1.6, 0.06), panel);
+          wing.position.set(side * (radius + 2.5 + k * 2.7), 0, 0);
+          group.add(wing);
+        }
+        const light = new THREE.Mesh(new THREE.SphereGeometry(0.2, 8, 6), glow(side < 0 ? '#ff5d5d' : '#5dff9a'));
+        light.position.set(side * radius * 1.0, radius * 0.5, 0.3);
+        group.add(light);
+      }
+      break;
+    }
+    case 'jupiter': {
+      // A gate assembled from tumbling ring-ice chunks around an amber guide line.
+      ring(radius, 0.06, 96, glow(accent, 0.9)).scale.x = 1.18;
+      const chunkMat = new THREE.MeshStandardMaterial({ color: '#e2cfa8', emissive: '#5a3a1e', emissiveIntensity: 0.3, roughness: 0.85, flatShading: true });
+      around(22, (i, a) => {
+        const chunk = new THREE.Mesh(new THREE.IcosahedronGeometry(0.35 + hash(i * 5 + index) * 0.45, 0), chunkMat);
+        const r = radius + 0.5 + (hash(i * 7) - 0.5) * 0.8;
+        chunk.position.set(Math.cos(a) * r * 1.18, Math.sin(a) * r, (hash(i) - 0.5) * 0.8);
+        chunk.rotation.set(i, i * 1.7, i * 0.3);
+        group.add(chunk);
+      });
+      group.userData.spin = -0.002;
+      break;
+    }
+    default: {
+      // Neon Rift: hexagonal relay gate with girder struts and status lights.
+      const girder = metal('#33445e', secondary, 0.25);
+      ring(radius, 0.26, 6, girder, Math.PI * 2, 4).rotation.z = Math.PI / 6;
+      ring(radius - 0.38, 0.07, 6, glow(accent), Math.PI * 2, 4).rotation.z = Math.PI / 6;
+      around(6, (i, a) => {
+        const corner = a + Math.PI / 6;
+        const strut = new THREE.Mesh(new THREE.BoxGeometry(0.35, 1.6, 0.6), girder);
+        strut.position.set(Math.cos(corner) * (radius + 0.6), Math.sin(corner) * (radius + 0.6), 0);
+        strut.rotation.z = corner - Math.PI / 2;
+        group.add(strut);
+        const light = new THREE.Mesh(new THREE.BoxGeometry(0.22, 0.22, 0.22), glow(i % 2 ? accent : '#ff5d7a'));
+        light.position.set(Math.cos(corner) * (radius + 1.45), Math.sin(corner) * (radius + 1.45), 0.2);
+        group.add(light);
+      });
+    }
+  }
+  // Every gate keeps a bright top marker so checkpoints read at speed.
+  const marker = new THREE.Mesh(new THREE.OctahedronGeometry(0.3, 0), new THREE.MeshStandardMaterial({ color: accent, emissive: accent, emissiveIntensity: 1.1 }));
+  marker.position.set(0, radius - 0.05, 0.2);
+  group.add(marker);
+  return group;
+}

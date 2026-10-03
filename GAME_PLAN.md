@@ -22,7 +22,7 @@ Goal: make Starwake feel great to play, make each world look like its name, clea
   - Helix Deep: layered violet nebula clouds, drifting rock, a gravity-well vortex glow.
   - Earthfall Circuit: huge curved Earth below with a cloud layer and atmosphere rim, satellites, the sun on the horizon.
   - Jovian Shear: giant banded Jupiter filling the sky, a visible ring plane the route crosses, ring-particle fields.
-- [ ] **Per-world tunnel frames and hazards**: frame and hazard meshes match the world (ice-crystal gates on Titan, lava-rock arches on Io, station girders on the Rift, satellite debris on Earth, ring chunks at Jupiter).
+- [x] **Per-world tunnel frames and hazards**: frame and hazard meshes match the world (ice-crystal gates on Titan, lava-rock arches on Io, station girders on the Rift, satellite debris on Earth, ring chunks at Jupiter).
 - [ ] **Per-world ambience**: a distinct music and drone layer plus particle weather for each world.
 - [x] **Forged worlds** pick up the matching environment from their `kind` and tint it with their palette.
 
@@ -59,3 +59,4 @@ Goal: make Starwake feel great to play, make each world look like its name, clea
 ## Log
 - Round 0 (2026-10-02): git baseline; plan written. Playtest finding: Neon Rift, Io Storm and Titan Veil look nearly identical in race (black void, same corner planet and ring tunnel; only the tint changes).
 - Round 1: added `world-themes.js`, a per-world sky dome, fog, ground and scrolling set pieces. Rift: neon station pylons, gantries, transit spine. Io: lava sea, volcanoes, plumes, ash and embers, lightning, Jupiter overhead. Titan: amber haze, ice-spire canal walls, methane canal, Saturn. Helix: nebula clouds, spiral vortex, drifting rock. Earth: curved planet below with atmosphere rim, sun, satellites. Jupiter: banded giant, ring plane, ring dust and chunks. Forged courses use the theme for their `kind`. Also fixed per-frame theme rebuilds on the home screen and raised the camera far plane to 450.
+- Round 2: themed checkpoint gates (`buildWorldFrame`): hex relay gate, basalt arch with lava seams, octagonal crystal gate with ice spikes, spinning energy ring, orbital ring with solar wings, ring-chunk gate. Hazard rocks per world (`hazardLook`): metal debris, lava rock, ice crystals, nebula stone, satellite wreckage, ring ice. Saved the contest rules to `CONTEST.md` and added contest-critical items (multiplayer hardening, submission package).

@@ -266,3 +266,4 @@
 .sw-ship-bars i{font:6px 'DM Mono',monospace;font-style:normal;letter-spacing:.1em;color:#74849a}.sw-ship-bars u{height:2px;background:rgba(255,255,255,.1)}.sw-ship-bars em{display:block;height:100%;background:var(--ship-tone)}
 .sw-ship-action{padding:6px 8px;border:1px solid var(--ship-tone);background:transparent;color:var(--ship-tone);font:7px 'DM Mono',monospace;letter-spacing:.12em}.sw-ship-action:disabled{opacity:.6;cursor:default}
 .sw-ship-pick .sw-ship-action{font:600 8px 'DM Mono',monospace!important;letter-spacing:.1em;padding:6px 8px;white-space:nowrap}
+.sw-forge-race{border:0;cursor:pointer}.sw-forge-race:focus-visible{outline:2px solid #fff;outline-offset:2px}

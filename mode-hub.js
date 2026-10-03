@@ -101,7 +101,7 @@ export function mountModeHub({ root, onAction = () => {}, initialCourse = 'neon-
           <article class="sw-hub-destination sw-designer">
             <div class="sw-designer-heading"><small>03 — WORLD FORGE</small><span>AI COURSE DESIGNER</span></div><h2>Describe a new world.</h2><p>OpenAI designs the track shape, palette, gravity, crosswinds, and hazards from your words. Your whole lobby races the forged course.</p>
             <form class="sw-forge-form"><label class="sw-sr-only" for="sw-forge-prompt">Describe your racing world</label><textarea id="sw-forge-prompt" maxlength="180" placeholder="Type the racing world of your dreams…" required></textarea><button type="submit" aria-label="Build course">✦</button></form>
-            <button type="button" class="sw-forge-result" id="sw-forge-result" hidden></button>
+            <div class="sw-forge-result" id="sw-forge-result" hidden></div>
             <div class="sw-forge-foot"><span id="sw-forge-status" role="status">TRY: “A CANYON RACE THROUGH A SHATTERED MOON”</span><button type="button" data-action="forge">FORGE WORLD <span>→</span></button></div>
           </article>
         </section>
@@ -130,11 +130,11 @@ export function mountModeHub({ root, onAction = () => {}, initialCourse = 'neon-
       card.dataset.course = forged.id;
       card.style.setProperty('--map-tone', forged.accent);
       const gravity = level(-Number(forged.forces?.gravity || 0), 0.36), wind = level(Number(forged.forces?.lateralDrift || 0), 0.18);
-      card.innerHTML = `<small>AI-FORGED · ${esc(forged.planet)} · ${esc(forged.world)}</small><b>${esc(forged.name)}</b><span>${esc(forged.summary)}</span>${trackSketch(forged.track?.path)}<em class="sw-forge-chips"><u>GRAVITY ${gravity}</u><u>CROSSWIND ${wind}</u><u>${forged.hazards?.length || 0} HAZARD ZONES</u></em><strong class="sw-forge-race" data-action="race-forged">RACE THIS WORLD ↗</strong>`;
+      card.innerHTML = `<small>AI-FORGED · ${esc(forged.planet)} · ${esc(forged.world)}</small><b>${esc(forged.name)}</b><span>${esc(forged.summary)}</span>${trackSketch(forged.track?.path)}<em class="sw-forge-chips"><u>GRAVITY ${gravity}</u><u>CROSSWIND ${wind}</u><u>${forged.hazards?.length || 0} HAZARD ZONES</u></em><button type="button" class="sw-forge-race" data-action="race-forged">RACE THIS WORLD ↗</button>`;
     } else if (offlineMatch) {
       card.dataset.course = offlineMatch.id;
       card.style.setProperty('--map-tone', offlineMatch.tone);
-      card.innerHTML = `<small class="sw-forge-offline">OFFLINE FORGE · AI NOT CONNECTED ON THIS SERVER</small><b>${esc(offlineMatch.name)}</b><span>The AI designer is unavailable, so your idea was matched to the closest hand-built world, with a variant seeded from your words.</span><strong class="sw-forge-race" data-action="race-forged">RACE THIS WORLD ↗</strong>`;
+      card.innerHTML = `<small class="sw-forge-offline">OFFLINE FORGE · AI NOT CONNECTED ON THIS SERVER</small><b>${esc(offlineMatch.name)}</b><span>The AI designer is unavailable, so your idea was matched to the closest hand-built world, with a variant seeded from your words.</span><button type="button" class="sw-forge-race" data-action="race-forged">RACE THIS WORLD ↗</button>`;
     }
   };
   const chooseCourse = (id) => {

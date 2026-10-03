@@ -42,7 +42,7 @@ const FINISH_GRACE_MS = 12000;
 // A host silent this long hands the room to the most recently active pilot.
 const HOST_TIMEOUT_MS = 25000;
 const SEEN_WRITE_MS = 8000;
-const MAX_HEAT_SCORE = 25000;
+const MAX_HEAT_SCORE = 60000;
 
 const store = () => getStore({ name: "starwake-rooms", consistency: "strong" });
 const liveKey = (code: string, id: string) => `live/${code}/${id}`;
@@ -202,8 +202,8 @@ export default async (request: Request) => {
           courseSeed: Number.isFinite(Number(body.courseSeed)) ? Number(body.courseSeed) >>> 0 : 0,
           players: [{ id: hostId, name: cleanName(body.name), ship: cleanShip(body.ship), kind: "human", progress: 0, score: 0, finished: false, lastSeen: Date.now() }],
           bots: Math.max(0, Math.min(7, Number(body.bots) || 0)),
-          // Sim-pilot strength picked by the host's rank (rookie curve), 0.45-1.
-          botSkill: Math.max(0.45, Math.min(1, Number(body.botSkill) || 1)),
+          // Sim-pilot strength picked by the host's rank: 0.45 for rookies up to 2 (competitive with clean runs).
+          botSkill: Math.max(0.45, Math.min(2, Number(body.botSkill) || 1)),
           scores: [],
           updatedAt: Date.now(),
         };

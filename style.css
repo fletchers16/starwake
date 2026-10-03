@@ -319,3 +319,5 @@ button:disabled{cursor:not-allowed;filter:saturate(.55);opacity:.58}
 #app:has(#results-screen.active) .toast{bottom:auto;top:88px}
 .bot-control.guest .stepper{opacity:.35;pointer-events:none}.bot-control.guest strong:after{content:" · HOST ONLY";color:#6f7f95}
 .module-option:disabled{opacity:.45;cursor:not-allowed}
+/* Menus sit over a dimmed, blurred race scene instead of a stale sharp frame. */
+#app:has(.panel-screen.active) #flight-scene{filter:blur(7px) brightness(.55);transition:filter .3s}

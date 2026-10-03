@@ -50,10 +50,10 @@ Goal: make Starwake feel great to play, make each world look like its name, clea
 - [x] **Forged worlds** pick up the matching environment from their `kind` and tint it with their palette.
 
 ### Game feel
-- [ ] **Camera**: FOV kick and stretch on boost, a short shake on hit, camera roll following the bank, a slight lag behind the ship.
+- [x] **Camera**: FOV kick and stretch on boost, a short shake on hit, camera roll following the bank, a slight lag behind the ship.
 - [ ] **High-tech flight effects** *(user idea)*: holographic HUD lines, energy exhaust trails, warp-stretch streaks on boost, shield shimmer on hits, scanline/chromatic flash on big moments. Speed streaks and dust scaled by speed.
-- [ ] **Hit feedback**: red vignette flash, shake, a brief slowdown, an animated hull-pip loss, a crunch sound, a few frames of invulnerability with a ship blink.
-- [ ] **Collect feedback**: ring pop particles, a rising pitch for consecutive rings (a combo counter with a score multiplier), a Star Core burst.
+- [x] **Hit feedback**: red vignette flash, shake, a brief slowdown, an animated hull-pip loss, a crunch sound, a few frames of invulnerability with a ship blink.
+- [x] **Collect feedback**: ring pop particles, a rising pitch for consecutive rings (a combo counter with a score multiplier), a Star Core burst.
 - [ ] **Controls**: tune acceleration and damping so steering feels responsive but weighty; check keyboard and touch drag; keep the ship from blocking the view of the track ahead.
 - [ ] **Finish line** *(user idea)*: a big, unmistakable finish/lap gate per world with a light tunnel, a checkered holo-banner and a fly-through burst.
 - [ ] **Ghost rivals** *(user idea, Mario Kart style)*: bots and other players render as translucent glowing ghost copies of their actual ships, with name tags and a trailing ribbon.
@@ -61,7 +61,7 @@ Goal: make Starwake feel great to play, make each world look like its name, clea
 
 ### Content and progression
 - [ ] **Audit the economy**: RP ranks, credits, ship prices, module prices and stickers. Make the first unlock reachable in 2–3 races and give each later unlock a clear goal.
-- [ ] **Results screen**: score breakdown (rings, cores, laps, hull, time), RP and credits earned with a progress bar toward the next rank or unlock, personal best and sticker callouts.
+- [x] **Results screen**: score breakdown (rings, cores, laps, hull, time), RP and credits earned with a progress bar toward the next rank or unlock, personal best and sticker callouts.
 - [ ] **Fix the upgrade system + garage** *(user idea)*: clear stat bars, owned/equipped states, modules with effects you can feel in play, prices that make sense.
 - [ ] **Ship micro-figure select** *(user idea)*: a racing-game-style ship picker with a rotating 3D micro-figure of each ship on a lit pedestal, also on the hub before launching.
 - [ ] **Interactive color scheme** *(user idea)*: ship paint/trail color picker, and UI accents that shift with the selected world and react to boosts and hits.
@@ -70,7 +70,7 @@ Goal: make Starwake feel great to play, make each world look like its name, clea
 - [ ] **Remove dead UI**: the legacy home-screen controls hidden behind the hub (duplicate World Forge, course arrows). Make sure nothing still depends on them.
 
 ### Polish and stability
-- [ ] **First-run onboarding**: a short controls card on the first heat; drop the "Exploration prototype" disclaimers where they're no longer true.
+- [x] **First-run onboarding**: a short controls card on the first heat; drop the "Exploration prototype" disclaimers where they're no longer true.
 - [ ] **Mobile**: hub and race HUD at 375px width, touch steering, a boost button that doesn't overlap the HUD.
 - [ ] **Performance**: dispose geometry and materials between races (check for leaks across 5 races), cap pixel ratio, code-split three.js so the main chunk drops under 500 KB.
 - [ ] **Robustness**: offline and multiplayer error states, a pause on tab blur, no console errors through a full 3-heat PvE session.
@@ -79,7 +79,7 @@ Goal: make Starwake feel great to play, make each world look like its name, clea
 - [ ] **New courses** *(user idea)*: more planet / atmosphere / galaxy themes with different obstacle mixes (e.g. Venus acid clouds, Saturn's Cassini gap, a black-hole accretion disk, Mars dust canyons).
 
 ### AI (stretch)
-- [ ] **Forge card track preview**: draw the forged path as a mini-map.
+- [x] **Forge card track preview**: draw the forged path as a mini-map.
 - [ ] **Remix button**: tweak the current forged course ("more hazards", "lower gravity").
 
 ## Morning summary
@@ -124,3 +124,4 @@ The user's ideas (from their OpenAI brainstorm) were merged into the backlog abo
 - Round 13: Free Flight rebuilt. Fixed the invisible ship (`free = state.freeFlight && …` evaluated to `true`, so the ship was placed at NaN). It now roams the hub-selected world's full environment (`setOrigin` moves the environment with the camera) and has signal-shard collectibles with a saved best. Removed the old dark procedural planets, the "prototype" disclaimer and the star-core hint; the HUD label shows shards, distance, best and device-aware controls.
 - Round 14: hub layout. On phones the launch bar is pinned to the bottom (sticky can't work because `#app` clips overflow, so it's fixed and the hub gets bottom padding). The Ship Garage button sits inline under the launch button instead of floating over the course cards. The Jovian card's black blob was an unstyled SVG ellipse defaulting to a black fill; it's now outlined. "SKIP INTRO" clipping and the mobile ticker were fixed in rounds 11 and 7.
 - Round 15: submission package. Generated `submission/cover.png` (1600×900) from a live autopiloted Jovian Shear heat mid ring-trail with a title overlay ("STARWAKE · Race worlds you imagine"). `SUBMISSION.md` (round 8) has the title, a paste-ready description, judge guide and deploy checklist. Added a dev-only `/__dev/save-image` endpoint (writes only `submission/*.png`) and a dev-only `capture()` hook, both stripped from production builds.
+- Round 16: sound and game feel. The game had no audio and the sound toggle did nothing. Added `audio.js`, a dependency-free Web Audio synth: engine hum tied to boost, ring chimes rising with the combo on a pentatonic scale, a perfect-line arpeggio, a star sparkle, a combo-lost blip, a hit crunch, a boost whoosh, 3-2-1-GO beeps, lap and finish fanfares. Unlocked on the first gesture; the toggle works and persists. Camera: FOV kick to 71 on boost, a real shake on hits, stronger roll into turns. Hit feedback: the ship blinks during invulnerability and the red vignette is stronger. Collect feedback: soft particle bursts per ring (bigger with combo) and star. Checked off results screen, onboarding and Forge track preview (done in rounds 6/10, 8 and 12).

@@ -44,7 +44,7 @@
 #app.racing .race-toast{z-index:12;top:51%;max-width:min(90vw,480px);padding:13px 19px;border:1px solid rgba(126,245,226,.42);background:linear-gradient(120deg,rgba(5,18,31,.92),rgba(10,29,40,.82));box-shadow:0 0 42px rgba(64,231,207,.16);font-size:11px;letter-spacing:.14em;white-space:nowrap;backdrop-filter:blur(12px)}
 #app.racing .race-toast span{margin-left:8px;color:#fff2bf;font-size:9px;letter-spacing:.1em}
 #app.star-burst.racing .race-controls button{border-color:#ffe38b;box-shadow:0 0 36px rgba(255,213,100,.4),inset 0 0 18px rgba(255,233,145,.16)}
-#app.impact .race-screen:after{position:absolute;z-index:8;inset:0;content:"";pointer-events:none;box-shadow:inset 0 0 62px rgba(255,105,88,.38);animation:impact-flash .17s ease-out forwards}
+#app.impact .race-screen:after{position:absolute;z-index:8;inset:0;content:"";pointer-events:none;box-shadow:inset 0 0 140px rgba(255,70,60,.62);animation:impact-flash .17s ease-out forwards}
 @keyframes impact-flash{from{opacity:1}to{opacity:0}}
 .flight-route-guide{position:absolute;z-index:8;top:clamp(86px,12vh,120px);right:clamp(14px,4vw,68px);min-width:154px;padding:11px 14px;border:1px solid rgba(130,225,232,.27);border-right:2px solid var(--cyan);background:linear-gradient(245deg,rgba(5,16,29,.82),rgba(9,21,35,.45));box-shadow:0 10px 30px rgba(0,0,0,.2);color:#ecf7ff;font:600 10px/1.45 'DM Mono',monospace;letter-spacing:.1em;text-align:right;backdrop-filter:blur(12px);pointer-events:none}
 .flight-route-guide>span{color:var(--cyan);font-size:7px;letter-spacing:.17em}

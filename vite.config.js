@@ -9,6 +9,19 @@ function netlifyFunctionsDev() {
     name: 'starwake-netlify-functions-dev',
     apply: 'serve',
     configureServer(server) {
+      // Dev-only: save a captured image (e.g. the submission cover) into submission/.
+      server.middlewares.use('/__dev/save-image', async (req, res) => {
+        const name = new URL(req.url, 'http://x').searchParams.get('name') || '';
+        if (req.method !== 'POST' || !/^[a-z0-9-]+\.png$/.test(name)) { res.statusCode = 400; return res.end('bad request'); }
+        const chunks = [];
+        for await (const chunk of req) chunks.push(chunk);
+        const base64 = Buffer.concat(chunks).toString().replace(/^data:image\/png;base64,/, '');
+        const { mkdir, writeFile } = await import('node:fs/promises');
+        const dir = fileURLToPath(new URL('./submission/', import.meta.url));
+        await mkdir(dir, { recursive: true });
+        await writeFile(dir + name, Buffer.from(base64, 'base64'));
+        res.end('saved');
+      });
       server.middlewares.use(async (req, res, next) => {
         const match = req.url?.match(/^\/\.netlify\/functions\/([a-z0-9-]+)(\?.*)?$/);
         if (!match) return next();

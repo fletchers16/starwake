@@ -20,7 +20,7 @@ const MODULES = [{id:'stock',name:'STOCK',cost:0,description:'Balanced frame',mo
 const state = { code:null, playerId:null, playerName:'Pilot 01', host:false, botCount:3, heat:1, totalScore:0, rp:240, credits:80, ship:'kite', owned:['kite'], selected:'kite', upgrades:{},unlockedModules:['stock'], stickers:[],bestTimes:{},courseId:'neon-rift',coursePrompt:'',courseSeed:0,forgedCourse:null,rivals:{},race:null, raf:0, lastSent:0, room:null, previousView:'home-screen', audio:false, serverOffset:0 };
 let toastTimer, pollTimer, keys={};
 // Dev-only hook for automated playtests (stripped from production builds).
-if(import.meta.env.DEV)window.__starwake={state,get ship(){return shipModel},get camera(){return camera}};
+if(import.meta.env.DEV)window.__starwake={state,get ship(){return shipModel},get camera(){return camera},capture(){composer.render();return renderer.domElement.toDataURL("image/png")}};
 
 function showScreen(id){$('toast')?.classList.remove('show');if(id!=='race-screen'){const ticker=$('standings-ticker');if(ticker)ticker.hidden=true} screens.forEach(s=>s.classList.toggle('active',s.id===id)); state.previousView=id; $('app').classList.toggle('racing',id==='race-screen'); if(id==='home-screen') drawHome(); }
 function toast(message){const el=$('toast');el.textContent=message;el.classList.add('show');clearTimeout(toastTimer);toastTimer=setTimeout(()=>el.classList.remove('show'),2500)}

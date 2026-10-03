@@ -35,7 +35,7 @@ const COURSES = ["neon-rift", "io-storm", "titan-veil", "helix-deep", "earthfall
 const SHIPS = ["kite", "bastion", "needle", "manta"];
 const BOT_NAMES = ["VANTA-7", "ECHO/3", "MICA", "RUNE-8", "SOL"];
 const HEAT_MS = 60000;
-const COUNTDOWN_MS = 7000;
+const COUNTDOWN_MS = 4000;
 // After the heat clock ends, pilots who never report are scored as DNF.
 const FINISH_GRACE_MS = 12000;
 // A host silent this long hands the room to the most recently active pilot.

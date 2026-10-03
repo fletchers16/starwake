@@ -280,3 +280,18 @@ button:disabled{cursor:not-allowed;filter:saturate(.55);opacity:.58}
 .result-breakdown{display:grid;grid-template-columns:1fr auto;gap:5px 12px;margin:0 0 14px;font:9px 'DM Mono',monospace;letter-spacing:.08em;color:#8291a6}.result-breakdown b{color:#e8eff9;font-weight:500;text-align:right}
 .flight-craft{display:none!important}
 @media(max-width:760px){.standings-ticker{width:118px;right:8px}.standings-ticker div{padding:4px 6px;gap:5px}}
+/* Input hints follow the input device, not the screen width. */
+@media (pointer:fine){#app.racing .touch-guide{display:none!important}}
+@media (pointer:coarse){#app.racing .input-guide>b,#app.racing .input-guide>em{display:none}#app.racing .touch-guide{display:inline!important}}
+.controls-card{position:absolute;z-index:8;left:50%;top:58%;transform:translate(-50%,-50%);width:min(340px,86vw);padding:14px 16px;background:rgba(6,12,22,.82);border:1px solid rgba(126,245,226,.35);backdrop-filter:blur(8px);font:10px 'DM Mono',monospace;letter-spacing:.06em;color:#b9c7d8;pointer-events:none;transition:opacity .3s}
+.controls-card[hidden]{display:none}.controls-card.leaving{opacity:0}
+.controls-card small{color:var(--cyan);letter-spacing:.16em;font-size:8px}
+.controls-card p{margin:7px 0 0;line-height:1.5}.controls-card b{color:#f2f8ff;font-weight:500}
+.controls-card .goal{margin-top:10px;padding-top:9px;border-top:1px solid rgba(177,202,236,.14);font-family:'Space Grotesk',sans-serif;font-size:12px;letter-spacing:0;color:#d4e0ee}.controls-card em{color:var(--cyan);font-style:normal}
+.race-menu{position:absolute;inset:0;z-index:12;display:grid;place-items:center;background:rgba(4,8,16,.62);backdrop-filter:blur(6px)}
+.race-menu[hidden]{display:none}
+.race-menu>div{width:min(320px,86vw);padding:20px;background:rgba(10,18,32,.95);border:1px solid var(--line);display:grid;gap:10px}
+.race-menu small{font:9px 'DM Mono',monospace;letter-spacing:.16em;color:var(--cyan)}.race-menu strong{font-size:24px;letter-spacing:-.04em}.race-menu p{margin:0 0 6px;color:#94a3b8;font-size:12px;line-height:1.5}
+.race-menu-button{position:absolute;z-index:9;top:74px;left:50%;transform:translateX(-50%);width:30px;height:24px;border:1px solid var(--line);background:rgba(6,12,22,.6);color:#9fb0c6;font:9px 'DM Mono',monospace;display:none}
+#app.racing:not(.free-flight) .race-menu-button{display:block}
+.controls-card{top:72%}

@@ -1,3 +1,4 @@
+import { rimObject } from './rim.js';
 /**
  * Named set pieces the race route flies through or past ("attractions").
  * Each world gets three, placed at fixed lap fractions so every pilot sees the
@@ -376,7 +377,7 @@ const BUILDERS = {
 export function buildLandmarks(THREE, course, ctx) {
   const specs = (BUILDERS[course?.kind] || BUILDERS.relay)(THREE, course);
   const objects = specs.map((spec) => {
-    const object = spec.build(ctx);
+    const object = rimObject(spec.build(ctx), { strength: 0.6 });
     object.userData.name = spec.name;
     object.userData.at = spec.at;
     object.traverse((o) => { o.frustumCulled = false; });

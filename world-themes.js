@@ -1,3 +1,4 @@
+import { rimColor, rimObject } from './rim.js';
 import { createFogRamp } from './fog-ramp.js';
 import { buildLandmarks } from './landmarks.js';
 /**
@@ -466,7 +467,7 @@ export function createWorldEnvironment(THREE, scene) {
       clear();
       ctx = { course, glow, sky, theme, boltAt: -1e9 };
       ctx.pieces = theme.build(THREE, ctx);
-      ctx.pieces.forEach((piece) => root.add(piece));
+      ctx.pieces.forEach((piece) => { root.add(piece); rimObject(piece, { strength: 0.45 }); });
       // Named attractions the route flies through (see landmarks.js).
       ctx.landmarks = buildLandmarks(THREE, course, ctx);
       ctx.landmarks.objects.forEach((object) => { root.add(object); ctx.pieces.push(object); });
@@ -483,6 +484,8 @@ export function createWorldEnvironment(THREE, scene) {
         fogRamp.setColors(theme.fogRamp[0], theme.fogRamp[1]);
       }
       sky.material.uniforms.mid.value.copy(far);
+      // Rim light uses a brightened near-haze colour so silhouettes catch the world's light.
+      rimColor.value.copy(fogRamp.uniforms.fogRampNear.value).lerp(new THREE.Color('#ffffff'), 0.25);
       if (scene.fog) {
         scene.fog.color.set(course?.forged ? course.fog : theme.fog[0]);
         scene.fog.near = theme.fog[1];

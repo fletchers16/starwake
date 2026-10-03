@@ -1,3 +1,4 @@
+import { addRim } from './rim.js';
 /**
  * Hazard meshes with one consistent visual language: anything that hurts is
  * drawn in the course's hazard colour with a glowing core, and nothing is
@@ -77,7 +78,7 @@ export function makeRock(THREE, item, course, look) {
   const material = look
     ? new THREE.MeshStandardMaterial({ color: look.color, emissive: look.emissive, emissiveIntensity: look.emissiveIntensity * 0.7, metalness: look.metalness, roughness: look.roughness, transparent: !!look.opacity, opacity: look.opacity || 1, flatShading: true })
     : new THREE.MeshStandardMaterial({ color: '#3a3440', roughness: 0.8, flatShading: true });
-  const body = new THREE.Mesh(geometry, material);
+  const body = new THREE.Mesh(geometry, addRim(material, { strength: 0.55 }));
   const stretch = look?.stretch || [1, 0.9, 1];
   body.scale.set(stretch[0] * r, stretch[1] * r, stretch[2] * r);
   group.add(body);

@@ -91,12 +91,17 @@ function botSeed(code: string, heat: number, i: number) {
   return h >>> 0;
 }
 
+// Faster laps for stronger sim pilots (matches the client's botLapTime).
+function botLapTime(score: number, seed: number) {
+  return Math.max(38, Math.min(59.5, 64 - score / 700 + (seed % 900) / 300));
+}
+
 function scoreBots(room: Room) {
   for (let i = 0; i < room.bots; i++) {
     const botId = `bot-${i}`;
     if (room.scores.some((entry) => entry.playerId === botId && entry.heat === room.heat)) continue;
     const seed = botSeed(room.code, room.heat, i);
-    room.scores.push({ playerId: botId, name: BOT_NAMES[i % BOT_NAMES.length], kind: "bot", score: Math.round((4000 + (seed % 7000)) * (room.botSkill ?? 1)), heat: room.heat, flightTime: 40 + (seed % 19000) / 1000 });
+    room.scores.push({ playerId: botId, name: BOT_NAMES[i % BOT_NAMES.length], kind: "bot", score: Math.round((4000 + (seed % 7000)) * (room.botSkill ?? 1)), heat: room.heat, flightTime: botLapTime(Math.round((4000 + (seed % 7000)) * (room.botSkill ?? 1)), seed) });
   }
 }
 

@@ -396,3 +396,4 @@ button:disabled{cursor:not-allowed;filter:saturate(.55);opacity:.58}
 #app.racing .race-toast{top:38%;padding:0;border:0;background:none;box-shadow:none;backdrop-filter:none;max-width:none;font:600 13px 'DM Mono',monospace;letter-spacing:.16em}
 #app.racing .race-toast span{margin:0;font:600 26px 'Space Grotesk',sans-serif;letter-spacing:-.02em;color:#fff}
 #app.racing #heat-label{font:500 8px 'DM Mono',monospace!important;letter-spacing:.16em!important;color:rgba(226,236,248,.6)}
+.launch-intro{--cyan:#7ef5e2}.launch-copy h1{letter-spacing:-.06em}

@@ -140,6 +140,9 @@ export function mountModeHub({ root, onAction = () => {}, initialCourse = 'neon-
   const chooseCourse = (id) => {
     if (!MAPS.some(m => m.id === id) && forged?.id !== id) return;
     selectedCourse = id;
+    // The launch bar and accents follow the selected world's colour.
+    const tone = forged?.id === id ? forged.accent : MAPS.find(m => m.id === id)?.tone;
+    if (tone) root.style.setProperty('--hub-cyan', tone);
     root.querySelectorAll('[data-course]').forEach(button => {
       const active = button.dataset.course === id;
       button.classList.toggle('is-selected', active);

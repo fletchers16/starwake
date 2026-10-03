@@ -83,24 +83,43 @@ Goal: make Starwake feel great to play, make each world look like its name, clea
 - [ ] **Remix button**: tweak the current forged course ("more hazards", "lower gravity").
 
 ## Morning summary
-_(last update after round 10)_
+_(last update after round 20)_
 
-**Done overnight (one git commit per round, so any of it can be reverted):**
-1. **Worlds look like their names**: Io lava seas and lightning, Titan amber ice canals, curved Earth below, Jupiter's ring plane, a neon station on the Rift, a nebula vortex in Helix. Each has its own gates and hazards.
-2. **Real multiplayer**: rivals appear live as named ghost ships; disconnects and a host leaving are handled; invite links join directly; a live standings ticker.
-3. **Skill matters**: ring trails with combos up to ×5, a mined centre line, and a guide line to the next ring. Idle scores 360, good flying about 18,000 (idle used to win).
-4. **Results make sense**: live standings match the final table; bots no longer cluster; a score breakdown; "You placed 2nd"; a rank progress bar; PB messages show.
-5. **Guidance and polish**: 3-2-1 countdown, first-heat controls card (keyboard or touch), Esc menu (solo pauses for real), a clear view of the track, and the rookie bot curve so new players can win.
-6. **Submission kit drafted** in `SUBMISSION.md` (title, description, judge guide, deploy checklist).
+**20 rounds done overnight.** Each round is its own git commit (`git log --oneline`), so anything can be reverted.
 
-Two cold playtests by a separate agent drove rounds 5–10; their reports are summarised in the Log.
+**Worlds and visuals**
+- Every world looks like its name, with its own sky, ground, set pieces, gates and hazards (rounds 1–2).
+- High-tech flight effects: energy trails, warp streaks, hex hit shield, perfect-line flash. A real finish line with a holo banner and light tunnel (round 17).
+- Camera: FOV kick on boost, impact shake, ring-pop sparks (round 16).
 
-**Things only you can do:**
-- Set `OPENAI_API_KEY` on Netlify, deploy, and forge one world live (it should say FORGED).
-- Test PvP on two real devices with the invite link.
-- Submit by **Oct 30, 11:59 PM PT**: title, cover image, description, URL (all drafted in `SUBMISSION.md`).
+**Multiplayer (the contest's core)**
+- Rivals appear live as named ghost ships; invite links join directly; a live standings ticker matches the final results (rounds 3–4, 6).
+- Disconnects and a host leaving are handled. Callsigns, and an invite intro ("JOIN ROOM X") (round 11).
+- Sim bots fly real ship classes as Mario Kart-style ghosts with "NAME · SIM" tags (round 18).
 
-**Up next:** visible callsign, invite context, solo skips the lobby, Forge result card, cover image, Free Flight, then game feel (camera, hit and collect effects, finish line), garage and upgrades, the ship micro-figure picker and new worlds.
+**Gameplay**
+- Skill matters: ring trails with ×5 combos, a mined centre line, and a guide line. Idle scores 360 vs about 18,000 flying well (round 5).
+- Rookie bot curve so new players can win; true pause in solo (round 9).
+- Free Flight works: the ship was invisible before; now it roams your chosen world collecting shards (round 13).
+
+**Polish and flow**
+- 3-2-1 countdown, first-heat controls card, Esc race menu (round 8). Solo starts instantly (round 12).
+- Results say "You placed 2nd", with a breakdown and rank bar (rounds 6, 10).
+- **Sound:** there was none, and the toggle was dead. Now there's an engine hum, combo-pitched ring chimes, hits, boost and fanfares (round 16). Please listen and tell me if anything is annoying.
+- Hub: a ship picker with rotating 3D models (round 20), a mobile launch bar and layout fixes (round 14).
+- Economy and garage: first unlock within 2–3 races, season bonus, stat deltas, clear module states (round 19).
+
+**AI World Forge (the OpenAI showcase):** a result card with a track sketch and a "Race this world" button, plus a clear offline fallback (round 12).
+
+**Submission:** `SUBMISSION.md` (title, description, judge guide, checklist) and `submission/cover.png` (round 15).
+
+**Things only you can do**
+1. On Netlify, set `OPENAI_API_KEY`, deploy, and forge one world (it should say "AI-FORGED", not offline).
+2. Test PvP on two real devices using the invite link.
+3. Listen to the sound and play a few heats; tell me what feels off.
+4. Submit by **Oct 30, 11:59 PM PT** using `SUBMISSION.md` and the cover image.
+
+**Next in the loop:** feedback from the third playtest, interactive colour scheme, titles and PB sticker book, medals on course cards, mobile and performance checks, new worlds.
 
 ## Ideas inbox
 The user's ideas (from their OpenAI brainstorm) were merged into the backlog above and marked *(user idea)*. Add new ideas here, then triage them into the backlog.

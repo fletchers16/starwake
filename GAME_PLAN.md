@@ -17,7 +17,7 @@ Goal: make Starwake feel great to play, make each world look like its name, clea
 
 ### Playtest 2 fixes (round 8 cold playtest)
 - [x] **Bug bundle + fairness**: breakdown missing the flight-time row (sums 60 short); bot times over 60s; Io lightning `setFromPoints` buffer warnings flooding the console; Enter in the Forge textarea should forge; stale toasts persist across screens. Rookie bot curve (new players always placed last; scale bots to the pilot's rank). True pause in solo (extend the server heat clock). Touch boost label says "HOLD · SPACE"; the II button overlaps "BOOST FUEL" on mobile.
-- [ ] **Results tell you how you did**: placement headline ("You placed 2nd · +40 RP"), a season verdict for you, and a rank progress bar.
+- [x] **Results tell you how you did**: placement headline ("You placed 2nd · +40 RP"), a season verdict for you, and a rank progress bar.
 - [ ] **Visible callsign**: an editable pilot name on the hub and lobby, with a random default (e.g. NOVA-42) instead of everyone being the same name.
 - [ ] **Invite context**: the intro shows "Joining room XXXXX" for invite links.
 
@@ -83,21 +83,24 @@ Goal: make Starwake feel great to play, make each world look like its name, clea
 - [ ] **Remix button**: tweak the current forged course ("more hazards", "lower gravity").
 
 ## Morning summary
-_(updated every few rounds; last update after round 5)_
+_(last update after round 10)_
 
-**Done so far (each round is its own git commit, so any of it can be reverted):**
-1. Every world looks like its name (lava sea and volcanoes on Io, amber ice canals on Titan, a curved Earth below, Jupiter and its rings, a neon station on the Rift, the nebula vortex in Helix).
-2. Each world has its own checkpoint gates and hazard rocks.
-3. Real multiplayer races: rivals appear live as named ghost ships; disconnects and a host leaving are handled.
-4. Invite links, a working copy/share button, and a live standings ticker.
-5. Skill matters now. Rings come in combo trails, the centre line is guarded, and the guide leads you to points. Idle flying scored 360 against 18,370 for good flying (idling used to win).
+**Done overnight (one git commit per round, so any of it can be reverted):**
+1. **Worlds look like their names**: Io lava seas and lightning, Titan amber ice canals, curved Earth below, Jupiter's ring plane, a neon station on the Rift, a nebula vortex in Helix. Each has its own gates and hazards.
+2. **Real multiplayer**: rivals appear live as named ghost ships; disconnects and a host leaving are handled; invite links join directly; a live standings ticker.
+3. **Skill matters**: ring trails with combos up to ×5, a mined centre line, and a guide line to the next ring. Idle scores 360, good flying about 18,000 (idle used to win).
+4. **Results make sense**: live standings match the final table; bots no longer cluster; a score breakdown; "You placed 2nd"; a rank progress bar; PB messages show.
+5. **Guidance and polish**: 3-2-1 countdown, first-heat controls card (keyboard or touch), Esc menu (solo pauses for real), a clear view of the track, and the rookie bot curve so new players can win.
+6. **Submission kit drafted** in `SUBMISSION.md` (title, description, judge guide, deploy checklist).
 
-**Things you need to do (I can't):**
-- Set `OPENAI_API_KEY` on Netlify so the AI World Forge works for judges.
-- Deploy, then test PvP on two real devices.
-- Submission (due Oct 30): title, cover image, description, URL. See `CONTEST.md`.
+Two cold playtests by a separate agent drove rounds 5–10; their reports are summarised in the Log.
 
-**Up next:** the robustness bundle (HUD reset between heats), rankings that match results, a clear view of the track, onboarding and pause, solo vs PvP flow, the Forge result card, then the submission package.
+**Things only you can do:**
+- Set `OPENAI_API_KEY` on Netlify, deploy, and forge one world live (it should say FORGED).
+- Test PvP on two real devices with the invite link.
+- Submit by **Oct 30, 11:59 PM PT**: title, cover image, description, URL (all drafted in `SUBMISSION.md`).
+
+**Up next:** visible callsign, invite context, solo skips the lobby, Forge result card, cover image, Free Flight, then game feel (camera, hit and collect effects, finish line), garage and upgrades, the ship micro-figure picker and new worlds.
 
 ## Ideas inbox
 The user's ideas (from their OpenAI brainstorm) were merged into the backlog above and marked *(user idea)*. Add new ideas here, then triage them into the backlog.
@@ -115,3 +118,4 @@ The user's ideas (from their OpenAI brainstorm) were merged into the backlog abo
 - Round 8: onboarding and race controls. A 3-2-1 countdown (4s on server and local, was 7s) with a "HEAT n / 03" label. A device-aware controls card on a player's first 3 heats, dismissed on first steer. Input hints follow `pointer: coarse/fine` instead of width (no more "drag to steer" on desktop). An Esc race menu (and an on-screen II button) with Resume and Quit; Quit leaves the room and returns to the hub. It honestly notes that the synced heat clock keeps running. Verified end to end with no console errors.
 - Round 8 playtest report (subagent): recent changes verified (idle 360 vs holding keys 16,535; ticker within 3 points of results; PvP results agree on both clients). New bugs and fairness issues added as "Playtest 2 fixes". Protect skill scoring, PvP sync and art direction. Side effect: the shared profile now owns Needle.
 - Round 9: playtest-2 bug and fairness bundle. Rookie bot curve (`botSkill` 0.45–1 from the host's RP, applied on server and client, so live standings still match). True pause for solo heats (Esc freezes the clock; the new server `extend` action shifts the heat clock, allowed only in single-human rooms). The breakdown has a flight-time row and now sums to the heat score; bot times are 40–59s and labelled FLIGHT. The Io lightning uses a fixed buffer with `setDrawRange` (no more BufferGeometry warnings). Enter forges (Shift+Enter for a newline). Toasts clear on screen change. The touch boost label reads HOLD. The II button moves bottom-left on mobile. Verified on Io: clock frozen 5s, server scored the extended heat (no DNF), breakdown sums correctly, no console warnings.
+- Round 10: results headline ("Heat won." / "You placed 3rd."), overall standing each heat, a season verdict with the points gap to the winner, and a rank progress bar toward the next title. Fixed the personal-best message, which was overwritten by the standings render and never shown.

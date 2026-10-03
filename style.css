@@ -297,3 +297,6 @@ button:disabled{cursor:not-allowed;filter:saturate(.55);opacity:.58}
 .controls-card{top:72%}
 @media(max-width:760px){.race-menu-button{top:auto;bottom:74px;left:18px;transform:none}}
 @media (pointer:coarse){.kbd-only{display:none}}
+.rank-bar{margin:-4px 0 16px;font:9px 'DM Mono',monospace;letter-spacing:.08em;color:#8291a6}
+.rank-bar div{display:flex;justify-content:space-between;gap:10px;margin-bottom:6px}.rank-bar b{color:#e8eff9;font-weight:500}
+.rank-bar i{display:block;height:4px;background:rgba(237,243,251,.12)}.rank-bar em{display:block;height:100%;background:var(--cyan);box-shadow:0 0 10px var(--cyan);transition:width .8s ease}

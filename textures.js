@@ -88,18 +88,20 @@ export function lavaCrustTexture(THREE, size = 512, cells = 9) {
 }
 
 /** Earth surface: oceans with depth shading and fractal continents (equirectangular, wraps in x). */
-export function earthSurfaceTexture(THREE, width = 768, height = 384) {
+export function earthSurfaceTexture(THREE, width = 1280, height = 640) {
   return makeTexture(THREE, width, height, (data, w, h) => {
     for (let y = 0; y < h; y++) {
       const lat = Math.abs(y / h - 0.5) * 2;
       for (let x = 0; x < w; x++) {
         const u = x / w, v = y / h;
         const e = fbm(u, v, { octaves: 6, base: 3, seed: 11 }) - lat * 0.18;
-        let c;
-        if (lat > 0.88) c = [235, 242, 250];
-        else if (e < 0.5) c = mix3([10, 40, 92], [28, 92, 158], Math.max(0, (e - 0.25) / 0.25));
-        else if (e < 0.53) c = [196, 184, 140];
-        else c = mix3([52, 108, 58], [128, 112, 74], Math.min(1, (e - 0.53) / 0.2));
+        // Soft coastlines: blend ocean -> shallows -> beach -> land instead of hard steps.
+        const ss = (a, b, t) => { const k = Math.max(0, Math.min(1, (t - a) / (b - a))); return k * k * (3 - 2 * k); };
+        const ocean = mix3([10, 40, 92], [36, 104, 170], ss(0.3, 0.5, e));
+        const land = mix3([52, 108, 58], [132, 116, 78], ss(0.53, 0.75, e));
+        let c = mix3(ocean, [196, 184, 140], ss(0.48, 0.505, e));
+        c = mix3(c, land, ss(0.505, 0.53, e));
+        c = mix3(c, [235, 242, 250], ss(0.84, 0.9, lat));
         const i = (y * w + x) * 4;
         data[i] = c[0]; data[i + 1] = c[1]; data[i + 2] = c[2]; data[i + 3] = 255;
       }

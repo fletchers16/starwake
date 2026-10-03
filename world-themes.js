@@ -247,7 +247,7 @@ const THEMES = {
       const ice = new THREE.MeshStandardMaterial({ color: '#ffffff', vertexColors: true, metalness: 0.1, roughness: 0.15, emissive: '#3d6f94', emissiveIntensity: 0.25, flatShading: true });
       // Crystal clusters with a deep-blue base fading to frosted tips (replaces single-colour cones).
       const crystal = gradient(crystalCluster(7, 5).scale(10, 14, 10).translate(0, -7, 0), '#4f7fa8', '#f4fbff', 0.8);
-      const slab = gradient(rockSlab(8, 30, 14, 3), '#21170f', '#6e5442', 1.4);
+      const slab = gradient(rockSlab(8, 30, 14, 3), '#5b4334', '#b08a66', 1.2);
       // Canal walls of ice spires on both sides.
       const spires = makeTrackside(THREE, crystal, ice, { count: 56, spacing: 5 }, (slot) => {
         const side = slot % 2 ? 1 : -1;
@@ -311,11 +311,14 @@ const THEMES = {
     build(THREE) {
       // A huge curved Earth below: the route rides low orbit above it.
       const planet = new THREE.Group();
-      planet.add(new THREE.Mesh(new THREE.SphereGeometry(150, 72, 48), new THREE.MeshStandardMaterial({ map: earthSurfaceTexture(THREE), roughness: 0.8, emissive: '#0a2a55', emissiveIntensity: 0.25 })));
+      // Unlit: the race's local point lights would otherwise pool bright cyan on the surface under the ship.
+      planet.add(new THREE.Mesh(new THREE.SphereGeometry(150, 72, 48), new THREE.MeshBasicMaterial({ map: earthSurfaceTexture(THREE), color: '#c8d4e6' })));
       // Soft cloud layer on its own sphere so it can drift over the continents.
-      const clouds = new THREE.Mesh(new THREE.SphereGeometry(151.5, 72, 48), new THREE.MeshStandardMaterial({ map: earthCloudTexture(THREE), transparent: true, depthWrite: false, roughness: 1 }));
+      const clouds = new THREE.Mesh(new THREE.SphereGeometry(151.5, 72, 48), new THREE.MeshBasicMaterial({ map: earthCloudTexture(THREE), transparent: true, depthWrite: false, opacity: 0.9 }));
       planet.add(clouds);
       planet.userData.clouds = clouds;
+      // We fly above the globe's top, so tilt it to show the equator (continents and oceans) rather than the polar cap.
+      planet.children.forEach((child) => { child.rotation.x = Math.PI / 2; });
       planet.add(new THREE.Mesh(new THREE.SphereGeometry(155, 72, 48), new THREE.ShaderMaterial({
         transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, side: THREE.BackSide, fog: false,
         vertexShader: 'varying vec3 vN; varying vec3 vV; void main(){ vN = normalize(normalMatrix*normal); vec4 mv = modelViewMatrix*vec4(position,1.0); vV = normalize(-mv.xyz); gl_Position = projectionMatrix*mv; }',
@@ -345,14 +348,15 @@ const THEMES = {
       const giant = new THREE.Group();
       giant.add(new THREE.Mesh(new THREE.SphereGeometry(95, 64, 40), new THREE.MeshStandardMaterial({ map: gasGiantTexture(THREE, ['#8f563c', '#e3b47a', '#c58d63', '#f1d6a8', '#a86a48', '#d9a777'], { storm: { u: 0.66, v: 0.62, rx: 0.07, ry: 0.06, color: '#b5482f' } }), roughness: 0.9, emissive: '#3a1c10', emissiveIntensity: 0.5 })));
       giant.rotation.z = -0.18;
-      const planet = skyObject(giant, [-70, 40, -200], 0.95);
+      // The planet sits on the ring plane (equator at y=-9) with its ring centred on it, so the ring's gap hugs the planet.
+      const planet = skyObject(giant, [-60, -9, -230], 0.92);
       planet.userData.spin = giant.children[0];
       const ringTex = canvasTexture(THREE, 512, 8, (c, w) => { for (let x = 0; x < w; x++) { c.fillStyle = `rgba(230,205,160,${0.15 + hash(x * 0.37) * 0.55 * (Math.sin(x * 0.09) * 0.5 + 0.5)})`; c.fillRect(x, 0, 1, 8); } });
-      const rings = new THREE.Mesh(new THREE.RingGeometry(70, 230, 128, 1), new THREE.MeshBasicMaterial({ map: ringTex, transparent: true, side: THREE.DoubleSide, depthWrite: false }));
+      const rings = new THREE.Mesh(new THREE.RingGeometry(112, 300, 160, 1), new THREE.MeshBasicMaterial({ map: ringTex, transparent: true, side: THREE.DoubleSide, depthWrite: false }));
       const uv = rings.geometry.attributes.uv, pos = rings.geometry.attributes.position, v = new THREE.Vector3();
-      for (let i = 0; i < uv.count; i++) { v.fromBufferAttribute(pos, i); uv.setXY(i, (v.length() - 70) / 160, 0.5); }
+      for (let i = 0; i < uv.count; i++) { v.fromBufferAttribute(pos, i); uv.setXY(i, (v.length() - 112) / 188, 0.5); }
       rings.rotation.x = -Math.PI / 2 + 0.06;
-      const ringPlane = skyObject(rings, [-40, -9, -120], 0.9);
+      const ringPlane = skyObject(rings, [-60, -9, -230], 0.92);
       // Ring particles the route skims through.
       const ringDust = makeParticles(THREE, ctx.glow, { count: 340, color: '#f0d8b0', size: 0.32, opacity: 0.7, spread: [90, 3.5, 170], additive: false });
       ringDust.position.y = -7;

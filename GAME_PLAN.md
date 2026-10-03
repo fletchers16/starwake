@@ -15,6 +15,17 @@ Goal: make Starwake feel great to play, make each world look like its name, clea
 
 ## Backlog (ranked)
 
+### Playtest fixes (round 4 cold playtest; highest impact first)
+- [ ] **Skill must matter**: zero input scored 1,750 and placed 1st, while following the HUD arrow scored less and wrecked the hull. Gates must need a real lateral or vertical line (no passive passes), and a missed gate should cost points or speed. The guide arrow must route around hazards. Re-tune so steering clearly beats idling.
+- [ ] **Robustness bundle**: delete the dead `api('patch')` call (game.js ~line 200; about 60 console 400s per heat). Reset all HUD state at each heat start (score, lap, hull, ticker). Hide the standings ticker outside races (e.g. Free Flight). Fix the checkpoint counter disagreeing with "Next gate".
+- [ ] **Rankings that make sense**: the live place and ticker must agree with final results (rank by projected score, or score by distance). Bots get believable, spread-out results from their simulated runs, not clustered 1147/1146/1145 with identical times. Add a results score breakdown (rings, cores, laps, hull, time).
+- [ ] **Clear view of the track**: remove the static SVG `#craft-hull` overlay. Lower the 3D ship, move it back and shrink it so it doesn't hide gates (Bastion covers about 25% of the mobile screen). Keep rival ghosts from sitting on top of the player.
+- [ ] **Onboarding + race controls**: a device-aware first-heat controls card (don't show "drag to steer" on desktop), Esc/pause menu with resume and quit, and a punchy 3-2-1 instead of the 6s staging on heats 2–3.
+- [ ] **Solo vs PvP flow**: solo starts straight into a heat (no "build your crew" or invite link). Add a pilot-name field on the hub (everyone is "ACE" now). The invite intro says "Joining room XXXXX".
+- [ ] **Forge result card** with palette, gravity, hazards, a mini-map and a "Race this world" button. Make offline fallback messaging clear (now one tiny grey line).
+- [ ] **Free Flight**: give it world set pieces and collectibles, or drop it, and remove the "prototype" disclaimer.
+- [ ] **Hub layout**: launch button reachable without scrolling past 6 cards (sticky on mobile), the black blob on the Jovian card art, the clipped "SKIP INTRO", and the ticker overlapping the ship on mobile.
+
 ### Contest-critical (multiplayer + submission)
 - [x] **Multiplayer hardening**: run a 2-browser PvP session end to end (create → join by code → 3 heats → results), using two tabs with separate storage locally. Live opponent ghosts and positions in race, clear handling of disconnects and a host leaving, and graceful errors. Validate scores server-side as far as is cheap.
 - [x] **Multiplayer feel**: show the other human pilots' names over their ships, a live standings ticker, and a lobby that makes "share this code" obvious (copy button, share link with the code in the URL).
@@ -29,7 +40,7 @@ Goal: make Starwake feel great to play, make each world look like its name, clea
   - Earthfall Circuit: huge curved Earth below with a cloud layer and atmosphere rim, satellites, the sun on the horizon.
   - Jovian Shear: giant banded Jupiter filling the sky, a visible ring plane the route crosses, ring-particle fields.
 - [x] **Per-world tunnel frames and hazards**: frame and hazard meshes match the world (ice-crystal gates on Titan, lava-rock arches on Io, station girders on the Rift, satellite debris on Earth, ring chunks at Jupiter).
-- [ ] **Per-world ambience**: a distinct music and drone layer plus particle weather for each world.
+- [ ] *(lower priority per playtest)* **Per-world ambience**: a distinct music and drone layer plus particle weather for each world.
 - [x] **Forged worlds** pick up the matching environment from their `kind` and tint it with their palette.
 
 ### Game feel
@@ -77,3 +88,4 @@ The user's ideas (from their OpenAI brainstorm) were merged into the backlog abo
 - Round 2: themed checkpoint gates (`buildWorldFrame`): hex relay gate, basalt arch with lava seams, octagonal crystal gate with ice spikes, spinning energy ring, orbital ring with solar wings, ring-chunk gate. Hazard rocks per world (`hazardLook`): metal debris, lava rock, ice crystals, nebula stone, satellite wreckage, ring ice. Saved the contest rules to `CONTEST.md` and added contest-critical items (multiplayer hardening, submission package).
 - Round 3: multiplayer hardening. Added a dev middleware that runs the real Netlify functions with in-memory Blobs (`vite.config.js`, `dev/blobs-shim.js`). Server: live in-race telemetry (per-player keys, no write contention), a `leave` action, host handoff after 25s of silence, auto-resolving heats 12s after the clock with DNF scores from last telemetry, telemetry and score clamping, a guard against early fake completes, and joining humans displacing sim pilots. Client: other humans render as named ghost ships with interpolation, placement uses raw distance (fixes a 1500 m cap that tied everyone), a room-closed / lost-connection exit, a pagehide leave beacon, and DNF labels. Verified with a 2-tab race (ghost visible, disconnect resolved) and a 3-heat API run.
 - Round 4: multiplayer feel. Invite links (`?room=CODE` auto-joins after the intro; the lobby button copies the link, or opens the share sheet on phones). Fixed the dead COPY CODE button (an older handler overrode it with a code-only copy) and Back now leaves the room on the server. Live standings ticker in races (you, human rivals in pink, bots, with metre gaps). Name tags on rival ghosts landed in round 3. Started the first playtest agent.
+- Round 4 playtest report (subagent): see the Playtest fixes section. Protect the hub/intro art direction, multiplayer basics (invite, synced countdown, named ghosts) and the distinct worlds. Side effect: the test bought Bastion with the shared local profile.

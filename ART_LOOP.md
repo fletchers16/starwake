@@ -28,7 +28,7 @@ Baseline is 132–155 draw calls, 22k–35k triangles, about 4–6 ms CPU per fr
 ## Idea backlog
 Status: `ready` · `needs-asset-approval` · `in-progress` · `done` · `rejected`
 
-1. `ready` **Depth-ramp fog plus a matched horizon** (Firewatch). Patch `fog_fragment` to sample a per-world 3-band ramp by depth, with the far band equal to the sky horizon. Sources: ctrl500.com Firewatch article; halisavakis.com multi-coloured fog. Asset: none.
+1. `done` (Art 1) **Depth-ramp fog plus a matched horizon** (Firewatch). Patch `fog_fragment` to sample a per-world 3-band ramp by depth, with the far band equal to the sky horizon. Sources: ctrl500.com Firewatch article; halisavakis.com multi-coloured fog. Asset: none.
 2. `ready` **Palette discipline plus a grade pass** (Sayonara Wild Hearts). Tighten each world to three hues; add a ShaderPass after bloom for vignette, subtle grain and split-tone; raise the bloom threshold so only rings, engines and the accent bloom. Asset: none.
 3. `ready` **Fresnel rim light on hero objects** (Redout). Add a `rim.js` onBeforeCompile helper and apply it to the ship, landmarks and rocks; cut blanket emissive. Asset: none.
 4. `ready` **Inverted-hull ink outline** on obstacles (danger red) and landmarks (dark ink). Use creased normals for flat geometry. Asset: none.
@@ -44,3 +44,4 @@ Status: `ready` · `needs-asset-approval` · `in-progress` · `done` · `rejecte
 ## Log
 - Research round 1 (subagent): diagnosis: too many similar-saturation hues, everything glowing, no depth layering or silhouettes. Seven ideas and CC0 candidates triaged above; style rules adopted. Performance baseline measured (and fixed the measurement: `renderer.info` auto-resets per pass, so the dev `stats()` hook now accumulates across the composer).
 - 2026-10-03: the user approved downloading the Kenney Particle Pack and Kenney Space Kit (CC0). Re-check the license on each page at download time; vendor only the files used.
+- Art 1: depth-ramp fog (`fog-ramp.js`). Every material's fog chunk is patched via onBeforeCompile to step through per-world near/mid bands into the far fog colour, with shared uniforms so a world switch needs no recompile. The sky horizon is now set to equal the far fog (style rule 2). Forged worlds derive their ramp from their accent. Verified on Rift, Titan and Helix captures; no errors; 121–139 calls, 20–23k triangles, about 1 ms render CPU (within budget).

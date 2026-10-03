@@ -1,3 +1,4 @@
+import { createFogRamp } from './fog-ramp.js';
 import { buildLandmarks } from './landmarks.js';
 /**
  * Per-world environments: sky, fog, ground, and scrolling set pieces that make
@@ -235,6 +236,7 @@ function groundPlane(THREE, material, y, uvScale = 0.02) {
 
 const THEMES = {
   relay: {
+    fogRamp: ['#1b6f8a', '#16305a'],
     sky: ['#040a18', '#0d2244', '#02050b'], fog: ['#0a1a33', 34, 165], stars: 1,
     build(THREE, ctx) {
       const steel = new THREE.MeshStandardMaterial({ color: '#4a5d7a', metalness: 0.7, roughness: 0.4, emissive: '#13243d', flatShading: true });
@@ -263,6 +265,7 @@ const THEMES = {
   },
 
   volcanic: {
+    fogRamp: ['#c2481c', '#5a1a16'],
     sky: ['#0d0408', '#4a1410', '#ff6a1c'], fog: ['#3a120e', 22, 150], stars: 0.25,
     build(THREE, ctx) {
       const lava = lavaTexture(THREE);
@@ -317,6 +320,7 @@ const THEMES = {
   },
 
   ice: {
+    fogRamp: ['#e6ad68', '#bb7c44'],
     sky: ['#4a3420', '#c08447', '#6b4a2c'], fog: ['#a8743f', 10, 118], stars: 0,
     build(THREE, ctx) {
       const ice = new THREE.MeshStandardMaterial({ color: '#cfe8ff', metalness: 0.1, roughness: 0.15, emissive: '#5a8db0', emissiveIntensity: 0.35, transparent: true, opacity: 0.92, flatShading: true });
@@ -345,6 +349,7 @@ const THEMES = {
   },
 
   nebula: {
+    fogRamp: ['#7a3fb0', '#3a1a66'],
     sky: ['#0a0620', '#2a1252', '#08051a'], fog: ['#1d0f38', 32, 165], stars: 1,
     build(THREE, ctx) {
       const colors = [ctx.course.accent, ctx.course.secondary, '#ff7ac8', '#6a4dff'];
@@ -377,6 +382,7 @@ const THEMES = {
   },
 
   earth: {
+    fogRamp: ['#3f86c7', '#173e70'],
     sky: ['#010208', '#0c2a55', '#2a7cc4'], fog: ['#0b1e3a', 50, 190], stars: 1,
     build(THREE) {
       // A huge curved Earth below: the route rides low orbit above it.
@@ -400,6 +406,7 @@ const THEMES = {
   },
 
   jupiter: {
+    fogRamp: ['#b9814f', '#5a3a24'],
     sky: ['#070504', '#2a1a10', '#140c08'], fog: ['#24170f', 44, 180], stars: 0.8,
     build(THREE, ctx) {
       // Jupiter fills the sky, with its ring plane sweeping across.
@@ -431,7 +438,9 @@ export function createWorldEnvironment(THREE, scene) {
   const sky = makeSky(THREE);
   root.add(sky);
   const glow = glowTexture(THREE);
+  const fogRamp = createFogRamp(THREE);
   let ctx = null;
+  let lastPatch = 0;
 
   function clear() {
     if (!ctx) return;
@@ -466,6 +475,14 @@ export function createWorldEnvironment(THREE, scene) {
       sky.material.uniforms.top.value.set(course?.forged ? course.sky : top);
       sky.material.uniforms.mid.value.set(course?.forged ? course.fog : mid);
       sky.material.uniforms.bottom.value.set(bottom);
+      // Depth ramp: near and mid bands per world; the far band is the fog colour, and the sky horizon matches it.
+      const far = new THREE.Color(course?.forged ? course.fog : theme.fog[0]);
+      if (course?.forged) {
+        fogRamp.setColors(far.clone().lerp(new THREE.Color(course.accent), 0.45), far.clone().lerp(new THREE.Color(course.accent), 0.2));
+      } else {
+        fogRamp.setColors(theme.fogRamp[0], theme.fogRamp[1]);
+      }
+      sky.material.uniforms.mid.value.copy(far);
       if (scene.fog) {
         scene.fog.color.set(course?.forged ? course.fog : theme.fog[0]);
         scene.fog.near = theme.fog[1];
@@ -478,6 +495,8 @@ export function createWorldEnvironment(THREE, scene) {
     },
     update(frame) {
       if (!ctx || !root.visible) return;
+      // New meshes (obstacles, ghosts, bursts) appear every race; patch their fog about once a second.
+      if (!lastPatch || frame.now - lastPatch > 1000) { fogRamp.patchScene(scene); lastPatch = frame.now; }
       sky.position.set(frame.cameraX, frame.cameraY, 13);
       for (const piece of ctx.pieces) piece.userData.update?.(frame);
       ctx.theme.tick?.(ctx, frame, THREE);

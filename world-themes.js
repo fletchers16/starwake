@@ -1,7 +1,7 @@
 import { createSkyline } from './skyline.js';
 import { NOISE_GLSL, makeSwirlMaterial } from './swirl.js';
 import { crystalCluster, rockSlab, volcano, gradient, roughen } from './shapes.js';
-import { lavaCrustTexture, earthSurfaceTexture, earthCloudTexture, gasGiantTexture } from './textures.js';
+import { lavaCrustTexture, earthSurfaceTexture, earthCloudTexture, gasGiantTexture, moonTexture } from './textures.js';
 import { rimColor, rimObject } from './rim.js';
 import { createFogRamp } from './fog-ramp.js';
 import { buildLandmarks } from './landmarks.js';
@@ -365,6 +365,7 @@ const THEMES = {
   },
 
   earth: {
+    horizonGlow: ['#3f9cff', 0.35],
     fogRamp: ['#3f86c7', '#173e70'],
     sky: ['#010208', '#0c2a55', '#2a7cc4'], fog: ['#0b1e3a', 50, 190], stars: 1,
     build(THREE) {
@@ -376,15 +377,36 @@ const THEMES = {
       planet.add(new THREE.Mesh(new THREE.SphereGeometry(150, 72, 48), new THREE.ShaderMaterial({
         fog: false,
         uniforms: { map: { value: earthSurfaceTexture(THREE) }, sun: { value: new THREE.Vector3(0.32, 0.86, -0.43).normalize() } },
-        vertexShader: 'varying vec2 vUv; varying vec3 vN; void main(){ vUv = uv; vN = normalize(mat3(modelMatrix) * normal); gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }',
-        fragmentShader: 'uniform sampler2D map; uniform vec3 sun; varying vec2 vUv; varying vec3 vN; void main(){ vec3 c = texture2D(map, vUv).rgb; float l = 0.16 + 1.05 * smoothstep(-0.08, 0.55, dot(normalize(vN), sun)); gl_FragColor = vec4(c * l, 1.0); \n#include <tonemapping_fragment>\n#include <colorspace_fragment>\n}',
+        vertexShader: 'varying vec2 vUv; varying vec3 vN; varying vec3 vW; void main(){ vUv = uv; vN = normalize(mat3(modelMatrix) * normal); vec4 w = modelMatrix * vec4(position, 1.0); vW = w.xyz; gl_Position = projectionMatrix * viewMatrix * w; }',
+        // Day side lit by the Sun, a warm terminator, city lights on the night-side land, sun glint on the oceans
+        // and a blue atmospheric haze toward the limb, so it reads as Earth at a glance.
+        fragmentShader: `uniform sampler2D map; uniform vec3 sun; varying vec2 vUv; varying vec3 vN; varying vec3 vW;
+          float h(vec2 p){ return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }
+          void main(){
+            vec3 n = normalize(vN), v = normalize(cameraPosition - vW);
+            // Only a sliver of the globe is ever on screen, so the (seamless) map repeats 3x around it.
+            vec3 c = texture2D(map, vec2(vUv.x * 3.0, vUv.y)).rgb;
+            float ndl = dot(n, sun);
+            float day = smoothstep(-0.12, 0.35, ndl);
+            float land = smoothstep(0.0, 0.06, c.g - c.b);
+            vec3 col = c * (0.05 + 1.15 * day);
+            col += vec3(1.0, 0.45, 0.18) * 0.22 * exp(-pow(ndl * 7.0, 2.0));
+            float city = step(0.86, h(floor(vUv * vec2(900.0, 450.0)))) * land * (1.0 - smoothstep(-0.25, 0.02, ndl));
+            col += vec3(1.0, 0.78, 0.42) * city * 0.9;
+            col += vec3(1.0, 0.95, 0.85) * pow(max(dot(reflect(-sun, n), v), 0.0), 160.0) * (1.0 - land) * day * 0.35;
+            float limb = pow(1.0 - max(dot(n, v), 0.0), 8.0);
+            col = mix(col, vec3(0.35, 0.65, 1.0) * (0.25 + day), limb * 0.55);
+            gl_FragColor = vec4(col, 1.0);
+            #include <tonemapping_fragment>
+            #include <colorspace_fragment>
+          }`,
       })));
       // Soft cloud layer on its own sphere so it can drift over the continents.
       const clouds = new THREE.Mesh(new THREE.SphereGeometry(151.5, 72, 48), new THREE.MeshBasicMaterial({ map: earthCloudTexture(THREE), transparent: true, depthWrite: false, opacity: 0.9 }));
       planet.add(clouds);
       planet.userData.clouds = clouds;
-      // We fly above the globe's top, so tilt it to show the equator (continents and oceans) rather than the polar cap.
-      planet.children.forEach((child) => { child.rotation.x = Math.PI / 2; });
+      // Pole along the x axis: the equator runs under the route, and spinning about the pole rolls the surface toward the camera.
+      planet.children.forEach((child) => { child.rotation.order = 'ZYX'; child.rotation.z = Math.PI / 2; });
       planet.add(new THREE.Mesh(new THREE.SphereGeometry(155, 72, 48), new THREE.ShaderMaterial({
         transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, side: THREE.BackSide, fog: false,
         vertexShader: 'varying vec3 vN; varying vec3 vV; void main(){ vN = normalize(normalMatrix*normal); vec4 mv = modelViewMatrix*vec4(position,1.0); vV = normalize(-mv.xyz); gl_Position = projectionMatrix*mv; }',
@@ -397,12 +419,16 @@ const THEMES = {
       sun.scale.set(60, 60, 1);
       const panel = new THREE.MeshStandardMaterial({ color: '#1d3d7a', metalness: 0.7, roughness: 0.3, emissive: '#0b2a66' });
       const sats = makeTrackside(THREE, new THREE.BoxGeometry(5, 0.15, 1.6), panel, { count: 10, spacing: 40 }, (slot) => ({ x: (slot % 2 ? 1 : -1) * (18 + hash(slot) * 14), y: 4 + hash(slot * 2) * 10, ry: slot, rz: slot * 0.3 }));
-      return [earth, sun, sats];
+      // The Moon hangs in the upper sky so the frame above the planet isn't empty black.
+      const moon = new THREE.Mesh(new THREE.SphereGeometry(9, 40, 24), (() => { const t = moonTexture(THREE); return new THREE.MeshStandardMaterial({ map: t, roughness: 1, emissive: '#ffffff', emissiveMap: t, emissiveIntensity: 0.7 }); })());
+      const moonObj = skyObject(moon, [-48, 44, -170]);
+      return [earth, sun, sats, moonObj];
     },
     tick(ctx, { now }) {
       const planet = ctx.pieces[0].userData.spin;
-      planet.rotation.y = now * 0.000012;
-      if (planet.userData.clouds) planet.userData.clouds.rotation.y = now * 0.000006;
+      // Fast enough that continents visibly roll by beneath the route.
+      planet.children[0].rotation.y = -now * 0.00004;
+      if (planet.userData.clouds) planet.userData.clouds.rotation.y = -now * 0.00003;
     },
   },
 

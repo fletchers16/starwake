@@ -94,11 +94,14 @@ export function earthSurfaceTexture(THREE, width = 1280, height = 640) {
       const lat = Math.abs(y / h - 0.5) * 2;
       for (let x = 0; x < w; x++) {
         const u = x / w, v = y / h;
-        const e = fbm(u, v, { octaves: 6, base: 3, seed: 11 }) - lat * 0.18;
+        // Offset so roughly 70% is ocean, like the real Earth.
+        const e = fbm(u, v, { octaves: 6, base: 8, seed: 11 }) - 0.02 - Math.max(0, lat - 0.7) * 0.5;
+        const dry = fbm(u, v, { octaves: 3, base: 12, seed: 41 });
         // Soft coastlines: blend ocean -> shallows -> beach -> land instead of hard steps.
         const ss = (a, b, t) => { const k = Math.max(0, Math.min(1, (t - a) / (b - a))); return k * k * (3 - 2 * k); };
-        const ocean = mix3([10, 40, 92], [36, 104, 170], ss(0.3, 0.5, e));
-        const land = mix3([52, 108, 58], [132, 116, 78], ss(0.53, 0.75, e));
+        const ocean = mix3([14, 66, 150], [40, 138, 210], ss(0.32, 0.5, e));
+        // Green lowlands, with drier tan regions where a second noise says so, then highlands.
+        const land = mix3(mix3([38, 112, 52], [170, 150, 96], ss(0.55, 0.75, dry)), [120, 110, 92], ss(0.62, 0.78, e));
         let c = mix3(ocean, [196, 184, 140], ss(0.48, 0.505, e));
         c = mix3(c, land, ss(0.505, 0.53, e));
         c = mix3(c, [235, 242, 250], ss(0.84, 0.9, lat));
@@ -140,6 +143,25 @@ export function gasGiantTexture(THREE, palette, { storm = null, width = 512, hei
       }
       const i = (y * w + x) * 4;
       data[i] = Math.min(255, c[0]); data[i + 1] = Math.min(255, c[1]); data[i + 2] = Math.min(255, c[2]); data[i + 3] = 255;
+    }
+  });
+}
+
+/** Moon: grey regolith with dark maria and scattered crater rims. */
+export function moonTexture(THREE, width = 512, height = 256) {
+  const craters = [];
+  for (let k = 0; k < 40; k++) craters.push([hash(k, 1, 51), 0.15 + hash(k, 2, 51) * 0.7, 0.01 + Math.pow(hash(k, 3, 51), 3) * 0.05]);
+  return makeTexture(THREE, width, height, (data, w, h) => {
+    for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
+      const u = x / w, v = y / h;
+      const maria = fbm(u, v, { octaves: 4, base: 3, seed: 61 });
+      let g = 150 + (fbm(u, v, { octaves: 5, base: 16, seed: 67 }) - 0.5) * 60 - Math.max(0, maria - 0.5) * 180;
+      for (const [cu, cv, r] of craters) {
+        const du = Math.min(Math.abs(u - cu), 1 - Math.abs(u - cu)) * 2, d = Math.hypot(du, v - cv) / r;
+        if (d < 1.2) g += d < 1 ? -18 * (1 - d) : 30 * (1.2 - d) / 0.2;
+      }
+      const i = (y * w + x) * 4;
+      data[i] = g; data[i + 1] = g; data[i + 2] = g * 1.04; data[i + 3] = 255;
     }
   });
 }

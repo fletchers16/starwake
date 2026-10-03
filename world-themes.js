@@ -167,11 +167,16 @@ function makeTrackside(THREE, geometry, material, { count, spacing, behind = 2 }
   const mesh = new THREE.InstancedMesh(geometry, material, count);
   mesh.frustumCulled = false;
   const m = new THREE.Matrix4(), q = new THREE.Quaternion(), e = new THREE.Euler(), p = new THREE.Vector3(), s = new THREE.Vector3();
-  mesh.userData.update = ({ distance, routeAt }) => {
+  // Start hidden: identity matrices would stack every instance at the origin, in front of the camera.
+  for (let i = 0; i < count; i++) mesh.setMatrixAt(i, m.makeScale(0, 0, 0));
+  mesh.userData.update = ({ distance, routeAt, cameraX = 0, cameraY = 0 }) => {
     const first = Math.floor(distance / spacing) - behind;
     for (let i = 0; i < count; i++) {
       const slot = first + i, along = slot * spacing, centre = routeAt(along), o = place(slot, centre);
       p.set(centre.x + o.x, centre.y + o.y, Z0 - (along - distance) + (o.z || 0));
+      // Keep the flight corridor clear: on tight bends scenery can swing in front of the lens.
+      const ahead = along - distance;
+      if (ahead > -12 && ahead < 45 && Math.abs(p.x - cameraX) < 7 && Math.abs(p.y - cameraY) < 7) { mesh.setMatrixAt(i, m.makeScale(0, 0, 0)); continue; }
       e.set(o.rx || 0, o.ry || 0, o.rz || 0);
       q.setFromEuler(e);
       s.set(o.sx ?? o.s ?? 1, o.sy ?? o.s ?? 1, o.sz ?? o.s ?? 1);
@@ -480,11 +485,11 @@ export function createWorldEnvironment(THREE, scene) {
 
 /** Hazard rock look per world: geometry family, material, and stretch. */
 const HAZARD_LOOKS = {
-  relay: { geometry: 'box', color: '#5d6f8c', emissive: '#1d3350', emissiveIntensity: 0.4, metalness: 0.85, roughness: 0.3, stretch: [1.4, 0.55, 0.8] },
+  relay: { geometry: 'icosa', color: '#4a5a74', emissive: '#16263c', emissiveIntensity: 0.4, metalness: 0.85, roughness: 0.32, stretch: [1.3, 0.8, 1] },
   volcanic: { geometry: 'dodeca', color: '#2a1410', emissive: '#ff4a12', emissiveIntensity: 0.55, metalness: 0.1, roughness: 0.95, stretch: [1, 0.9, 1] },
   ice: { geometry: 'octa', color: '#d8f0ff', emissive: '#6fb6e8', emissiveIntensity: 0.45, metalness: 0.1, roughness: 0.08, opacity: 0.88, stretch: [0.7, 1.55, 0.7] },
   nebula: { geometry: 'dodeca', color: '#3a2a55', emissive: '#b26bff', emissiveIntensity: 0.35, metalness: 0.2, roughness: 0.8, stretch: [1.1, 0.95, 1] },
-  earth: { geometry: 'box', color: '#c9ced8', emissive: '#1d3d7a', emissiveIntensity: 0.3, metalness: 0.9, roughness: 0.25, stretch: [1.5, 0.35, 1] },
+  earth: { geometry: 'icosa', color: '#9aa4b4', emissive: '#1d3d7a', emissiveIntensity: 0.3, metalness: 0.9, roughness: 0.25, stretch: [1.5, 0.35, 1] },
   jupiter: { geometry: 'icosa', color: '#d9c49e', emissive: '#6b4a2a', emissiveIntensity: 0.25, metalness: 0.05, roughness: 0.85, stretch: [1.15, 0.85, 1] },
 };
 

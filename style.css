@@ -268,3 +268,12 @@ button:disabled{cursor:not-allowed;filter:saturate(.55);opacity:.58}
   #app.racing .vector-readout>strong{font-size:18px}
 }
 .result-row .dnf { color: #ff8a8a; font-style: normal; }
+.standings-ticker{position:absolute;top:96px;right:5vw;width:168px;display:grid;gap:3px;font:9px 'DM Mono',monospace;letter-spacing:.06em;pointer-events:none}
+.standings-ticker[hidden]{display:none}
+.standings-ticker div{display:grid;grid-template-columns:16px 1fr auto;gap:7px;align-items:center;padding:5px 8px;background:rgba(6,12,22,.62);border-left:2px solid rgba(177,202,236,.18);color:#b5c2d4;transition:transform .25s}
+.standings-ticker div.human{border-left-color:#ff7ca7}
+.standings-ticker div.me{border-left-color:var(--cyan);background:rgba(18,40,52,.78);color:#f0fbff}
+.standings-ticker b{color:var(--cyan);font-weight:500}
+.standings-ticker span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.standings-ticker i{font-style:normal;color:#7f8ea4}
+@media(max-width:760px){.standings-ticker{top:auto;bottom:86px;right:12px;width:132px;font-size:8px}}

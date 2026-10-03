@@ -94,6 +94,16 @@ function applyHubVisibility() {
 window.addEventListener('starwake:launch-complete', () => {
   launched = true;
   window.setTimeout(applyHubVisibility, 0);
+  // Invite links (?room=CODE) drop the pilot straight into that lobby.
+  const params = new URLSearchParams(location.search);
+  const invited = String(params.get('room') || '').toUpperCase();
+  if (/^[A-Z0-9]{5}$/.test(invited)) {
+    params.delete('room');
+    history.replaceState(null, '', `${location.pathname}${params.size ? `?${params}` : ''}${location.hash}`);
+    const input = document.querySelector('#join-code');
+    if (input) input.value = invited;
+    window.setTimeout(() => window.starwakeJoinLobby?.(), 50);
+  }
 });
 
 const screenObserver = new MutationObserver(applyHubVisibility);

@@ -30,7 +30,7 @@ Status: `ready` · `needs-asset-approval` · `in-progress` · `done` · `rejecte
 
 **From art playtest 2 (after Art 6; scores: Rift 5, Io 7, Titan 5, Helix 3, Earthfall 4, Jovian 5):**
 19. `done` (Art 7) **Visual bug bundle.** Jupiter reads as see-through (its ring isn't concentric with the planet, so the ring's hole cuts across it). Earth has a hard-edged pale disc under the ship in every frame, and its continents are blocky. Titan's canyon walls render pure black (albedo too dark).
-20. `ready` **Helix Deep rebuild** (worst world, 3/10). The nebula sprites form a visible grid (use scattered, rotated, size-varied puffs or an fbm sky), and the flat vector spiral and The Eye read as clip art (use a volumetric swirl).
+20. `done` (Art 8) **Helix Deep rebuild** (worst world, 3/10). The nebula sprites form a visible grid (use scattered, rotated, size-varied puffs or an fbm sky), and the flat vector spiral and The Eye read as clip art (use a volumetric swirl).
 21. `ready` **Flat-card effects** (Aurora Curtain, Methane Falls, Cassini Gap) need curved ribbon geometry with soft noise-alpha edges.
 22. `ready` **Neon Rift void** (60% of the frame is empty black). Add a distant megastructure or skyline backdrop, light the beams, make the finish banner readable.
 23. `ready` **Crafted hazards.** Hazards are still primitive polyhedra; Titan's blockers are blue with only a red outline (breaks one-danger-red). Use crafted shapes with a red emissive core.
@@ -62,7 +62,7 @@ Status: `ready` · `needs-asset-approval` · `in-progress` · `done` · `rejecte
 ## Asset log
 | File | Source | License | Size | Approved | Used in |
 |---|---|---|---|---|---|
-| particles/smoke_04.png, light_01.png, spark_05.png, star_06.png, trace_01.png, flare_01.png (128 px) | Kenney Particle Pack 1.1, https://kenney.nl/assets/particle-pack | CC0 1.0 (License.txt vendored) | 66 KB total | User, 2026-10-03 | queued: idea 7 |
+| particles/smoke_04.png, light_01.png, spark_05.png, star_06.png, trace_01.png, flare_01.png (128 px) | Kenney Particle Pack 1.1, https://kenney.nl/assets/particle-pack | CC0 1.0 (License.txt vendored) | 66 KB total | User, 2026-10-03 | smoke_04: Helix dust clouds + Dust Pillars (Art 8); rest queued |
 | models/satelliteDish_large, structure_detailed, pipe_ringSupport, meteor, craft_cargoB, hangar_roundA, monorail_trackSupport .glb | Kenney Space Kit, https://kenney.nl/assets/space-kit | CC0 1.0 (License.txt vendored) | 93 KB total, self-contained GLB | User, 2026-10-03 | queued: idea 8 |
 
 ## Log
@@ -78,3 +78,4 @@ Status: `ready` · `needs-asset-approval` · `in-progress` · `done` · `rejecte
 - Vendored the approved Kenney CC0 files into `public/assets/kenney/` (licenses re-checked on both pages and in the bundled License.txt). Only the files used are kept: 6 particle sprites downscaled to 128 px (66 KB) and 7 self-contained GLB models (93 KB).
 - Art playtest 2 (subagent, after Art 6): Pele's Arch is the best frame; the Jovian ring banding, Titan crystals, ship framing and UI are good. New items 19–26. 94–204 calls; no JS errors.
 - Art 7: visual bug bundle. Jupiter now sits centred on its own ring plane (equator at y=-9; ring 112–300, so the gap hugs the planet; both share one follow factor), instead of an off-centre ring whose hole cut across the planet. The protected ring-plane look is kept. Earth's "pale disc" had two causes: the camera looks down on the north-pole ice cap (the globe is now tilted to show the equator), plus the race's cyan point light pooling on the surface (Earth surface and clouds are now unlit). Also removed the ship's translucent belly disc. Earth texture is 1280×640 with smooth ocean/beach/land/ice blends instead of hard steps. Titan canyon walls lifted from near-black to warm brown rock. Verified on Jupiter, Earthfall and Titan; 154–169 calls; no errors.
+- Art 8: Helix Deep rebuild. The sky dome now paints a continuous fbm nebula (two hues plus bright filaments, slow drift; `swirl.js` NOISE_GLSL), with a faint version on Neon Rift for its empty void. The vortex and The Eye are an animated swirl shader (log-spiral arms broken up by noise, soft core and rim) instead of a flat canvas spiral and concentric rings. Mid-distance clouds and Dust Pillars use the Kenney smoke sprite with random rotation, size and placement (first vendored asset in use). Rocks are roughened with a lighter gradient so they read against the nebula. Verified on Helix (opening, The Eye, Dust Pillars); Dust Pillars trimmed from 32 to 20 sprites after it hit 214 calls; no errors.

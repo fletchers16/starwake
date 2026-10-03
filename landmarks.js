@@ -1,3 +1,4 @@
+import { makeSwirlMaterial } from './swirl.js';
 import { crystalCluster, roughen, gradient } from './shapes.js';
 import { rimObject } from './rim.js';
 /**
@@ -219,29 +220,32 @@ const BUILDERS = {
   ],
 
   nebula: (THREE, course) => [
-    { at: 0.2, name: 'THE EYE', build(ctx) {
+    { at: 0.2, name: 'THE EYE', build() {
       const g = new THREE.Group();
-      const swirl = canvasTexture(THREE, 256, 256, (c, w) => {
-        c.translate(w / 2, w / 2);
-        for (let a = 0; a < 1400; a++) { const t = a / 1400, r = 60 + t * 68; c.fillStyle = `rgba(220,170,255,${0.5 * (1 - t)})`; c.beginPath(); c.arc(Math.cos(t * 30) * r, Math.sin(t * 30) * r, 2.2 * (1 - t) + 0.6, 0, 6.3); c.fill(); }
-      });
-      const disc = new THREE.Mesh(new THREE.RingGeometry(10, 26, 64), new THREE.MeshBasicMaterial({ map: swirl, transparent: true, side: THREE.DoubleSide, depthWrite: false, blending: THREE.AdditiveBlending }));
+      // Fly through the eye of the gravity well: a swirling disc around an open core.
+      const swirl = makeSwirlMaterial(THREE, { colorA: course.accent, colorB: course.secondary, outer: 30, inner: 0.32, intensity: 1.1 });
+      const disc = new THREE.Mesh(new THREE.RingGeometry(9.6, 30, 96, 1), swirl);
       g.add(disc);
-      const rim = new THREE.Mesh(new THREE.TorusGeometry(10, 0.18, 8, 72), glow(THREE, course.accent));
+      const rim = new THREE.Mesh(new THREE.TorusGeometry(9.6, 0.12, 8, 96), glow(THREE, '#ffffff', 0.85));
       g.add(rim);
-      g.userData.tick = (now) => { disc.rotation.z = now * 0.0004; };
+      g.userData.tick = (now) => { swirl.uniforms.uTime.value = now * 0.001; };
       return g;
     } },
     { at: 0.5, name: 'DUST PILLARS', build(ctx) {
       const g = new THREE.Group();
+      // Towering dust columns from soft smoke sprites with jittered size, rotation and drift.
+      let k = 0;
       for (const side of [-1, 1]) {
-        for (let i = 0; i < 9; i++) {
-          const puff = new THREE.Sprite(new THREE.SpriteMaterial({ map: ctx.glow, color: i % 2 ? course.secondary : '#7a4dff', transparent: true, opacity: 0.4, depthWrite: false, blending: THREE.AdditiveBlending }));
-          puff.position.set(side * (20 + (i % 2) * 3), -14 + i * 5, -10 - (i % 3) * 4);
-          puff.scale.setScalar(16);
+        for (let i = 0; i < 10; i++, k++) {
+          const j = (n) => { const x = Math.sin(k * 12.9898 + n * 78.233) * 43758.5453; return x - Math.floor(x); };
+          const puff = new THREE.Sprite(new THREE.SpriteMaterial({ map: ctx.smoke, color: i % 3 ? course.secondary : '#8a5cff', transparent: true, opacity: 0.22 + j(1) * 0.2, depthWrite: false, blending: THREE.AdditiveBlending, rotation: j(2) * Math.PI * 2 }));
+          puff.position.set(side * (19 + (j(3) - 0.5) * 8), -16 + i * 5.2 + (j(4) - 0.5) * 3, -6 - j(5) * 16);
+          puff.scale.setScalar(13 + j(6) * 16);
+          puff.userData.spin = (j(7) - 0.5) * 0.0004;
           g.add(puff);
         }
       }
+      g.userData.tick = (now) => g.children.forEach((p) => { p.material.rotation += p.userData.spin * 16; });
       return g;
     } },
     { at: 0.8, name: 'THE DERELICT', build() {

@@ -1,4 +1,5 @@
-import { crystalCluster, rockSlab, volcano, gradient } from './shapes.js';
+import { NOISE_GLSL, makeSwirlMaterial } from './swirl.js';
+import { crystalCluster, rockSlab, volcano, gradient, roughen } from './shapes.js';
 import { lavaCrustTexture, earthSurfaceTexture, earthCloudTexture, gasGiantTexture } from './textures.js';
 import { rimColor, rimObject } from './rim.js';
 import { createFogRamp } from './fog-ramp.js';
@@ -70,11 +71,24 @@ function makeSky(THREE) {
       mid: { value: new THREE.Color('#0b1a33') },
       bottom: { value: new THREE.Color('#03060d') },
       flash: { value: 0 },
+      uNebula: { value: 0 },
+      uNebA: { value: new THREE.Color('#c06bff') },
+      uNebB: { value: new THREE.Color('#3fb6ff') },
+      uTime: { value: 0 },
     },
     vertexShader: 'varying vec3 vDir; void main(){ vDir = normalize(position); gl_Position = projectionMatrix * modelViewMatrix * vec4(position,1.0); }',
-    fragmentShader: `uniform vec3 top; uniform vec3 mid; uniform vec3 bottom; uniform float flash; varying vec3 vDir;
+    fragmentShader: `${NOISE_GLSL}
+      uniform vec3 top; uniform vec3 mid; uniform vec3 bottom; uniform float flash; uniform float uNebula; uniform vec3 uNebA; uniform vec3 uNebB; uniform float uTime; varying vec3 vDir;
       void main(){ float y = vDir.y; vec3 c = y > 0.0 ? mix(mid, top, smoothstep(0.0, 0.55, y)) : mix(mid, bottom, smoothstep(0.0, 0.35, -y));
-      gl_FragColor = vec4(c + flash * vec3(0.55, 0.5, 0.75), 1.0); }`,
+        if (uNebula > 0.0) {
+          // Painted nebula: continuous fbm wisps across the whole sky instead of sprite blobs.
+          vec3 p = vDir * 2.6 + vec3(0.0, 0.0, uTime * 0.008);
+          float n = fbm3(p), hue = fbm3(p * 1.7 + 5.3), detail = fbm3(p * 4.1 + 9.1);
+          float m = smoothstep(0.42, 0.78, n) * (0.6 + 0.6 * detail);
+          c += mix(uNebB, uNebA, hue) * m * uNebula;
+          c += mix(uNebA, vec3(1.0), 0.5) * smoothstep(0.7, 0.9, n * detail * 1.6) * 0.25 * uNebula;
+        }
+        gl_FragColor = vec4(c + flash * vec3(0.55, 0.5, 0.75), 1.0); }`,
   });
   const mesh = new THREE.Mesh(new THREE.SphereGeometry(400, 32, 16), material);
   mesh.renderOrder = -10;
@@ -158,6 +172,7 @@ function groundPlane(THREE, material, y, uvScale = 0.02) {
 
 const THEMES = {
   relay: {
+    nebula: { strength: 0.35, a: '#2a62d8', b: '#18c9b2' },
     fogRamp: ['#1b6f8a', '#16305a'],
     sky: ['#040a18', '#0d2244', '#02050b'], fog: ['#0a1a33', 34, 165], stars: 1,
     build(THREE, ctx) {
@@ -273,36 +288,38 @@ const THEMES = {
   },
 
   nebula: {
+    nebula: { strength: 1, a: '#c06bff', b: '#3fb6ff' },
     fogRamp: ['#7a3fb0', '#3a1a66'],
     sky: ['#0a0620', '#2a1252', '#08051a'], fog: ['#1d0f38', 32, 165], stars: 1,
     build(THREE, ctx) {
       const colors = [ctx.course.accent, ctx.course.secondary, '#ff7ac8', '#6a4dff'];
+      // Mid-distance dust clouds: Kenney smoke sprites, scattered with random rotation and size (no grid).
       const clouds = new THREE.Group();
-      for (let i = 0; i < 14; i++) {
-        const sprite = new THREE.Sprite(new THREE.SpriteMaterial({ map: cloudTexture(THREE, i * 31, colors), transparent: true, opacity: 0.55, depthWrite: false, blending: THREE.AdditiveBlending, fog: false }));
-        sprite.userData = { x: (hash(i) - 0.5) * 200, y: (hash(i * 2) - 0.5) * 90, z: -60 - hash(i * 3) * 130, s: 60 + hash(i * 4) * 80 };
+      for (let i = 0; i < 22; i++) {
+        const sprite = new THREE.Sprite(new THREE.SpriteMaterial({ map: ctx.smoke, color: colors[i % colors.length], transparent: true, opacity: 0.32, depthWrite: false, blending: THREE.AdditiveBlending, fog: false, rotation: hash(i * 5) * Math.PI * 2 }));
+        sprite.userData = { x: (hash(i) - 0.5) * 220, y: (hash(i * 2) - 0.5) * 100, z: -40 - hash(i * 3) * 160, s: 30 + Math.pow(hash(i * 4), 2) * 110 };
         sprite.scale.setScalar(sprite.userData.s);
         clouds.add(sprite);
       }
       clouds.userData.update = ({ distance, cameraX, cameraY }) => clouds.children.forEach((s) => {
         const u = s.userData, z = ((u.z + distance * 0.25) % 200 + 200) % 200 - 200;
         s.position.set(u.x + cameraX * 0.8, u.y + cameraY * 0.5, z);
-        s.material.opacity = 0.5 * Math.min(1, (200 + z) / 60);
+        s.material.opacity = 0.32 * Math.min(1, (200 + z) / 60);
       });
-      // Gravity-well vortex far ahead.
-      const vortex = skyObject(new THREE.Mesh(new THREE.CircleGeometry(40, 64), new THREE.MeshBasicMaterial({ map: canvasTexture(THREE, 256, 256, (c, w) => {
-        c.translate(w / 2, w / 2);
-        for (let a = 0; a < 900; a++) { const t = a / 900, r = t * w / 2; c.fillStyle = `rgba(230,190,255,${(1 - t) * 0.5})`; c.beginPath(); c.arc(Math.cos(t * 26) * r, Math.sin(t * 26) * r, 3 * (1 - t) + 0.6, 0, 6.3); c.fill(); }
-      }), transparent: true, blending: THREE.AdditiveBlending })), [10, 18, -195], 0.95);
+      // Gravity-well vortex far ahead: animated swirl shader instead of a flat drawn spiral.
+      const swirl = makeSwirlMaterial(THREE, { colorA: ctx.course.accent, colorB: ctx.course.secondary, outer: 46, inner: 0.06, intensity: 0.9 });
+      const vortex = skyObject(new THREE.Mesh(new THREE.CircleGeometry(46, 96), swirl), [10, 18, -195], 0.95);
       ctx.vortex = vortex;
-      const rocks = makeTrackside(THREE, new THREE.DodecahedronGeometry(2.2, 0), new THREE.MeshStandardMaterial({ color: '#3a2f4f', roughness: 0.9, flatShading: true }), { count: 30, spacing: 11 }, (slot) => {
+      ctx.swirl = swirl;
+      const rockGeo = gradient(roughen(new THREE.DodecahedronGeometry(2.2, 1), 0.7, 51), '#3a2f58', '#9a84c8', 1);
+      const rocks = makeTrackside(THREE, rockGeo, new THREE.MeshStandardMaterial({ color: '#ffffff', vertexColors: true, roughness: 0.85, flatShading: true }), { count: 30, spacing: 11 }, (slot) => {
         const side = slot % 2 ? 1 : -1;
         return { x: side * (16 + hash(slot) * 22), y: (hash(slot * 2) - 0.5) * 26, s: 0.5 + hash(slot * 3) * 1.6, rx: slot, ry: slot * 0.7 };
       });
       const dust = makeParticles(THREE, ctx.glow, { count: 220, color: '#e2b8ff', size: 0.4, opacity: 0.55 });
       return [clouds, vortex, rocks, dust];
     },
-    tick(ctx, { now }) { if (ctx.vortex) ctx.vortex.rotation.z = now * 0.00012; },
+    tick(ctx, { now }) { if (ctx.swirl) ctx.swirl.uniforms.uTime.value = now * 0.001; },
   },
 
   earth: {
@@ -374,6 +391,9 @@ export function createWorldEnvironment(THREE, scene) {
   const sky = makeSky(THREE);
   root.add(sky);
   const glow = glowTexture(THREE);
+  // Kenney Particle Pack smoke (CC0), shared by every world that needs soft clouds.
+  const smoke = new THREE.TextureLoader().load('/assets/kenney/particles/smoke_04.png');
+  smoke.colorSpace = THREE.SRGBColorSpace;
   const fogRamp = createFogRamp(THREE);
   let ctx = null;
   let lastPatch = 0;
@@ -384,7 +404,7 @@ export function createWorldEnvironment(THREE, scene) {
       root.remove(piece);
       piece.traverse((o) => {
         o.geometry?.dispose();
-        for (const mat of [].concat(o.material || [])) { if (mat.map && mat.map !== glow) mat.map.dispose(); mat.dispose(); }
+        for (const mat of [].concat(o.material || [])) { if (mat.map && mat.map !== glow && mat.map !== smoke) mat.map.dispose(); mat.dispose(); }
       });
     }
     ctx = null;
@@ -400,7 +420,7 @@ export function createWorldEnvironment(THREE, scene) {
         return ctx.look;
       }
       clear();
-      ctx = { course, glow, sky, theme, boltAt: -1e9 };
+      ctx = { course, glow, smoke, sky, theme, boltAt: -1e9 };
       ctx.pieces = theme.build(THREE, ctx);
       ctx.pieces.forEach((piece) => { root.add(piece); rimObject(piece, { strength: 0.45 }); });
       // Named attractions the route flies through (see landmarks.js).
@@ -411,6 +431,8 @@ export function createWorldEnvironment(THREE, scene) {
       sky.material.uniforms.top.value.set(course?.forged ? course.sky : top);
       sky.material.uniforms.mid.value.set(course?.forged ? course.fog : mid);
       sky.material.uniforms.bottom.value.set(bottom);
+      sky.material.uniforms.uNebula.value = theme.nebula?.strength || 0;
+      if (theme.nebula) { sky.material.uniforms.uNebA.value.set(course?.forged ? course.accent : theme.nebula.a); sky.material.uniforms.uNebB.value.set(course?.forged ? course.secondary : theme.nebula.b); }
       // Depth ramp: near and mid bands per world; the far band is the fog colour, and the sky horizon matches it.
       const far = new THREE.Color(course?.forged ? course.fog : theme.fog[0]);
       if (course?.forged) {
@@ -436,6 +458,7 @@ export function createWorldEnvironment(THREE, scene) {
       // New meshes (obstacles, ghosts, bursts) appear every race; patch their fog about once a second.
       if (!lastPatch || frame.now - lastPatch > 1000) { fogRamp.patchScene(scene); lastPatch = frame.now; }
       sky.position.set(frame.cameraX, frame.cameraY, 13);
+      sky.material.uniforms.uTime.value = (frame.now || 0) * 0.001;
       for (const piece of ctx.pieces) piece.userData.update?.(frame);
       ctx.theme.tick?.(ctx, frame, THREE);
     },

@@ -80,11 +80,21 @@ async function readLive(code: string): Promise<Live[]> {
   return entries.filter((entry): entry is Live => !!entry);
 }
 
+// Same mixing hash as the client's botSeed, so live standings match final results.
+function botSeed(code: string, heat: number, i: number) {
+  let h = 2166136261;
+  for (const c of `${code}:${heat}:${i}`) h = Math.imul(h ^ c.charCodeAt(0), 16777619);
+  h ^= h >>> 15;
+  h = Math.imul(h, 2246822507);
+  h ^= h >>> 13;
+  return h >>> 0;
+}
+
 function scoreBots(room: Room) {
   for (let i = 0; i < room.bots; i++) {
     const botId = `bot-${i}`;
     if (room.scores.some((entry) => entry.playerId === botId && entry.heat === room.heat)) continue;
-    const seed = [...`${room.code}:${room.heat}:${i}`].reduce((sum, char) => (sum * 31 + char.charCodeAt(0)) >>> 0, 7);
+    const seed = botSeed(room.code, room.heat, i);
     room.scores.push({ playerId: botId, name: BOT_NAMES[i % BOT_NAMES.length], kind: "bot", score: 4000 + (seed % 7000), heat: room.heat, flightTime: 52 + (seed % 16000) / 1000 });
   }
 }

@@ -6,7 +6,7 @@ Starwake is a sci-fi flight racer with a cinematic cockpit intro, a PvE/PvP race
 
 - A heat lasts 60 seconds. In a multiplayer lobby, every device receives the same start and finish timestamps and course seed.
 - Each course is a closed, curved 3D circuit. Crossing the finish gate starts another lap without slowing or freezing the ship; the shared heat clock decides when everyone stops.
-- Signal rings and Star Cores each add 250 points. Collecting a Star Core also restores one boost-fuel segment and triggers a brief speed burst. Each remaining hull point adds 35 points, each lap adds 300 points, and flight time adds 1 point per second.
+- Signal rings come in five-ring trails held off the centre line. Each ring scores 100 × your combo (up to ×5), missing one resets the combo, and clearing a whole trail adds a 300-point Perfect Line bonus. Crystal pylons guard the centre line, so you have to steer to score. Star Cores add 250 points. Collecting a Star Core also restores one boost-fuel segment and triggers a brief speed burst. Each remaining hull point adds 35 points, each lap adds 300 points, and flight time adds 1 point per second.
 - The highest three-heat score wins. Ties go to the pilot with the fastest total flight time.
 - Ships are sidegrades: speed, handling, hull, fuel, and width change together. Wider ships can take more hits and carry more fuel, but are harder to steer through gaps.
 - Race routes change direction in three dimensions. Shared course and route seeds keep a lobby's layout consistent across devices.

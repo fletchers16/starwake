@@ -85,7 +85,7 @@ function scoreBots(room: Room) {
     const botId = `bot-${i}`;
     if (room.scores.some((entry) => entry.playerId === botId && entry.heat === room.heat)) continue;
     const seed = [...`${room.code}:${room.heat}:${i}`].reduce((sum, char) => (sum * 31 + char.charCodeAt(0)) >>> 0, 7);
-    room.scores.push({ playerId: botId, name: BOT_NAMES[i % BOT_NAMES.length], kind: "bot", score: 650 + (seed % 650), heat: room.heat, flightTime: 32 + (seed % 13000) / 1000 });
+    room.scores.push({ playerId: botId, name: BOT_NAMES[i % BOT_NAMES.length], kind: "bot", score: 4000 + (seed % 7000), heat: room.heat, flightTime: 52 + (seed % 16000) / 1000 });
   }
 }
 

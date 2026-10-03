@@ -43,6 +43,14 @@ Status: `ready` · `needs-asset-approval` · `in-progress` · `done` · `rejecte
 36. `ready` **Titan floor and props.** Empty brown floor (add methane lakes or reflective puddles), flat blue crystals (gradient or emissive core), and an orange streak slab that looks glitchy.
 37. `done` (Art 16, smoke ring; the arch occlusion is now natural against the opaque Jupiter) **Io's overhead arch** cuts into Jupiter like a black cutout, and there's a floating black smoke ring in the sky.
 
+**From art playtest 5 (after Art 16; scores: Rift 5, Io 6, Titan 5, Helix 7, Earthfall 6 (from 4), Jovian 6; max 151 calls):**
+38. `ready` **Rift megastructure** (top issue, still): tall lit towers with window grids in mid and far layers. The backdrop is still void plus scattered boxes. Merges with 33.
+39. `ready` **Jovian ring and planet layering.** A dark edge-on band (the Cassini Gap slab) crosses the planet, and the lower half shows through the ring. The banded planet now reads as Saturn; give it Jupiter-like contrast (darker belts, Great Red Spot facing the camera). Orange collectible rings blend with the tan ring plane.
+40. `ready` **Titan crystals:** desaturate toward ochre or grey and push haze onto near geometry. The saturated blue fights the orange world. Saturn's ring never passes in front of the planet. Floor still empty (36).
+41. `ready` **Earthfall polish:** a yellow-tan fringe around the coastlines (beach band too wide), the sky above the limb should be black space, and the satellites are placeholder boxes with flat panels.
+42. `ready` **Helix:** asteroids near the vortex are solid black blobs (add rim or nebula ambient), and a grey slab with orange ticks crosses frame 3.
+43. `ready` **Colour discipline:** a red ladder structure dead centre on Rift (is it a hazard?), Io's dark rock mass looks pasted over Jupiter, and close-up rings crop hard at the left edge.
+
 **From art playtest 2 (after Art 6; scores: Rift 5, Io 7, Titan 5, Helix 3, Earthfall 4, Jovian 5):**
 19. `done` (Art 7) **Visual bug bundle.** Jupiter reads as see-through (its ring isn't concentric with the planet, so the ring's hole cuts across it). Earth has a hard-edged pale disc under the ship in every frame, and its continents are blocky. Titan's canyon walls render pure black (albedo too dark).
 20. `done` (Art 8) **Helix Deep rebuild** (worst world, 3/10). The nebula sprites form a visible grid (use scattered, rotated, size-varied puffs or an fbm sky), and the flat vector spiral and The Eye read as clip art (use a volumetric swirl).

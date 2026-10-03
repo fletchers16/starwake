@@ -13,7 +13,7 @@ Goal: make Starwake feel great to play, make each world look like its name, clea
 ## Backlog (ranked)
 
 ### World identity (the races should feel new)
-- [ ] **Per-world environment module**: each world gets its own sky gradient, backdrop and set pieces instead of the shared black void, ring tunnel and corner planet.
+- [x] **Per-world environment module**: each world gets its own sky gradient, backdrop and set pieces instead of the shared black void, ring tunnel and corner planet.
   - Neon Rift: derelict orbital relay. Station trusses, broken transit spine, blinking beacons, electric-blue debris.
   - Io Storm: lava ocean glowing below, ash particles, lightning flashes in storm cells, volcanic plumes.
   - Titan Veil: thick amber haze (heavy fog), methane canal walls and ice spires on both sides, Saturn faint in the sky.
@@ -22,7 +22,7 @@ Goal: make Starwake feel great to play, make each world look like its name, clea
   - Jovian Shear: giant banded Jupiter filling the sky, a visible ring plane the route crosses, ring-particle fields.
 - [ ] **Per-world tunnel frames and hazards**: frame and hazard meshes match the world (ice-crystal gates on Titan, lava-rock arches on Io, station girders on the Rift, satellite debris on Earth, ring chunks at Jupiter).
 - [ ] **Per-world ambience**: a distinct music and drone layer plus particle weather for each world.
-- [ ] **Forged worlds** pick up the matching environment from their `kind` and tint it with their palette.
+- [x] **Forged worlds** pick up the matching environment from their `kind` and tint it with their palette.
 
 ### Game feel
 - [ ] **Camera**: FOV kick and stretch on boost, a short shake on hit, camera roll following the bank, a slight lag behind the ship.
@@ -51,3 +51,4 @@ Goal: make Starwake feel great to play, make each world look like its name, clea
 
 ## Log
 - Round 0 (2026-10-02): git baseline; plan written. Playtest finding: Neon Rift, Io Storm and Titan Veil look nearly identical in race (black void, same corner planet and ring tunnel; only the tint changes).
+- Round 1: added `world-themes.js`, a per-world sky dome, fog, ground and scrolling set pieces. Rift: neon station pylons, gantries, transit spine. Io: lava sea, volcanoes, plumes, ash and embers, lightning, Jupiter overhead. Titan: amber haze, ice-spire canal walls, methane canal, Saturn. Helix: nebula clouds, spiral vortex, drifting rock. Earth: curved planet below with atmosphere rim, sun, satellites. Jupiter: banded giant, ring plane, ring dust and chunks. Forged courses use the theme for their `kind`. Also fixed per-frame theme rebuilds on the home screen and raised the camera far plane to 450.

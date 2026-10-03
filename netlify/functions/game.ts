@@ -25,6 +25,7 @@ type Room = {
   endsAt?: number;
   players: Pilot[];
   bots: number;
+  botSkill?: number;
   scores: Array<{ playerId: string; score: number; heat: number; name?: string; kind?: "human" | "bot"; flightTime?: number; dnf?: boolean }>;
   updatedAt: number;
 };
@@ -95,7 +96,7 @@ function scoreBots(room: Room) {
     const botId = `bot-${i}`;
     if (room.scores.some((entry) => entry.playerId === botId && entry.heat === room.heat)) continue;
     const seed = botSeed(room.code, room.heat, i);
-    room.scores.push({ playerId: botId, name: BOT_NAMES[i % BOT_NAMES.length], kind: "bot", score: 4000 + (seed % 7000), heat: room.heat, flightTime: 52 + (seed % 16000) / 1000 });
+    room.scores.push({ playerId: botId, name: BOT_NAMES[i % BOT_NAMES.length], kind: "bot", score: Math.round((4000 + (seed % 7000)) * (room.botSkill ?? 1)), heat: room.heat, flightTime: 40 + (seed % 19000) / 1000 });
   }
 }
 
@@ -201,6 +202,8 @@ export default async (request: Request) => {
           courseSeed: Number.isFinite(Number(body.courseSeed)) ? Number(body.courseSeed) >>> 0 : 0,
           players: [{ id: hostId, name: cleanName(body.name), ship: cleanShip(body.ship), kind: "human", progress: 0, score: 0, finished: false, lastSeen: Date.now() }],
           bots: Math.max(0, Math.min(7, Number(body.bots) || 0)),
+          // Sim-pilot strength picked by the host's rank (rookie curve), 0.45-1.
+          botSkill: Math.max(0.45, Math.min(1, Number(body.botSkill) || 1)),
           scores: [],
           updatedAt: Date.now(),
         };
@@ -276,6 +279,12 @@ export default async (request: Request) => {
         }
         scoreBots(draft);
         settleHeat(draft);
+      } else if (action === "extend") {
+        // Solo pause: only a room with a single human may stretch its heat clock.
+        if (draft.phase !== "race" || draft.players.length !== 1) throw new Error("Only solo heats can pause.");
+        const ms = Math.max(0, Math.min(120000, Number(body.ms) || 0));
+        draft.startsAt = (draft.startsAt || 0) + ms;
+        draft.endsAt = (draft.endsAt || 0) + ms;
       } else if (action === "next") {
         if (draft.hostId !== playerId || draft.phase !== "results") throw new Error("The host can continue after every pilot finishes the heat.");
         draft.heat += 1;

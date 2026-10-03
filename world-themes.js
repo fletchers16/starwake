@@ -280,7 +280,9 @@ const THEMES = {
       const embers = makeParticles(THREE, ctx.glow, { count: 120, color: '#ff8a2a', size: 0.35, opacity: 0.9, fall: -3 });
       // Jupiter looms over Io.
       const jupiter = skyObject(new THREE.Mesh(new THREE.SphereGeometry(48, 40, 24), new THREE.MeshBasicMaterial({ map: bandedPlanetTexture(THREE, ['#a5674a', '#e0b07c', '#c48a62', '#f0d2a4'], '#b0503a'), transparent: true, opacity: 0.55 })), [55, 70, -190]);
-      const bolt = new THREE.Line(new THREE.BufferGeometry(), new THREE.LineBasicMaterial({ color: '#f4e8ff', transparent: true, opacity: 0, fog: false }));
+      const boltGeometry = new THREE.BufferGeometry();
+      boltGeometry.setAttribute('position', new THREE.BufferAttribute(new Float32Array(32 * 3), 3));
+      const bolt = new THREE.Line(boltGeometry, new THREE.LineBasicMaterial({ color: '#f4e8ff', transparent: true, opacity: 0, fog: false }));
       bolt.frustumCulled = false;
       ctx.bolt = bolt;
       ctx.nextBolt = 0;
@@ -296,7 +298,12 @@ const THEMES = {
         const pts = [];
         let x = cameraX + (Math.random() - 0.5) * 80, y = 40;
         while (y > -12) { pts.push(new THREE.Vector3(x, y, -120)); x += (Math.random() - 0.5) * 9; y -= 3 + Math.random() * 5; }
-        ctx.bolt.geometry.setFromPoints(pts);
+        // Fixed-size buffer: bolts vary in length, so draw only the points used.
+        const attr = ctx.bolt.geometry.attributes.position, count = Math.min(32, pts.length);
+        for (let i = 0; i < count; i++) attr.setXYZ(i, pts[i].x, pts[i].y, pts[i].z);
+        attr.needsUpdate = true;
+        ctx.bolt.geometry.setDrawRange(0, count);
+        ctx.bolt.geometry.computeBoundingSphere();
       }
     },
   },

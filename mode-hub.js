@@ -194,6 +194,8 @@ export function mountModeHub({ root, onAction = () => {}, initialCourse = 'neon-
   const handleSubmit = (event) => { event.preventDefault(); buildFromPrompt(); };
   root.addEventListener('click', handleClick);
   forgeForm.addEventListener('submit', handleSubmit);
+  // Enter forges; Shift+Enter keeps a newline.
+  $('#sw-forge-prompt').addEventListener('keydown', (event) => { if (event.key === 'Enter' && !event.shiftKey) { event.preventDefault(); buildFromPrompt(); } });
   renderForged();
   if (forged) chooseCourse(forged.id);
 

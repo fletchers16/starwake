@@ -14,6 +14,11 @@ Goal: make Starwake feel great to play, make each world look like its name, clea
 
 ## Backlog (ranked)
 
+### Contest-critical (multiplayer + submission)
+- [ ] **Multiplayer hardening**: run a 2-browser PvP session end to end (create → join by code → 3 heats → results), using two tabs with separate storage locally. Live opponent ghosts and positions in race, clear handling of disconnects and a host leaving, and graceful errors. Validate scores server-side as far as is cheap.
+- [ ] **Multiplayer feel**: show the other human pilots' names over their ships, a live standings ticker, and a lobby that makes "share this code" obvious (copy button, share link with the code in the URL).
+- [ ] **Submission package**: generate a cover image (in-game screenshot composition), write the project description (OpenAI World Forge + multiplayer), and a deploy checklist (Netlify, `OPENAI_API_KEY`, two-device test).
+
 ### World identity (the races should feel new)
 - [x] **Per-world environment module**: each world gets its own sky gradient, backdrop and set pieces instead of the shared black void, ring tunnel and corner planet.
   - Neon Rift: derelict orbital relay. Station trusses, broken transit spine, blinking beacons, electric-blue debris.
@@ -33,11 +38,6 @@ Goal: make Starwake feel great to play, make each world look like its name, clea
 - [ ] **Collect feedback**: ring pop particles, a rising pitch for consecutive rings (a combo counter with a score multiplier), a Star Core burst.
 - [ ] **Controls**: tune acceleration and damping so steering feels responsive but weighty; check keyboard and touch drag; keep the ship from blocking the view of the track ahead.
 - [ ] **Race flow**: a punchier 3-2-1-GO countdown, lap-complete fanfare, a final-10-seconds tension cue, a clear finish moment.
-
-### Contest-critical (multiplayer + submission)
-- [ ] **Multiplayer hardening**: run a 2-browser PvP session end to end (create → join by code → 3 heats → results), using two tabs with separate storage locally. Live opponent ghosts and positions in race, clear handling of disconnects and a host leaving, and graceful errors. Validate scores server-side as far as is cheap.
-- [ ] **Multiplayer feel**: show the other human pilots' names over their ships, a live standings ticker, and a lobby that makes "share this code" obvious (copy button, share link with the code in the URL).
-- [ ] **Submission package**: generate a cover image (in-game screenshot composition), write the project description (OpenAI World Forge + multiplayer), and a deploy checklist (Netlify, `OPENAI_API_KEY`, two-device test).
 
 ### Content and progression
 - [ ] **Audit the economy**: RP ranks, credits, ship prices, module prices and stickers. Make the first unlock reachable in 2–3 races and give each later unlock a clear goal.

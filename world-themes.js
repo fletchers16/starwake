@@ -1,3 +1,4 @@
+import { lavaCrustTexture, earthSurfaceTexture, earthCloudTexture, gasGiantTexture } from './textures.js';
 import { rimColor, rimObject } from './rim.js';
 import { createFogRamp } from './fog-ramp.js';
 import { buildLandmarks } from './landmarks.js';
@@ -55,87 +56,6 @@ function cloudTexture(THREE, seed, colors) {
       ctx.fillRect(0, 0, w, w);
     }
   });
-}
-
-function bandedPlanetTexture(THREE, bands, storm) {
-  return canvasTexture(THREE, 512, 256, (ctx, w, h) => {
-    let y = 0;
-    let i = 0;
-    while (y < h) {
-      const bh = 6 + hash(i * 4.3) * 22;
-      ctx.fillStyle = bands[i % bands.length];
-      ctx.fillRect(0, y, w, bh + 1);
-      // turbulent band edges
-      ctx.globalAlpha = 0.35;
-      for (let x = 0; x < w; x += 8) {
-        ctx.fillStyle = bands[(i + 1) % bands.length];
-        ctx.fillRect(x, y + bh - 2 + Math.sin(x * 0.05 + i) * 3, 9, 4);
-      }
-      ctx.globalAlpha = 1;
-      y += bh;
-      i++;
-    }
-    if (storm) {
-      ctx.fillStyle = storm;
-      ctx.beginPath();
-      ctx.ellipse(w * 0.66, h * 0.62, 34, 15, 0, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.strokeStyle = 'rgba(255,240,220,.45)';
-      ctx.lineWidth = 3;
-      ctx.stroke();
-    }
-  });
-}
-
-function earthTexture(THREE) {
-  return canvasTexture(THREE, 1024, 512, (ctx, w, h) => {
-    ctx.fillStyle = '#0d3f78';
-    ctx.fillRect(0, 0, w, h);
-    // continents
-    for (let i = 0; i < 9; i++) {
-      const cx = hash(i * 9.1) * w, cy = h * (0.25 + hash(i * 5.3) * 0.5);
-      ctx.fillStyle = i % 3 ? '#2f6b3a' : '#7a6a45';
-      ctx.beginPath();
-      for (let a = 0; a < Math.PI * 2; a += 0.3) {
-        const r = 40 + hash(i * 11 + a) * 70;
-        ctx.lineTo(cx + Math.cos(a) * r * 1.6, cy + Math.sin(a) * r);
-      }
-      ctx.fill();
-    }
-    // cloud streaks
-    ctx.globalAlpha = 0.55;
-    ctx.fillStyle = '#f2f7ff';
-    for (let i = 0; i < 70; i++) {
-      const x = hash(i * 2.7) * w, y = hash(i * 6.1) * h;
-      ctx.beginPath();
-      ctx.ellipse(x, y, 30 + hash(i) * 90, 4 + hash(i * 3) * 9, (hash(i * 8) - 0.5) * 0.5, 0, Math.PI * 2);
-      ctx.fill();
-    }
-  });
-}
-
-function lavaTexture(THREE) {
-  return canvasTexture(THREE, 256, 256, (ctx, w) => {
-    ctx.fillStyle = '#1a0806';
-    ctx.fillRect(0, 0, w, w);
-    ctx.lineCap = 'round';
-    for (let i = 0; i < 46; i++) {
-      let x = hash(i * 3.3) * w, y = hash(i * 7.9) * w;
-      ctx.strokeStyle = i % 4 ? '#ff5a1a' : '#ffc14a';
-      ctx.lineWidth = 1 + hash(i * 2.2) * 3.5;
-      ctx.beginPath();
-      ctx.moveTo(x, y);
-      for (let s = 0; s < 6; s++) {
-        x += (hash(i * 13 + s) - 0.5) * 50;
-        y += (hash(i * 17 + s) - 0.5) * 50;
-        ctx.lineTo(x, y);
-      }
-      ctx.stroke();
-    }
-    // tile seam blur
-    ctx.globalAlpha = 0.35;
-    ctx.drawImage(ctx.canvas, w / 2, 0, w / 2, w, 0, 0, w / 2, w);
-  }, true);
 }
 
 /** Sky dome with a three-stop vertical gradient; ignores fog. */
@@ -269,10 +189,9 @@ const THEMES = {
     fogRamp: ['#c2481c', '#5a1a16'],
     sky: ['#0d0408', '#4a1410', '#ff6a1c'], fog: ['#3a120e', 22, 150], stars: 0.25,
     build(THREE, ctx) {
-      const lava = lavaTexture(THREE);
-      // Mirrored tiling hides the seam where the lava texture repeats.
-      lava.wrapS = lava.wrapT = THREE.MirroredRepeatWrapping;
-      lava.repeat.set(10, 10);
+      // Seamless lava crust (Voronoi plates + glowing seams); no mirroring needed.
+      const lava = lavaCrustTexture(THREE);
+      lava.repeat.set(6, 6);
       const sea = groundPlane(THREE, new THREE.MeshStandardMaterial({ color: '#2a0d08', map: lava, emissive: '#ffffff', emissiveMap: lava, emissiveIntensity: 1.25, roughness: 0.9 }), -15, 0.05);
       const rock = new THREE.MeshStandardMaterial({ color: '#2b1712', roughness: 0.95, flatShading: true, emissive: '#3a0d04' });
       const volcanoes = makeTrackside(THREE, new THREE.ConeGeometry(9, 22, 7), rock, { count: 12, spacing: 32 }, (slot) => {
@@ -291,7 +210,7 @@ const THEMES = {
       const ash = makeParticles(THREE, ctx.glow, { count: 260, color: '#9a8478', size: 0.28, opacity: 0.55, fall: 4, additive: false });
       const embers = makeParticles(THREE, ctx.glow, { count: 120, color: '#ff8a2a', size: 0.35, opacity: 0.9, fall: -3 });
       // Jupiter looms over Io.
-      const jupiter = skyObject(new THREE.Mesh(new THREE.SphereGeometry(48, 40, 24), new THREE.MeshBasicMaterial({ map: bandedPlanetTexture(THREE, ['#a5674a', '#e0b07c', '#c48a62', '#f0d2a4'], '#b0503a'), transparent: true, opacity: 0.55 })), [55, 70, -190]);
+      const jupiter = skyObject(new THREE.Mesh(new THREE.SphereGeometry(48, 40, 24), new THREE.MeshBasicMaterial({ map: gasGiantTexture(THREE, ['#a5674a', '#e0b07c', '#c48a62', '#f0d2a4'], { storm: { u: 0.66, v: 0.62, rx: 0.07, ry: 0.06, color: '#b0503a' } }), transparent: true, opacity: 0.55 })), [55, 70, -190]);
       const boltGeometry = new THREE.BufferGeometry();
       boltGeometry.setAttribute('position', new THREE.BufferAttribute(new Float32Array(32 * 3), 3));
       const bolt = new THREE.Line(boltGeometry, new THREE.LineBasicMaterial({ color: '#f4e8ff', transparent: true, opacity: 0, fog: false }));
@@ -340,7 +259,7 @@ const THEMES = {
       const snow = makeParticles(THREE, ctx.glow, { count: 220, color: '#fff3dc', size: 0.16, opacity: 0.8, fall: 1.5, additive: false });
       // Saturn, faint through the haze.
       const saturn = new THREE.Group();
-      saturn.add(new THREE.Mesh(new THREE.SphereGeometry(26, 32, 20), new THREE.MeshBasicMaterial({ map: bandedPlanetTexture(THREE, ['#e8cf9a', '#d6b47a', '#f2e0b4']), transparent: true, opacity: 0.32 })));
+      saturn.add(new THREE.Mesh(new THREE.SphereGeometry(26, 32, 20), new THREE.MeshBasicMaterial({ map: gasGiantTexture(THREE, ['#e8cf9a', '#d6b47a', '#f2e0b4'], { seed: 41 }), transparent: true, opacity: 0.32 })));
       const ring = new THREE.Mesh(new THREE.RingGeometry(34, 52, 64), new THREE.MeshBasicMaterial({ color: '#f2dfb2', transparent: true, opacity: 0.22, side: THREE.DoubleSide }));
       ring.rotation.x = 1.25;
       saturn.add(ring);
@@ -388,7 +307,11 @@ const THEMES = {
     build(THREE) {
       // A huge curved Earth below: the route rides low orbit above it.
       const planet = new THREE.Group();
-      planet.add(new THREE.Mesh(new THREE.SphereGeometry(150, 72, 48), new THREE.MeshStandardMaterial({ map: earthTexture(THREE), roughness: 0.8, emissive: '#0a2a55', emissiveIntensity: 0.35 })));
+      planet.add(new THREE.Mesh(new THREE.SphereGeometry(150, 72, 48), new THREE.MeshStandardMaterial({ map: earthSurfaceTexture(THREE), roughness: 0.8, emissive: '#0a2a55', emissiveIntensity: 0.25 })));
+      // Soft cloud layer on its own sphere so it can drift over the continents.
+      const clouds = new THREE.Mesh(new THREE.SphereGeometry(151.5, 72, 48), new THREE.MeshStandardMaterial({ map: earthCloudTexture(THREE), transparent: true, depthWrite: false, roughness: 1 }));
+      planet.add(clouds);
+      planet.userData.clouds = clouds;
       planet.add(new THREE.Mesh(new THREE.SphereGeometry(155, 72, 48), new THREE.ShaderMaterial({
         transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, side: THREE.BackSide, fog: false,
         vertexShader: 'varying vec3 vN; varying vec3 vV; void main(){ vN = normalize(normalMatrix*normal); vec4 mv = modelViewMatrix*vec4(position,1.0); vV = normalize(-mv.xyz); gl_Position = projectionMatrix*mv; }',
@@ -403,7 +326,11 @@ const THEMES = {
       const sats = makeTrackside(THREE, new THREE.BoxGeometry(5, 0.15, 1.6), panel, { count: 10, spacing: 40 }, (slot) => ({ x: (slot % 2 ? 1 : -1) * (18 + hash(slot) * 14), y: 4 + hash(slot * 2) * 10, ry: slot, rz: slot * 0.3 }));
       return [earth, sun, sats];
     },
-    tick(ctx, { now }) { ctx.pieces[0].userData.spin.rotation.y = now * 0.000012; },
+    tick(ctx, { now }) {
+      const planet = ctx.pieces[0].userData.spin;
+      planet.rotation.y = now * 0.000012;
+      if (planet.userData.clouds) planet.userData.clouds.rotation.y = now * 0.000006;
+    },
   },
 
   jupiter: {
@@ -412,7 +339,7 @@ const THEMES = {
     build(THREE, ctx) {
       // Jupiter fills the sky, with its ring plane sweeping across.
       const giant = new THREE.Group();
-      giant.add(new THREE.Mesh(new THREE.SphereGeometry(95, 64, 40), new THREE.MeshStandardMaterial({ map: bandedPlanetTexture(THREE, ['#8f563c', '#e3b47a', '#c58d63', '#f1d6a8', '#a86a48', '#d9a777'], '#b5482f'), roughness: 0.9, emissive: '#3a1c10', emissiveIntensity: 0.5 })));
+      giant.add(new THREE.Mesh(new THREE.SphereGeometry(95, 64, 40), new THREE.MeshStandardMaterial({ map: gasGiantTexture(THREE, ['#8f563c', '#e3b47a', '#c58d63', '#f1d6a8', '#a86a48', '#d9a777'], { storm: { u: 0.66, v: 0.62, rx: 0.07, ry: 0.06, color: '#b5482f' } }), roughness: 0.9, emissive: '#3a1c10', emissiveIntensity: 0.5 })));
       giant.rotation.z = -0.18;
       const planet = skyObject(giant, [-70, 40, -200], 0.95);
       planet.userData.spin = giant.children[0];

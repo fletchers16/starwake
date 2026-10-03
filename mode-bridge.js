@@ -8,6 +8,16 @@ root.id = 'mode-hub-root';
 app.append(root);
 
 let launched = false;
+// Invite links: tell the pilot which room they're about to join.
+{
+  const invitedRoom = String(new URLSearchParams(location.search).get('room') || '').toUpperCase();
+  if (/^[A-Z0-9]{5}$/.test(invitedRoom)) {
+    const label = document.querySelector('#launch-button span:nth-child(2)');
+    if (label) label.textContent = `JOIN ROOM ${invitedRoom}`;
+    const eyebrow = document.querySelector('.launch-eyebrow');
+    if (eyebrow) eyebrow.innerHTML = `<i></i> YOU'VE BEEN INVITED TO A PRIVATE RACE`;
+  }
+}
 let savedProfile = {};
 try { savedProfile = JSON.parse(localStorage.getItem('starwake-profile') || '{}'); } catch {}
 let selectedPrompt = String(savedProfile.coursePrompt || '');

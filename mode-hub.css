@@ -236,3 +236,8 @@
 @keyframes sw-forge-pulse { 50% { opacity: .35; transform: rotate(180deg); } }
 @keyframes sw-forge-in { from { opacity: 0; transform: translateY(6px); } }
 @media (prefers-reduced-motion: reduce) { .sw-forge-result, .sw-designer.is-forging .sw-forge-form button { animation: none; } }
+.sw-callsign{display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:10px;margin:0 0 10px;padding:0 12px;height:42px;border:1px solid rgba(177,202,236,.16);background:rgba(4,10,20,.5)}
+.sw-callsign span,.sw-callsign small{font:7px 'DM Mono',monospace;letter-spacing:.14em;color:#74849a}
+.sw-callsign span{color:var(--hub-cyan)}
+.sw-callsign input{min-width:0;border:0;outline:0;background:transparent;color:#eef5ff;font:600 13px 'DM Mono',monospace;letter-spacing:.12em;text-transform:uppercase}
+@media(max-width:520px){.sw-callsign small{display:none}}

@@ -90,7 +90,7 @@ export function mountModeHub({ root, onAction = () => {}, initialCourse = 'neon-
         <section class="sw-hub-main" aria-label="Choose a flight mode">
           <div class="sw-hub-section-head"><div><small>01 — RACE HUB</small><h2>Pick your heat.</h2></div><div class="sw-hub-mode" role="group" aria-label="Race mode"><button type="button" data-mode="pve" aria-pressed="${selectedMode === 'pve'}">PvE <small>VS SIM PILOTS</small></button><button type="button" data-mode="pvp" aria-pressed="${selectedMode === 'pvp'}">PvP <small>WITH YOUR CREW</small></button></div></div>
           <div class="sw-hub-maps" role="list" aria-label="Race maps">${MAPS.map(m => `<button class="sw-hub-map ${m.id === selectedCourse ? 'is-selected' : ''}" type="button" role="listitem" data-course="${m.id}" aria-pressed="${m.id === selectedCourse}" style="--map-tone:${m.tone}"><span class="sw-map-art sw-map-${m.kind}">${mapArt(m.kind)}</span><span class="sw-map-num">${m.number}</span><span class="sw-map-copy"><small>${m.place}</small><b>${m.name}</b><span>${m.note}</span></span><span class="sw-map-check" aria-hidden="true">✓</span></button>`).join('')}</div>
-          <button class="sw-hub-launch" type="button" data-action="launch"><span><small id="sw-hub-launch-label">${selectedMode === 'pve' ? 'START SOLO HEAT' : 'CREATE PRIVATE RACE'}</small><b id="sw-hub-launch-course">${esc(courseName(selectedCourse))}</b></span><span class="sw-hub-arrow">↗</span></button>
+          <label class="sw-callsign" for="sw-callsign"><span>CALLSIGN</span><input id="sw-callsign" maxlength="18" autocomplete="nickname" spellcheck="false" aria-label="Pilot callsign"><small>OTHER PILOTS SEE THIS</small></label><button class="sw-hub-launch" type="button" data-action="launch"><span><small id="sw-hub-launch-label">${selectedMode === 'pve' ? 'START SOLO HEAT' : 'CREATE PRIVATE RACE'}</small><b id="sw-hub-launch-course">${esc(courseName(selectedCourse))}</b></span><span class="sw-hub-arrow">↗</span></button>
           <div class="sw-pvp-join" id="sw-pvp-join" ${selectedMode === 'pvp' ? '' : 'hidden'}><label for="sw-room-code">HAVE A ROOM CODE?</label><div><input id="sw-room-code" maxlength="5" autocomplete="off" placeholder="ROOM CODE" aria-label="Room code"><button type="button" data-action="pvp-join">JOIN CREW ↗</button></div></div>
         </section>
         <section class="sw-hub-side" aria-label="Explore and create">
@@ -198,6 +198,16 @@ export function mountModeHub({ root, onAction = () => {}, initialCourse = 'neon-
   $('#sw-forge-prompt').addEventListener('keydown', (event) => { if (event.key === 'Enter' && !event.shiftKey) { event.preventDefault(); buildFromPrompt(); } });
   renderForged();
   if (forged) chooseCourse(forged.id);
+  // Callsign mirrors the game's pilot-name field and persists between visits.
+  const callsign = $('#sw-callsign');
+  callsign.value = localStorage.getItem('starwake-name') || '';
+  callsign.addEventListener('input', () => {
+    const value = callsign.value.replace(/[<>]/g, '').toUpperCase();
+    callsign.value = value;
+    const legacy = document.querySelector('#pilot-name');
+    if (legacy) legacy.value = value;
+    if (value.trim()) localStorage.setItem('starwake-name', value.trim());
+  });
 
   const revealAfterLaunch = () => {
     root.hidden = false;

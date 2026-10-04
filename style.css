@@ -435,3 +435,7 @@ button:disabled{cursor:not-allowed;filter:saturate(.55);opacity:.58}
 .brief-challenge small{font:800 10px 'DM Mono',monospace;letter-spacing:.16em}
 .brief-challenge p{margin:4px 0 0;font:600 14px/1.35 system-ui,sans-serif}
 @media(max-width:560px){.challenge-actions{grid-template-columns:1fr}}
+
+.brief-cards.four{grid-template-columns:repeat(2,minmax(0,1fr))}
+.brief-icon.pod svg{stroke:#ff8be8}.brief-icon.zap svg{stroke:#7ef5ff}
+@media(max-width:560px){.brief-cards.four{grid-template-columns:1fr}}

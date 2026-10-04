@@ -65,13 +65,14 @@ function mapArt(kind) {
   return `<svg viewBox="0 0 220 110" aria-hidden="true"><defs><linearGradient id="hub-grad" x1="0" y1="0" x2="1" y2="1"><stop stop-color="currentColor" stop-opacity=".42"/><stop offset="1" stop-color="currentColor" stop-opacity="0"/></linearGradient></defs><path class="hub-map-fill" d="M0 88 47 47l27 10 48-39 41 26 57-27v93H0z"/>${paths[kind]}<path class="hub-map-route" d="${routes[kind]||routes.rift}"/><circle class="hub-map-ping" cx="12" cy="72" r="3"/><circle class="hub-map-ping" cx="208" cy="55" r="3"/></svg>`;
 }
 
-export function mountModeHub({ root, onAction = () => {}, initialCourse = 'neon-rift', initialForged = null, initialMode = 'pve', deferReveal = false, forgeEndpoint = '/.netlify/functions/forge' } = {}) {
+export function mountModeHub({ root, onAction = () => {}, initialCourse = 'neon-rift', initialForged = null, initialMode = 'pvp', deferReveal = false, forgeEndpoint = '/.netlify/functions/forge' } = {}) {
   if (!root) throw new Error('mountModeHub requires a root element');
   let forged = initialForged?.id === initialCourse ? initialForged : null;
   let selectedCourse = forged || MAPS.some(m => m.id === initialCourse) ? initialCourse : MAPS[0].id;
   let forging = false;
   const courseName = (id) => (forged?.id === id ? forged.name : MAPS.find(m => m.id === id)?.name) || MAPS[0].name;
-  let selectedMode = initialMode === 'pvp' ? 'pvp' : 'pve';
+  // Battle (PvP) is the headline mode.
+  let selectedMode = initialMode === 'pve' ? 'pve' : 'pvp';
 
   root.innerHTML = `
     <main class="sw-hub" aria-labelledby="sw-hub-title">
@@ -83,15 +84,15 @@ export function mountModeHub({ root, onAction = () => {}, initialCourse = 'neon-
       <div class="sw-hub-content">
         <section class="sw-hub-intro">
           <p class="sw-hub-kicker">FLIGHT DECK <span></span> 01 / 03</p>
-          <h1 id="sw-hub-title">Choose your<br><em>frontier.</em></h1>
-          <p>Race a mapped course, break off into the unknown, or forge a world from a thought.</p>
-          <div class="sw-hub-signal"><span>◈</span><div><b>ONE SHARED COURSE</b><small>Lobby pilots receive the same map and seed.</small></div></div>
+          <h1 id="sw-hub-title">Blast your<br><em>friends.</em></h1>
+          <p>A cartoon battle racer. Grab ? pods, snipe rivals with laser blasters and steal their points. Race your crew live on any device, or dare them to beat your run.</p>
+          <div class="sw-hub-signal"><span>⚔</span><div><b>BATTLE ROOMS</b><small>Send a link. Friends join from a phone or laptop, no install.</small></div></div>
         </section>
         <section class="sw-hub-main" aria-label="Choose a flight mode">
-          <div class="sw-hub-section-head"><div><small>01 — RACE HUB</small><h2>Pick your heat.</h2></div><div class="sw-hub-mode" role="group" aria-label="Race mode"><button type="button" data-mode="pve" aria-pressed="${selectedMode === 'pve'}">PvE <small>VS SIM PILOTS</small></button><button type="button" data-mode="pvp" aria-pressed="${selectedMode === 'pvp'}">PvP <small>WITH YOUR CREW</small></button></div></div>
+          <div class="sw-hub-section-head"><div><small>01 — BATTLE HUB</small><h2>Pick your battle.</h2></div><div class="sw-hub-mode" role="group" aria-label="Race mode"><button type="button" data-mode="pvp" aria-pressed="${selectedMode === 'pvp'}">⚔ BATTLE <small>LIVE WITH FRIENDS</small></button><button type="button" data-mode="pve" aria-pressed="${selectedMode === 'pve'}">SOLO <small>VS ALIEN RACERS</small></button></div></div>
           <div class="sw-hub-maps" role="list" aria-label="Race maps">${MAPS.map(m => `<button class="sw-hub-map ${m.id === selectedCourse ? 'is-selected' : ''}" type="button" role="listitem" data-course="${m.id}" aria-pressed="${m.id === selectedCourse}" style="--map-tone:${m.tone}"><span class="sw-map-art sw-map-${m.kind}">${mapArt(m.kind)}</span><span class="sw-map-num">${m.number}</span><span class="sw-map-copy"><small>${m.place}</small><b>${m.name}</b><span>${m.note}</span></span><span class="sw-map-check" aria-hidden="true">✓</span></button>`).join('')}</div>
-          <label class="sw-callsign" for="sw-callsign"><span>CALLSIGN</span><input id="sw-callsign" maxlength="18" autocomplete="nickname" spellcheck="false" aria-label="Pilot callsign"><small>OTHER PILOTS SEE THIS</small></label><button class="sw-hub-launch" type="button" data-action="launch"><span><small id="sw-hub-launch-label">${selectedMode === 'pve' ? 'START SOLO HEAT' : 'CREATE PRIVATE RACE'}</small><b id="sw-hub-launch-course">${esc(courseName(selectedCourse))}</b></span><span class="sw-hub-arrow">↗</span></button>
-          <div class="sw-pvp-join" id="sw-pvp-join" ${selectedMode === 'pvp' ? '' : 'hidden'}><label for="sw-room-code">HAVE A ROOM CODE?</label><div><input id="sw-room-code" maxlength="5" autocomplete="off" placeholder="ROOM CODE" aria-label="Room code"><button type="button" data-action="pvp-join">JOIN CREW ↗</button></div></div>
+          <label class="sw-callsign" for="sw-callsign"><span>CALLSIGN</span><input id="sw-callsign" maxlength="18" autocomplete="nickname" spellcheck="false" aria-label="Pilot callsign"><small>OTHER PILOTS SEE THIS</small></label><button class="sw-hub-launch" type="button" data-action="launch"><span><small id="sw-hub-launch-label">${selectedMode === 'pve' ? 'RACE THE ALIENS' : 'OPEN A BATTLE ROOM'}</small><b id="sw-hub-launch-course">${esc(courseName(selectedCourse))}</b></span><span class="sw-hub-arrow">↗</span></button>
+          <div class="sw-pvp-join" id="sw-pvp-join" ${selectedMode === 'pvp' ? '' : 'hidden'}><label for="sw-room-code">GOT AN INVITE CODE?</label><div><input id="sw-room-code" maxlength="5" autocomplete="off" placeholder="ROOM CODE" aria-label="Room code"><button type="button" data-action="pvp-join">JOIN BATTLE ↗</button></div></div>
         </section>
         <section class="sw-hub-side" aria-label="Explore and create">
           <article class="sw-hub-destination sw-freeflight">
@@ -163,7 +164,7 @@ export function mountModeHub({ root, onAction = () => {}, initialCourse = 'neon-
     if (modeButton && root.contains(modeButton)) {
       selectedMode = modeButton.dataset.mode;
       root.querySelectorAll('[data-mode]').forEach(b => b.setAttribute('aria-pressed', String(b === modeButton)));
-      $('#sw-hub-launch-label').textContent = selectedMode === 'pve' ? 'START SOLO HEAT' : 'CREATE PRIVATE RACE';
+      $('#sw-hub-launch-label').textContent = selectedMode === 'pve' ? 'RACE THE ALIENS' : 'OPEN A BATTLE ROOM';
       $('#sw-pvp-join').hidden = selectedMode !== 'pvp';
       return;
     }

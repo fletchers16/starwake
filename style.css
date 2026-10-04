@@ -439,3 +439,21 @@ button:disabled{cursor:not-allowed;filter:saturate(.55);opacity:.58}
 .brief-cards.four{grid-template-columns:repeat(2,minmax(0,1fr))}
 .brief-icon.pod svg{stroke:#ff8be8}.brief-icon.zap svg{stroke:#7ef5ff}
 @media(max-width:560px){.brief-cards.four{grid-template-columns:1fr}}
+
+/* ===== Cartoon type: chunky display font with ink offset shadows (sticker look) ===== */
+:root{--display:'Lilita One','Space Grotesk',system-ui,sans-serif;--ink:#1b1430}
+#app .launch-copy h1,#mode-hub-root .sw-hub-intro h1,.brief-head h2,#results-title,.panel-wrap h2,.race-start strong,.challenge-verdict strong,.landmark-caption b{font-family:var(--display);font-weight:400;letter-spacing:.005em;line-height:.95}
+#app .launch-copy h1{text-shadow:0 6px 0 var(--ink),0 10px 40px rgba(0,0,0,.5);-webkit-text-stroke:2px var(--ink)}
+.launch-copy h1 em{color:#ffd84d}
+#mode-hub-root .sw-hub-intro h1{text-shadow:0 5px 0 var(--ink),0 9px 45px rgba(0,0,0,.45)}
+#mode-hub-root .sw-hub-intro h1 em{color:#ffd84d;font-weight:400}
+.hud2-score,.hud2-place{font-family:var(--display);font-weight:400;letter-spacing:.01em;text-shadow:0 3px 0 var(--ink)}
+.race-start strong{text-shadow:0 7px 0 var(--ink),0 0 40px rgba(0,0,0,.5);-webkit-text-stroke:3px var(--ink);color:#ffd84d}
+.race-toast b{font-family:var(--display);font-weight:400;font-size:1.35em;letter-spacing:.02em;color:#ffd84d;text-shadow:0 2px 0 var(--ink)}
+.landmark-caption b{text-shadow:0 3px 0 var(--ink)}
+#mode-hub-root .sw-hub-section-head h2,#mode-hub-root .sw-destination-copy h2,#mode-hub-root .sw-designer h2{font-family:var(--display);font-weight:400;letter-spacing:.01em}
+
+/* ===== Zap Frenzy: final 15 seconds ===== */
+#app.frenzy #race-screen::after{content:'';position:absolute;inset:0;pointer-events:none;z-index:6;box-shadow:inset 0 0 120px rgba(255,79,216,.45);animation:frenzy-pulse .5s ease-in-out infinite alternate}
+#app.frenzy .hud2-time strong{color:#ff8be8;animation:frenzy-pulse .5s ease-in-out infinite alternate}
+@keyframes frenzy-pulse{from{opacity:.55}to{opacity:1}}

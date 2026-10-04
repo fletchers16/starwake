@@ -10,6 +10,9 @@
  * - Sim pilots are NPC racers flown by cartoon aliens: they weave, grab pods,
  *   shoot back and can be shot. Their point swings are reported to the server
  *   so the final standings match what you saw.
+ * - Bounty: the leader wears a crown, and zapping them steals double.
+ * - Zap Frenzy: in the final 15 seconds every steal doubles again and sim pilots
+ *   fire twice as often.
  * - Human rivals are zapped through the server (see `outgoingZaps` and
  *   `receiveZaps`); the hit plays out on the victim's screen.
  *
@@ -17,8 +20,10 @@
  * player sits at z = Z0 - gap, offset from routeAt(d) by its lane x/y.
  */
 import { ALIENS, makeAlienPilot, toon, inkOutline } from './aliens.js';
+import { makeCrown } from './critters.js';
 
 export const ZAP_STEAL = 150;
+const FRENZY_SECONDS = 15;
 const STUN = 1.2;
 const Z0 = 4.7;
 
@@ -81,6 +86,40 @@ export function makeItemPod(THREE) {
   return group;
 }
 
+/**
+ * Cartoon pass for a built ship: toon materials in two tones, ink outlines on the
+ * big parts, the glass canopy swapped for a fishbowl, and an alien pilot seated in it.
+ * Returns { pilot }; `ship.userData.tick(now, dizzy)` animates the pilot.
+ */
+export function toonifyShip(THREE, ship, { color, alien = ALIENS[0], trimColor = '#2a2244' }) {
+  if (ship.userData.toon) return { pilot: ship.userData.pilot };
+  ship.userData.toon = true;
+  const body = toon(THREE, color), trim = toon(THREE, trimColor);
+  ship.traverse((o) => {
+    if (o.isPointLight) { o.intensity = 0; return; }
+    if (!o.isMesh || !o.material || o.userData.ink) return;
+    if (o.material.isMeshPhysicalMaterial) { o.visible = false; return; }
+    const glowy = o.material.isMeshBasicMaterial || (o.material.emissiveIntensity || 0) > 0.6;
+    if (glowy) return;
+    const bright = (o.material.color?.getHSL?.({}).l ?? 0.5) > 0.35;
+    o.material.dispose?.();
+    o.material = bright ? body : trim;
+    o.geometry.computeBoundingSphere();
+    if (o.geometry.boundingSphere.radius > 0.4) inkOutline(THREE, o, 1.06);
+  });
+  const pilot = makeAlienPilot(THREE, alien);
+  // Oversized so the pilot reads from the chase camera.
+  pilot.position.set(0, 0.74, -0.28);
+  pilot.scale.setScalar(1.15);
+  ship.add(pilot);
+  const bowl = new THREE.Mesh(new THREE.SphereGeometry(0.52, 18, 12), new THREE.MeshBasicMaterial({ color: '#dffcff', transparent: true, opacity: 0.16, depthWrite: false }));
+  bowl.position.copy(pilot.position);
+  ship.add(bowl);
+  ship.userData.pilot = pilot;
+  ship.userData.tick = (now, dizzy) => pilot.userData.tick(now, dizzy);
+  return { pilot };
+}
+
 function canvasSprite(THREE, draw, size = 128) {
   const c = document.createElement('canvas');
   c.width = c.height = size;
@@ -121,6 +160,11 @@ export function createCombat(THREE, { world, getRoute, routeAt, makeShipMesh, sh
   world.add(reticle);
   const playerStars = dizzyStars();
   world.add(playerStars);
+  const crown = makeCrown(THREE);
+  world.add(crown);
+  let leaderId = null, frenzy = false;
+  /** Steal multiplier against a target: ×2 on the crowned leader, ×2 during the frenzy. */
+  const steal = (id) => ZAP_STEAL * (id === leaderId ? 2 : 1) * (frenzy ? 2 : 1);
 
   function dizzyStars() {
     const g = new THREE.Group();
@@ -142,32 +186,12 @@ export function createCombat(THREE, { world, getRoute, routeAt, makeShipMesh, sh
   /** Recolour a ship into toon materials in its alien's colours and seat the pilot. */
   function makeNpcShip(index, { alien = ALIENS[index % ALIENS.length], color = alien.color, label = alien.name, shipDef = ships[(index + 1) % ships.length] } = {}) {
     const ship = makeShipMesh(shipDef);
-    const body = toon(THREE, color), trim = toon(THREE, '#2a2244');
-    ship.traverse((o) => {
-      if (o.isPointLight) { o.intensity = 0; return; }
-      if (!o.isMesh || !o.material) return;
-      if (o.material.isMeshPhysicalMaterial) { o.visible = false; return; } // glass dome -> replaced by a fishbowl
-      const glowy = o.material.isMeshBasicMaterial || (o.material.emissiveIntensity || 0) > 0.6;
-      if (glowy) return;
-      o.material.dispose?.();
-      const bright = (o.material.color?.getHSL?.({}).l ?? 0.5) > 0.35;
-      o.material = bright ? body : trim;
-      o.geometry.computeBoundingSphere();
-      if (o.geometry.boundingSphere.radius > 0.4) inkOutline(THREE, o, 1.06);
-    });
-    const pilot = makeAlienPilot(THREE, alien);
-    pilot.position.set(0, 0.62, -0.28);
-    pilot.scale.setScalar(0.85);
-    ship.add(pilot);
-    const bowl = new THREE.Mesh(new THREE.SphereGeometry(0.42, 18, 12), new THREE.MeshBasicMaterial({ color: '#dffcff', transparent: true, opacity: 0.16, depthWrite: false }));
-    bowl.position.copy(pilot.position);
-    ship.add(bowl);
+    const { pilot } = toonifyShip(THREE, ship, { color, alien });
     const tag = nameTag(label, color);
     tag.position.set(0, 2.2, 0);
     ship.add(tag);
     ship.scale.multiplyScalar(0.92);
     world.add(ship);
-    ship.userData.tick = (now, dizzy) => pilot.userData.tick(now, dizzy);
     return { ship, pilot, tag, alien };
   }
 
@@ -194,6 +218,8 @@ export function createCombat(THREE, { world, getRoute, routeAt, makeShipMesh, sh
     zapCounts = {};
     zapSeen = {};
     lastPlayerHitByBot = -9;
+    leaderId = null;
+    frenzy = false;
     Object.assign(r, { item: null, ammo: 0, shieldUntil: -9, stunUntil: -9, zapPoints: 0, spin: 0, rolling: 0 });
   }
 
@@ -204,7 +230,7 @@ export function createCombat(THREE, { world, getRoute, routeAt, makeShipMesh, sh
     racers = [];
     effects = [];
     externals = [];
-    shield.visible = reticle.visible = playerStars.visible = false;
+    shield.visible = reticle.visible = playerStars.visible = crown.visible = false;
   }
 
   /** Scripted opponent (e.g. a challenge ghost): { id, name, color, mesh, sample(t)->{d,x,y}, score(t), zappable }. */
@@ -266,12 +292,12 @@ export function createCombat(THREE, { world, getRoute, routeAt, makeShipMesh, sh
 
   function hitPlayer(r, shooterName, color) {
     if (r.time < r.shieldUntil) { r.shieldUntil = -9; sfx.pop?.(); toast('SHIELD POPPED', `BLOCKED ${shooterName}`); return 0; }
-    const stolen = Math.min(ZAP_STEAL, Math.max(0, Math.floor(r.score)));
+    const stolen = Math.min(steal('player'), Math.max(0, Math.floor(r.score)));
     r.zapPoints -= stolen;
     r.stunUntil = r.time + STUN;
     r.combo = 0;
     sfx.zapped?.();
-    toast(`ZAPPED BY ${shooterName}`, `−${stolen} · SPIN OUT`);
+    toast(`ZAPPED BY ${shooterName}`, `−${stolen}${leaderId === 'player' ? ' · BOUNTY' : ''} · SPIN OUT`);
     onPlayerHit(color);
     return stolen;
   }
@@ -280,14 +306,14 @@ export function createCombat(THREE, { world, getRoute, routeAt, makeShipMesh, sh
     const t = target.ref;
     if (target.kind === 'bot') {
       if (r.time < t.shieldUntil) { t.shieldUntil = -9; return 0; }
-      const stolen = Math.min(ZAP_STEAL, liveBotScore(t, r));
+      const stolen = Math.min(steal(t.id), liveBotScore(t, r));
       t.adj -= stolen;
       t.stunUntil = r.time + STUN;
       return stolen;
     }
     if (target.kind === 'ext') {
       if (!t.zappable) return 0;
-      const stolen = Math.min(ZAP_STEAL, Math.max(0, Math.floor(t.score(r.time) + t.adj)));
+      const stolen = Math.min(steal(t.id), Math.max(0, Math.floor(t.score(r.time) + t.adj)));
       t.adj -= stolen;
       t.stunUntil = r.time + STUN;
       return stolen;
@@ -295,7 +321,7 @@ export function createCombat(THREE, { world, getRoute, routeAt, makeShipMesh, sh
     // Human rival: the hit is resolved on their screen; we spin their ship locally.
     if (shooter === 'player') zapCounts[t.id] = (zapCounts[t.id] || 0) + 1;
     t.stunUntil = r.time + STUN;
-    return ZAP_STEAL;
+    return steal(t.id);
   }
 
   // ---------- player actions ----------
@@ -320,7 +346,7 @@ export function createCombat(THREE, { world, getRoute, routeAt, makeShipMesh, sh
         const stolen = hitOpponent(r, target, 'player');
         r.zapPoints += stolen;
         beam(from, worldPos(r, target.d, target.x, target.y), ITEMS.blaster.color);
-        toast(`SNIPED ${target.name}!`, stolen ? `+${stolen} STOLEN` : 'SHIELD BLOCKED IT');
+        toast(`SNIPED ${target.name}!`, stolen ? `+${stolen} STOLEN${target.id === leaderId ? ' · BOUNTY ♛' : ''}` : 'SHIELD BLOCKED IT');
       } else {
         beam(from, worldPos(r, r.distance + 70, r.x, r.y), ITEMS.blaster.color);
       }
@@ -370,6 +396,16 @@ export function createCombat(THREE, { world, getRoute, routeAt, makeShipMesh, sh
     }
     if (!r.started) return;
     const lap = r.lapDistance;
+    // Bounty leader and the final-seconds frenzy.
+    let best = { id: 'player', score: r.score };
+    for (const o of opponents(r, rivals)) if (o.score > best.score) best = o;
+    if (best.id !== leaderId) {
+      if (best.id === 'player' && leaderId) toast('YOU TOOK 1ST ♛', 'YOU WEAR THE BOUNTY · ZAPS ON YOU STEAL ×2');
+      leaderId = best.id;
+    }
+    const nowFrenzy = r.duration - r.time <= FRENZY_SECONDS;
+    if (nowFrenzy && !frenzy) { toast('ZAP FRENZY!', `FINAL ${FRENZY_SECONDS}s · EVERY STEAL ×2`); sfx.perfect?.(); }
+    frenzy = nowFrenzy;
     for (const b of racers) {
       const stunned = r.time < b.stunUntil;
       // Rubber band: sim pilots close up when far behind you and ease off far ahead, so the pack stays a fight.
@@ -391,7 +427,7 @@ export function createCombat(THREE, { world, getRoute, routeAt, makeShipMesh, sh
         }
       }
       if (b.item === 'shield') { b.shieldUntil = r.time + 8; b.item = null; }
-      b.cooldown -= dt;
+      b.cooldown -= dt * (frenzy ? 2 : 1);
       if (b.item === 'blaster' && b.cooldown <= 0 && !stunned) botShoot(r, b, rivals);
     }
     // Effects
@@ -484,6 +520,8 @@ export function createCombat(THREE, { world, getRoute, routeAt, makeShipMesh, sh
     // Player: spin-out, dizzy stars, shield bubble, blaster lock reticle.
     const stunned = r.time < r.stunUntil;
     r.spin = stunned ? (1 - (r.stunUntil - r.time) / STUN) * Math.PI * 4 : 0;
+    shipModel.userData.tick?.(now, stunned);
+    for (const h of rivals) rivalMeshes.get(h.id)?.userData.tick?.(now, r.time < (h.stunUntil || -9));
     tickStars(playerStars, now, stunned, shipModel.position.x, shipModel.position.y, shipModel.position.z);
     shield.visible = r.time < r.shieldUntil;
     if (shield.visible) {
@@ -491,6 +529,14 @@ export function createCombat(THREE, { world, getRoute, routeAt, makeShipMesh, sh
       const left = r.shieldUntil - r.time;
       shield.material.opacity = (left < 2 && Math.floor(now / 120) % 2) ? 0.08 : 0.22;
       shieldRim.rotation.set(now * 0.002, now * 0.003, 0);
+    }
+    // Crown over the leader.
+    const leaderMesh = leaderId === 'player' ? shipModel : racers.find((b) => b.id === leaderId)?.ship || externals.find((e) => e.id === leaderId)?.mesh || rivalMeshes.get(leaderId);
+    crown.visible = !!(r.started && leaderMesh?.visible);
+    if (crown.visible) {
+      crown.position.copy(leaderMesh.position);
+      crown.position.y += 1.35 + Math.sin(now * 0.005) * 0.08;
+      crown.rotation.y = now * 0.002;
     }
     const lock = currentLock(r, rivals);
     reticle.visible = !!lock;
@@ -502,6 +548,7 @@ export function createCombat(THREE, { world, getRoute, routeAt, makeShipMesh, sh
   }
 
   return {
+    makeRacerMesh: (opts) => makeNpcShip(0, opts),
     start, dispose, addExternal, pickup, fire, update, render, currentLock,
     outgoingZaps, receiveZaps,
     /** Live scores of sim pilots for standings. */
@@ -511,5 +558,7 @@ export function createCombat(THREE, { world, getRoute, routeAt, makeShipMesh, sh
     botAdjust: () => racers.map((b) => Math.round(b.adj)),
     externalAdjust: () => externals.map((e) => Math.round(e.adj)),
     racerNames: () => racers.map((b) => b.name),
+    isFrenzy: () => frenzy,
+    leader: () => leaderId,
   };
 }

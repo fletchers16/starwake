@@ -97,6 +97,7 @@ export function createAudio() {
     roll(step = 0) { tone({ freq: note(step % 8, 523.25), type: 'triangle', decay: 0.06, gain: 0.05 }); },
     item() { [0, 4, 7].forEach((s, i) => tone({ freq: note(s, 880), type: 'square', decay: 0.12, gain: 0.05, delay: i * 0.05 })); },
     shield() { tone({ freq: 520, type: 'sine', decay: 0.4, gain: 0.09, slide: 1.6 }); },
+    moo() { tone({ freq: 140, type: 'sawtooth', attack: 0.04, decay: 0.55, gain: 0.08, slide: 0.7 }); tone({ freq: 210, type: 'triangle', attack: 0.04, decay: 0.5, gain: 0.05, slide: 0.65 }); },
     pop() { noise({ duration: 0.12, gain: 0.14, filter: 2400, sweep: 0.2 }); },
     countdown(final = false) { tone({ freq: final ? 880 : 440, type: 'square', decay: final ? 0.45 : 0.14, gain: 0.07 }); },
     lap() { [0, 7, 12].forEach((s, i) => tone({ freq: note(s, 392), type: 'triangle', decay: 0.4, gain: 0.1, delay: i * 0.09 })); },

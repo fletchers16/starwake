@@ -412,7 +412,7 @@ button:disabled{cursor:not-allowed;filter:saturate(.55);opacity:.58}
 .hud2-boost{display:none;gap:12px;align-items:end}
 @media (pointer:coarse){.hud2-boost{display:flex}}
 .hud2-boost .fire-button{width:72px;height:72px;border-color:rgba(255,139,232,.7);color:#ff8be8}
-.hud2-boost .fire-button:disabled{opacity:.35}
+.hud2-boost .fire-button.empty{opacity:.35}
 .hud2-boost .fire-button.active{background:#ff8be8;color:#1b1430}
 @media(max-width:760px){.item-slot{grid-template-columns:40px auto;padding:5px 10px 5px 5px;margin-top:8px}.item-slot i{width:40px;height:40px;font-size:22px}.item-slot b{font-size:10px}.item-slot small{font-size:7px}}
 

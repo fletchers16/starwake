@@ -5,13 +5,15 @@
   "type": "module",
   "scripts": {
     "dev": "vite --host 127.0.0.1",
-    "build": "vite build"
+    "build": "vite build",
+    "test:battle": "node tests/battle.e2e.mjs"
   },
   "dependencies": {
     "@netlify/blobs": "^10.0.7",
     "three": "^0.186.1"
   },
   "devDependencies": {
+    "playwright-core": "^1.44.1",
     "vite": "^7.0.0"
   }
 }

@@ -140,10 +140,9 @@ export function createCombat(THREE, { world, getRoute, routeAt, makeShipMesh, sh
   }
 
   /** Recolour a ship into toon materials in its alien's colours and seat the pilot. */
-  function makeNpcShip(index) {
-    const alien = ALIENS[index % ALIENS.length];
-    const ship = makeShipMesh(ships[(index + 1) % ships.length]);
-    const body = toon(THREE, alien.color), trim = toon(THREE, '#2a2244');
+  function makeNpcShip(index, { alien = ALIENS[index % ALIENS.length], color = alien.color, label = alien.name, shipDef = ships[(index + 1) % ships.length] } = {}) {
+    const ship = makeShipMesh(shipDef);
+    const body = toon(THREE, color), trim = toon(THREE, '#2a2244');
     ship.traverse((o) => {
       if (o.isPointLight) { o.intensity = 0; return; }
       if (!o.isMesh || !o.material) return;
@@ -163,11 +162,12 @@ export function createCombat(THREE, { world, getRoute, routeAt, makeShipMesh, sh
     const bowl = new THREE.Mesh(new THREE.SphereGeometry(0.42, 18, 12), new THREE.MeshBasicMaterial({ color: '#dffcff', transparent: true, opacity: 0.16, depthWrite: false }));
     bowl.position.copy(pilot.position);
     ship.add(bowl);
-    const tag = nameTag(alien.name, alien.color);
+    const tag = nameTag(label, color);
     tag.position.set(0, 2.2, 0);
     ship.add(tag);
     ship.scale.multiplyScalar(0.92);
     world.add(ship);
+    ship.userData.tick = (now, dizzy) => pilot.userData.tick(now, dizzy);
     return { ship, pilot, tag, alien };
   }
 
@@ -200,6 +200,7 @@ export function createCombat(THREE, { world, getRoute, routeAt, makeShipMesh, sh
   function dispose() {
     for (const b of racers) { disposeObject(b.ship); world.remove(b.stars); }
     for (const e of effects) disposeObject(e.mesh);
+    for (const e of externals) { disposeObject(e.mesh); world.remove(e.stars); }
     racers = [];
     effects = [];
     externals = [];
@@ -208,6 +209,7 @@ export function createCombat(THREE, { world, getRoute, routeAt, makeShipMesh, sh
 
   /** Scripted opponent (e.g. a challenge ghost): { id, name, color, mesh, sample(t)->{d,x,y}, score(t), zappable }. */
   function addExternal(opponent) {
+    if (!opponent.mesh) opponent.mesh = makeNpcShip(0, opponent.look || {}).ship;
     externals.push({ adj: 0, stunUntil: -9, spin: 0, stars: (() => { const s = dizzyStars(); world.add(s); return s; })(), ...opponent });
   }
 

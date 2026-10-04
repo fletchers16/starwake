@@ -10,12 +10,18 @@ app.append(root);
 let launched = false;
 // Invite links: tell the pilot which room they're about to join.
 {
-  const invitedRoom = String(new URLSearchParams(location.search).get('room') || '').toUpperCase();
+  const params = new URLSearchParams(location.search);
+  const invitedRoom = String(params.get('room') || '').toUpperCase();
+  const from = String(params.get('from') || '').replace(/[<>&"]/g, '').slice(0, 18).toUpperCase();
+  const challenge = String(params.get('challenge') || '');
+  const label = document.querySelector('#launch-button span:nth-child(2)');
+  const eyebrow = document.querySelector('.launch-eyebrow');
   if (/^[A-Z0-9]{5}$/.test(invitedRoom)) {
-    const label = document.querySelector('#launch-button span:nth-child(2)');
     if (label) label.textContent = `JOIN ROOM ${invitedRoom}`;
-    const eyebrow = document.querySelector('.launch-eyebrow');
-    if (eyebrow) eyebrow.innerHTML = `<i></i> YOU'VE BEEN INVITED TO A PRIVATE RACE`;
+    if (eyebrow) eyebrow.innerHTML = from ? `<i></i> ⚔ ${from} CHALLENGES YOU TO A LIVE BATTLE` : `<i></i> YOU'VE BEEN INVITED TO A PRIVATE RACE`;
+  } else if (/^[a-z0-9]{8}$/.test(challenge)) {
+    if (label) label.textContent = 'ACCEPT CHALLENGE';
+    if (eyebrow) eyebrow.innerHTML = `<i></i> ★ A FRIEND DARES YOU TO BEAT THEIR RUN`;
   }
 }
 let savedProfile = {};
@@ -110,8 +116,16 @@ window.addEventListener('starwake:launch-complete', () => {
   // Invite links (?room=CODE) drop the pilot straight into that lobby.
   const params = new URLSearchParams(location.search);
   const invited = String(params.get('room') || '').toUpperCase();
+  const challengeId = String(params.get('challenge') || '');
+  if (/^[a-z0-9]{8}$/.test(challengeId)) {
+    params.delete('challenge');
+    history.replaceState(null, '', `${location.pathname}${params.size ? `?${params}` : ''}${location.hash}`);
+    window.setTimeout(() => window.starwakeOpenChallenge?.(challengeId), 50);
+    return;
+  }
   if (/^[A-Z0-9]{5}$/.test(invited)) {
     params.delete('room');
+    params.delete('from');
     history.replaceState(null, '', `${location.pathname}${params.size ? `?${params}` : ''}${location.hash}`);
     const input = document.querySelector('#join-code');
     if (input) input.value = invited;

@@ -91,6 +91,13 @@ export function createAudio() {
       tone({ freq: 110, type: 'sawtooth', decay: 0.25, gain: 0.12, slide: 0.45 });
     },
     boost() { noise({ duration: 0.5, gain: 0.12, filter: 400, sweep: 6 }); },
+    // Battle sounds: a falling "pew", a cartoon "boing" when stunned, and a bubbly item roll.
+    zap() { tone({ freq: 1400, type: 'square', decay: 0.16, gain: 0.06, slide: 0.18 }); tone({ freq: 900, type: 'sawtooth', decay: 0.12, gain: 0.03, slide: 0.3, delay: 0.02 }); },
+    zapped() { tone({ freq: 300, type: 'triangle', decay: 0.5, gain: 0.12, slide: 2.4 }); tone({ freq: 160, type: 'sine', decay: 0.6, gain: 0.1, slide: 0.5, delay: 0.12 }); },
+    roll(step = 0) { tone({ freq: note(step % 8, 523.25), type: 'triangle', decay: 0.06, gain: 0.05 }); },
+    item() { [0, 4, 7].forEach((s, i) => tone({ freq: note(s, 880), type: 'square', decay: 0.12, gain: 0.05, delay: i * 0.05 })); },
+    shield() { tone({ freq: 520, type: 'sine', decay: 0.4, gain: 0.09, slide: 1.6 }); },
+    pop() { noise({ duration: 0.12, gain: 0.14, filter: 2400, sweep: 0.2 }); },
     countdown(final = false) { tone({ freq: final ? 880 : 440, type: 'square', decay: final ? 0.45 : 0.14, gain: 0.07 }); },
     lap() { [0, 7, 12].forEach((s, i) => tone({ freq: note(s, 392), type: 'triangle', decay: 0.4, gain: 0.1, delay: i * 0.09 })); },
     finish() { [0, 4, 7, 12, 16].forEach((s, i) => tone({ freq: note(s, 523.25), type: 'triangle', decay: 0.5, gain: 0.1, delay: i * 0.08 })); },

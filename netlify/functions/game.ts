@@ -34,7 +34,8 @@ type Live = { id: string; name: string; ship: string; d: number; x: number; y: n
 
 const COURSES = ["neon-rift", "io-storm", "titan-veil", "helix-deep", "earthfall-circuit", "jovian-shear"];
 const SHIPS = ["kite", "bastion", "needle", "manta"];
-const BOT_NAMES = ["VANTA-7", "ECHO/3", "MICA", "RUNE-8", "SOL"];
+// Sim pilots are the cartoon alien cast (same order as the client).
+const BOT_NAMES = ["ZORP", "BLIX", "MUNGO", "QUEEP", "GLORB"];
 const HEAT_MS = 60000;
 const COUNTDOWN_MS = 4000;
 // After the heat clock ends, pilots who never report are scored as DNF.
@@ -79,6 +80,26 @@ async function readLive(code: string): Promise<Live[]> {
   const { blobs } = await s.list({ prefix: `live/${code}/` });
   const entries = await Promise.all(blobs.map((blob) => s.get(blob.key, { type: "json" }) as Promise<Live | null>));
   return entries.filter((entry): entry is Live => !!entry);
+}
+
+// Laser zaps between humans: each shooter keeps a cumulative hit count per target
+// under its own key (zap/CODE/HEAT/TARGET/SHOOTER), so simultaneous hits never overwrite
+// each other. The target reads its inbox with each telemetry update.
+type Zap = { from: string; name: string; count: number; at: number };
+const zapKey = (code: string, heat: number, target: string, from: string) => `zap/${code}/${heat}/${target}/${from}`;
+async function readZaps(code: string, heat: number, target: string): Promise<Zap[]> {
+  const s = store();
+  const { blobs } = await s.list({ prefix: `zap/${code}/${heat}/${target}/` });
+  const entries = await Promise.all(blobs.map((blob) => s.get(blob.key, { type: "json" }) as Promise<Zap | null>));
+  return entries.filter((entry): entry is Zap => !!entry);
+}
+
+// "Beat my run" challenges: a recorded run plus the exact course layout, shared by link.
+const challengeKey = (id: string) => `challenge/${id}`;
+const validChallengeId = (id: unknown): id is string => typeof id === "string" && /^[a-z0-9]{8}$/.test(id);
+function cleanRun(run: unknown) {
+  if (!Array.isArray(run)) return [];
+  return run.slice(0, 1500).map((p) => (Array.isArray(p) ? [finite(p[0], 0, 600), finite(p[1], -50, 1e6), finite(p[2], -12, 12), finite(p[3], -12, 12)].map((v) => Math.round(v * 100) / 100) : null)).filter(Boolean);
 }
 
 // Same mixing hash as the client's botSeed, so live standings match final results.
@@ -218,6 +239,29 @@ export default async (request: Request) => {
       return json({ error: "Could not reserve a lobby code. Try again." }, 503);
     }
 
+    if (action === "challenge-save") {
+      const c = body.challenge || {};
+      const forged = normalizeCourseDefinition(c.course);
+      const courseId = forged && c.courseId === forged.id ? forged.id : COURSES.includes(c.courseId) ? c.courseId : null;
+      if (!courseId) return json({ error: "That course can't be shared." }, 400);
+      if (!validCode(c.layoutCode)) return json({ error: "Missing course layout." }, 400);
+      const id = Array.from(crypto.getRandomValues(new Uint8Array(8)), (b) => "abcdefghijkmnpqrstuvwxyz23456789"[b % 32]).join("");
+      const challenge = {
+        id, courseId, course: forged && courseId === forged.id ? forged : null,
+        coursePrompt: typeof c.coursePrompt === "string" ? c.coursePrompt.slice(0, 120) : "",
+        courseSeed: Number(c.courseSeed) >>> 0, layoutCode: c.layoutCode, heat: Math.max(1, Math.min(3, Number(c.heat) || 1)),
+        name: cleanName(c.name), ship: cleanShip(c.ship), score: Math.floor(finite(c.score, 0, MAX_HEAT_SCORE)),
+        duration: finite(c.duration, 10, 600), run: cleanRun(c.run), parent: validChallengeId(c.parent) ? c.parent : null, createdAt: Date.now(),
+      };
+      await store().setJSON(challengeKey(id), challenge);
+      return json({ id });
+    }
+    if (action === "challenge-get") {
+      if (!validChallengeId(body.id)) return json({ error: "That challenge link is broken." }, 400);
+      const challenge = await store().get(challengeKey(body.id), { type: "json" });
+      return challenge ? json({ challenge }) : json({ error: "That challenge has expired." }, 404);
+    }
+
     const code = String(body.code || "").toUpperCase();
     if (!validCode(code)) return json({ error: "Enter a valid five-character room code." }, 400);
 
@@ -250,8 +294,12 @@ export default async (request: Request) => {
       const t = body.telemetry || {};
       const entry: Live = { id: pilot.id, name: pilot.name, ship: pilot.ship, d: finite(t.d, 0, 1e6), x: finite(t.x, -12, 12), y: finite(t.y, -12, 12), score: Math.floor(finite(t.score, 0, MAX_HEAT_SCORE)), at: Date.now() };
       await store().setJSON(liveKey(code, pilot.id), entry);
-      const live = (await readLive(code)).filter((other) => other.id !== pilot.id && found.room.players.some((p) => p.id === other.id));
-      return json({ live, phase: found.room.phase, heat: found.room.heat });
+      // Outgoing zaps: cumulative counts per human target in this room.
+      const zaps = Array.isArray(body.zaps) ? body.zaps.slice(0, 8) : [];
+      await Promise.all(zaps.filter((z: { target?: string }) => z && z.target !== pilot.id && found.room.players.some((p) => p.id === z.target)).map((z: { target: string; count: number }) =>
+        store().setJSON(zapKey(code, found.room.heat, z.target, pilot.id), { from: pilot.id, name: pilot.name, count: Math.floor(finite(z.count, 0, 999)), at: Date.now() })));
+      const [live, zapped] = await Promise.all([readLive(code), readZaps(code, found.room.heat, pilot.id)]);
+      return json({ live: live.filter((other) => other.id !== pilot.id && found.room.players.some((p) => p.id === other.id)), zapped, phase: found.room.phase, heat: found.room.heat });
     }
 
     if (action === "leave") {
@@ -283,6 +331,12 @@ export default async (request: Request) => {
           draft.scores.push({ playerId, score, heat: draft.heat, name: pilot.name, kind: "human", flightTime: finite(result.flightTime, 0, 600) });
         }
         scoreBots(draft);
+        // Zap swings: points this pilot stole from (or lost to) each sim pilot.
+        const adjust = Array.isArray(result.botAdjust) ? result.botAdjust : [];
+        for (let i = 0; i < draft.bots; i++) {
+          const entry = draft.scores.find((e) => e.playerId === `bot-${i}` && e.heat === draft.heat);
+          if (entry) entry.score = Math.floor(finite(entry.score + finite(adjust[i], -3000, 3000), 0, MAX_HEAT_SCORE));
+        }
         settleHeat(draft);
       } else if (action === "extend") {
         // Solo pause: only a room with a single human may stretch its heat clock.

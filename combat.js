@@ -321,7 +321,8 @@ export function createCombat(THREE, { world, getRoute, routeAt, makeShipMesh, sh
     // Human rival: the hit is resolved on their screen; we spin their ship locally.
     if (shooter === 'player') zapCounts[t.id] = (zapCounts[t.id] || 0) + 1;
     t.stunUntil = r.time + STUN;
-    return steal(t.id);
+    // Can't steal more than they have (their client applies the same cap).
+    return Math.min(steal(t.id), Math.max(0, Math.floor(t.score || 0)));
   }
 
   // ---------- player actions ----------

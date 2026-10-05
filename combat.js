@@ -134,7 +134,7 @@ function canvasSprite(THREE, draw, size = 128) {
   return t;
 }
 
-export function createCombat(THREE, { world, getRoute, routeAt, makeShipMesh, ships, nameTag, glow, sfx, toast, onPlayerHit = () => {}, say = () => {} }) {
+export function createCombat(THREE, { world, getRoute, routeAt, makeShipMesh, ships, nameTag, glow, sfx, toast, onPlayerHit = () => {}, say = () => {}, onSteal = () => {} }) {
   const starTex = new THREE.TextureLoader().load('/assets/kenney/particles/star_06.png');
   const reticleTex = canvasSprite(THREE, (g, s) => {
     g.strokeStyle = '#ffffff';
@@ -235,6 +235,7 @@ export function createCombat(THREE, { world, getRoute, routeAt, makeShipMesh, sh
     zapSeen = {};
     paid = {};
     credited = 0;
+    creditBy = {};
     lastPlayerHitByBot = -9;
     botHitsOnPlayer = 0;
     leaderId = null;
@@ -316,6 +317,7 @@ export function createCombat(THREE, { world, getRoute, routeAt, makeShipMesh, sh
     r.zapPoints -= stolen;
     r.score = Math.max(0, r.score - stolen); // so back-to-back hits steal from what's actually left
     r.lostPts = (r.lostPts || 0) + stolen;
+    if (stolen) onSteal({ thief: shooterName, victim: 'YOU', amount: stolen, against: true });
     r.stunUntil = r.time + STUN;
     r.combo = 0;
     sfx.zapped?.();
@@ -332,6 +334,7 @@ export function createCombat(THREE, { world, getRoute, routeAt, makeShipMesh, sh
       t.adj -= stolen;
       t.stunUntil = r.time + STUN;
       if (shooter === 'player' && stolen) say(t.name, 'zapped');
+      if (stolen) onSteal({ thief: shooter === 'player' ? 'YOU' : racers.find((b) => b.id === shooter)?.name || 'RIVAL', victim: t.name, amount: stolen, mine: shooter === 'player' });
       return stolen;
     }
     if (target.kind === 'ext') {
@@ -339,6 +342,7 @@ export function createCombat(THREE, { world, getRoute, routeAt, makeShipMesh, sh
       const live = Math.max(0, Math.floor(t.score(r.time) + t.adj)), stolen = Math.min(steal(t.id, live), live);
       t.adj -= stolen;
       t.stunUntil = r.time + STUN;
+      if (stolen) onSteal({ thief: 'YOU', victim: t.name, amount: stolen, mine: true });
       return stolen;
     }
     // Human rival: the hit is resolved on their screen; we spin their ship locally.
@@ -527,7 +531,13 @@ export function createCombat(THREE, { world, getRoute, routeAt, makeShipMesh, sh
   const outgoingPaid = () => Object.entries(paid).map(([to, amount]) => ({ to, amount }));
 
   /** Credit points other humans confirmed losing to our zaps: [{ from, name, amount }] (cumulative per victim). */
+  let creditBy = {};
   function receiveCredits(r, list = []) {
+    for (const c of list) {
+      const gain = Math.max(0, Number(c.amount) || 0) - (creditBy[c.from] || 0);
+      if (gain > 0) onSteal({ thief: 'YOU', victim: String(c.name || 'RIVAL').toUpperCase(), amount: gain, mine: true });
+      creditBy[c.from] = Math.max(creditBy[c.from] || 0, Math.max(0, Number(c.amount) || 0));
+    }
     const total = list.reduce((sum, c) => sum + Math.max(0, Number(c.amount) || 0), 0);
     if (total > credited) {
       const gained = total - credited;

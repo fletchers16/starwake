@@ -474,3 +474,19 @@ button:disabled{cursor:not-allowed;filter:saturate(.55);opacity:.58}
 .ai-recap p{margin:5px 0 0;font:500 15px/1.4 system-ui,sans-serif;color:#f4f9ff}
 /* Phones: the bubble sits low (above FIRE/BOOST) so it never covers the item card. */
 @media(max-width:760px){.taunt{top:auto;bottom:128px}.taunt::after{display:none}.taunt span{font-size:12px}#checkpoint-label{white-space:nowrap;font-size:7px;letter-spacing:.08em}}
+
+/* ===== Live standings: leader crown, Zap Frenzy marker and the steal feed ===== */
+.standings-ticker span{color:#e8eef8}
+.standings-ticker.frenzy div{border-left-color:#ff8be8}
+.standings-ticker.frenzy::before{content:'⚡ ZAP FRENZY · STEALS ×2';font:700 8px 'DM Mono',monospace;letter-spacing:.14em;color:#ff8be8;padding:2px 0 3px}
+.steal-feed{display:grid;gap:3px;margin-top:6px;width:170px;pointer-events:none}
+.steal-feed div{display:flex;align-items:baseline;gap:6px;padding:4px 8px;border-radius:8px;background:rgba(20,14,40,.72);border:1px solid rgba(255,255,255,.12);font:600 9px 'DM Mono',monospace;color:#cfd8e6;animation:steal-in .22s ease-out;transition:opacity .5s,transform .5s}
+.steal-feed div.mine{border-color:#7ef5ff;color:#e9fdff}.steal-feed div.mine em{color:#7ef5ff}
+.steal-feed div.against{border-color:#ff8be8}.steal-feed div.against em{color:#ff8be8}
+.steal-feed div.gone{opacity:0;transform:translateX(12px)}
+.steal-feed b{font:400 11px var(--display);letter-spacing:.03em;color:#fff}
+.steal-feed em{font-style:normal;color:#ffd84d}
+.steal-feed span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+@keyframes steal-in{from{opacity:0;transform:translateX(16px)}}
+/* Phones: a compact top-3 strip and feed under the place/timer instead of hiding standings. */
+@media(max-width:760px){.hud2 .standings-ticker{display:grid;width:124px;font-size:7px;margin-top:6px}.hud2 .standings-ticker[hidden]{display:none}.standings-ticker div{padding:3px 5px;gap:4px;grid-template-columns:12px 1fr auto}.standings-ticker div:nth-child(n+4):not(.me){display:none}.steal-feed{width:124px}.steal-feed div{font-size:7px;padding:3px 5px}.steal-feed b{font-size:9px}}

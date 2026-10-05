@@ -64,7 +64,7 @@ Score each 1–10 with evidence. A 10 is demo-ready on a phone with no explanati
 19. `done` (C3) [Usefulness] **Novices crushed:** the 0.45·base bot floor and the 150 minimum steal. Scale with time flown, cap bot zaps per heat, steal 8%.
 20. `done` (C3) [Polish] **Rules text wrong:** "steals 150"; bounty, Frenzy and shield not explained; the challenge says three heats; the challenger is missing from the standings.
 21. `in-progress` (C3: lap times; the CTA overlap, briefing centring and winner-name repeat remain) [Polish] **Small UI faults:** bot lap times always 59.5 s; repeated winner name; mobile CTA overlap; mobile briefing off-centre.
-22. `idea` [Polish/Usefulness] Live standings strip with a steal ticker ("−120 → BLIX"), crown and Frenzy markers.
+22. `done` (C6) [Polish/Usefulness] Live standings strip with a steal ticker ("−120 → BLIX"), crown and Frenzy markers.
 
 **From grade 5:**
 23. `done` (C5) [Execution/Polish] Recap written once from incomplete standings: write it when the room reaches results or complete, and redo it if standings change.
@@ -109,3 +109,4 @@ Score each 1–10 with evidence. A 10 is demo-ready on a phone with no explanati
   - **Server:** duplicate names get a number, solo pause is capped at 120 s per heat, auth failures return 403.
   - **Deploy:** `npm run warm:ai <url>` pre-warms the AI lines for all six courses.
   - **Tests:** e2e 20/20.
+- Cycle 6: live battle readability. The standings strip marks the crowned leader (♛) and shows a ZAP FRENZY header in the final 15 s. A new steal feed lists every point swing as it happens ("YOU +47 from BLIX", NPC-on-NPC, rivals' confirmed PvP steals), coloured by whether you gained or lost. Phones now get a compact top-3 strip and feed (standings used to be hidden under 760 px). e2e 20/20.

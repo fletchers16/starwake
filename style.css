@@ -498,3 +498,5 @@ button:disabled{cursor:not-allowed;filter:saturate(.55);opacity:.58}
 .steal-feed{width:190px}.steal-feed div{font-size:11px}.steal-feed b{font-size:13px}
 .standings-ticker.frenzy::before{font-size:10px}
 @media(max-width:760px){.hud2 .standings-ticker{font-size:9px;width:140px}.hud2 .standings-ticker div{padding:3px 5px}.steal-feed{width:140px}.steal-feed div{font-size:9px}.steal-feed b{font-size:10px}.standings-ticker.frenzy::before{font-size:8px}}
+
+.rematch-button{margin-top:10px;width:100%;border:2px solid #ffd84d;color:#ffd84d;font-weight:700;letter-spacing:.12em}.rematch-button:disabled{opacity:.55;border-color:rgba(255,255,255,.25);color:rgba(255,255,255,.7)}

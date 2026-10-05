@@ -414,6 +414,13 @@ export default async (request: Request) => {
         draft.extendedMs = (draft.extendedMs || 0) + ms;
         draft.startsAt = (draft.startsAt || 0) + ms;
         draft.endsAt = (draft.endsAt || 0) + ms;
+      } else if (action === "rematch") {
+        // Same crew, fresh season: the host restarts heat 1 for everyone once a season is complete.
+        if (draft.hostId !== playerId || draft.phase !== "complete") throw new Error("The host can call a rematch once the season is over.");
+        draft.heat = 1;
+        draft.scores = [];
+        draft.botAdjust = {};
+        startHeat(draft);
       } else if (action === "next") {
         if (draft.hostId !== playerId || draft.phase !== "results") throw new Error("The host can continue after every pilot finishes the heat.");
         draft.heat += 1;

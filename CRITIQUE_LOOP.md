@@ -85,8 +85,8 @@ Score each 1–10 with evidence. A 10 is demo-ready on a phone with no explanati
 35. `done` (C7) [Polish] Strip and feed text 7–9 px; the LAP banner covers the HUD; "−0 pts" on ties.
 36. `done` (C7) [Execution] Late PvP zaps dropped after done; zapSeen jumps past the 2-hit cap.
 37. `done` (C7) [Execution/Security] Paid steals need a matching zap record and a cap; the C6 log overstated the feed (it shows your own steals only).
-38. `idea` [Creativity/Usefulness] Season-end AI story card with share/challenge buttons.
-39. `idea` [Usefulness/Polish] Social PvP: broadcast all human steals, emote taunts, REMATCH.
+38. `done` (C8) [Creativity/Usefulness] Season-end AI story card with share/challenge buttons.
+39. `in-progress` (C8: REMATCH done; the steal broadcast and emotes remain) [Usefulness/Polish] Social PvP: broadcast all human steals, emote taunts, REMATCH.
 
 ## Log
 - Cycle 2: fixed the top grade-1 findings.
@@ -130,3 +130,7 @@ Score each 1–10 with evidence. A 10 is demo-ready on a phone with no explanati
   - **Late PvP zaps:** accepted during the 2 s grace; zapSeen advances only by applied hits.
   - **Paid steals:** need a matching zap record and are capped at 1500 per zap.
   - **Tests:** e2e 20/20.
+- Cycle 8: season finale.
+  - **Season story:** after heat 3 the recap becomes a three-sentence story (OpenAI `season` request: champion, rivalry, a dare to run it back), with a template fallback built from the season table and accumulated zap/cow stats.
+  - **REMATCH · SAME CREW:** a new host-only `rematch` server action restarts heat 1 for the whole room with scores and bot swings cleared. Other players are pulled in by the poll (heat 3→1 resets their total); non-hosts see "waiting for the host".
+  - **Verified:** full 3-heat solo season → story → rematch → heat 1; e2e 20/20.

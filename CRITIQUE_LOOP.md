@@ -200,3 +200,7 @@ Score each 1–10 with evidence. A 10 is demo-ready on a phone with no explanati
   - **Landings:** live invites say "JOIN ORION-7 ON TITAN VEIL." plus the lobby count.
   - **Polish:** the briefing opens at the top (preventScroll); the "?" pods render as a chip; one hangar button on challenge results.
   - **Tests:** e2e 27/27.
+- Cycle 14: submission readiness.
+  - **README:** rewritten for the battle racer (rules, live and async multiplayer, the OpenAI features, architecture, dev hooks, e2e, deploy).
+  - **SUBMISSION.md:** rewritten (title "Starwake: Zap Your Friends", a paste-ready description, a 5-minute judge walkthrough, a deploy checklist including `warm:ai` and the AI checks).
+  - **Cover:** new `submission/cover-battle.png` (1600×900), staged from a live Jovian Shear heat (a laser locking onto ZORP, crown, UFO spectators, rings) with a cartoon title overlay.

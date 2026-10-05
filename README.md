@@ -1,43 +1,77 @@
-# Starwake
+# Starwake: cartoon battle racing
 
-Starwake is a sci-fi flight racer with a cinematic cockpit intro, a PvE/PvP race hub, a ship garage, and an endless free-flight prototype. Pilots race the same seeded course, collect signal rings, avoid debris, and earn rank points and credits to unlock ship variants.
+Race your friends and zap them. Starwake is a browser battle racer for 2–8 players on any device: grab "?" pods, snipe rivals with laser blasters, steal their points, and out-fly five alien rivals whose trash talk is written by OpenAI. Play live through an invite link, or dare a friend to beat your recorded run whenever they're free.
 
-## Race rules
+Built for the Handshake AI Skills Studio × OpenAI Multiplayer Game Challenge. The submission copy is in [SUBMISSION.md](SUBMISSION.md).
 
-- A heat lasts 60 seconds. In a multiplayer lobby, every device receives the same start and finish timestamps and course seed.
-- Each course is a closed, curved 3D circuit. Crossing the finish gate starts another lap without slowing or freezing the ship; the shared heat clock decides when everyone stops.
-- Signal rings come in five-ring trails held off the centre line. Each ring scores 100 × your combo (up to ×5), missing one resets the combo, and clearing a whole trail adds a 300-point Perfect Line bonus. Crystal pylons guard the centre line, so you have to steer to score. Star Cores add 250 points. Collecting a Star Core also restores one boost-fuel segment and triggers a brief speed burst. Each remaining hull point adds 35 points, each lap adds 300 points, and flight time adds 1 point per second.
-- The highest three-heat score wins. Ties go to the pilot with the fastest total flight time.
-- Ships are sidegrades: speed, handling, hull, fuel, and width change together. Wider ships can take more hits and carry more fuel, but are harder to steer through gaps.
-- Race routes change direction in three dimensions. Shared course and route seeds keep a lobby's layout consistent across devices.
+## How to play
 
-## Attractions
+- **Score the most points across three 60-second heats** (a challenge is a single heat).
+- **"?" pods** give a random item, and racers further behind get better ones:
+  - **Laser Blaster:** 3 shots that auto-aim at the racer ahead.
+  - **Comet Seeker:** hunts down 1st place.
+  - **Bubble Shield:** blocks one zap.
+  - **Turbo Snack:** an instant boost.
+- **Zaps** spin the target out and **steal 8% of their points** (minimum 40). The leader wears a **crown** worth double. In the final 15 seconds, **Zap Frenzy** doubles every steal again.
+- **Ring trails** score 100 × your combo (up to ×5), and a perfect trail adds +300. Gold stars refill boost. **Space cows** are worth +250. Glowing-outlined rocks and mines cost hull.
+- **Controls:**
+  - Steer with **A/D** or **←/→**, climb with **W/S** or **↑/↓**.
+  - **Space** boosts and **F** fires.
+  - **1–3** send emotes in multiplayer.
+  - On a phone, drag to steer and use the on-screen buttons.
 
-Every lap flies through three named landmarks per world, such as The Broken Halo ring station on Neon Rift, Pele's Arch on Io and the Cassini Gap at Jupiter, with an "ENTERING …" caption as you approach.
+## Playing together
 
-## Flight deck
+- **Live battles:** **⚔ BATTLE → OPEN A BATTLE ROOM**, then share the invite link. Friends join from any phone or laptop with no install or account.
+  - The server keeps every screen in sync: live positions, zaps, victim-confirmed point steals, the room-wide steal feed and emotes.
+  - After heat 3, the host can **REMATCH** with the same crew.
+  - Sim pilots fill empty seats.
+- **Async dares:** on any results screen, press **BEAT MY RUN**.
+  - Your friend races your recorded flight on the exact same track layout, as a ghost they can zap. The target stays fixed.
+  - Each chain of dare links keeps a **ladder** of everyone who tried.
+  - The hub's **Your dares** card shows who replied.
 
-- Choose PvE to race sim pilots, or PvP to create a room or join with a five-character code.
-- Select one of six race maps: Neon Rift, Io Storm, Titan Veil, Helix Deep, Earthfall Circuit, and Jovian Shear. Earthfall adds a steady pull toward the planet; Jovian Shear adds magnetic crosswind and dangerous ring-plane crossings.
-- Free Flight streams seeded planetary and asteroid domains ahead as you explore, while recycling distant regions to bound memory. It is a forward-thrust prototype with lateral and altitude steering; it does not yet provide full six-axis thrust, saved discoveries, or network-shared sectors.
-- World Forge sends your prompt to OpenAI (through `netlify/functions/forge.ts`), which designs a new course with structured outputs: name, setting, palette, track shape, gravity, crosswind, and hazards. `course-forge.js` clamps every value into ranges the engine can fly, so the forged course races like an authored one. It is saved to your profile, and in a lobby it travels with the room so every pilot gets the same course. Without the AI (local preview or no API key), it falls back to the closest authored map with a prompt-seeded variant.
+## Built with OpenAI
 
-## Controls
+- **AI rivals:** ZORP, BLIX, MUNGO, QUEEP and GLORB taunt you when they zap you, get zapped, or take the lead.
+  - Lines are written per world by `netlify/functions/banter.ts` and cached once per course.
+  - `npm run warm:ai <site>` pre-generates them after deploy.
+- **AI announcer:** a two-sentence recap of every heat and a three-sentence story at the end of each season, from the real standings and stats.
+- **World Forge:** turns a sentence into a raceable world (track shape, palette, gravity, crosswind, hazards) using structured outputs. `course-forge.js` clamps every value so AI tracks are fair and flyable.
+- **Limits and fallbacks:**
+  - Every AI call is rate-limited per IP per day, and repeated prompts are cached.
+  - Without `OPENAI_API_KEY` the game falls back to canned lines and template recaps.
 
-- Steer left/right with **A / D** or **← / →**; change altitude with **W / S** or **↑ / ↓**. On touchscreens, drag in either direction.
-- Hold **Space** or the **BOOST** button to spend fuel for a burst of speed.
-- Fly through teal signal rings. Dodge asteroids, blocker gates, and broken ring arcs.
-- Chase the gold Star Cores for a fuel refill and a short, free boost burst.
-- In Free Flight, forward thrust is automatic; steer laterally and vertically to roam between domains.
+## Architecture
 
-## Multiplayer
+| Area | Files |
+|---|---|
+| Rendering | three.js, a toon/ink cartoon style, six hand-built worlds (`world-themes.js`, `landmarks.js`, `skyline.js`, `textures.js`), a post-processing grade |
+| Battle systems | `combat.js` (items, zaps, NPC racers, bounty, frenzy), `aliens.js` (alien pilots, canned lines), `critters.js` (space cows, UFO spectators, crown), `challenge.js` (run recording, links) |
+| Game shell | `game.js` (race loop, HUD, lobby, results), `mode-hub.js` / `mode-bridge.js` (hub, invite and dare landings) |
+| Server | `netlify/functions/game.ts`, `forge.ts`, `banter.ts`, `netlify/lib/openai.ts` |
 
-On a deployed site, choose **PvP → Create Private Race**, share the five-character code, and have friends join from their own devices. The host can add sim pilots to open seats and starts each shared heat. The local preview uses browser storage, so its lobbies are limited to that browser; deploy the project to enable cross-device rooms. Scores are still client-submitted in this prototype, so treat online matches as casual until result validation moves server-side.
+### `netlify/functions/game.ts`
 
-## Netlify
+Rooms live on Netlify Blobs with strong consistency and conditional writes.
 
-The project is configured to build with `npm run build` and publish `dist/`. Multiplayer room state is handled by `netlify/functions/game.ts` and Netlify Blobs with strong consistency and conditional writes. The browser calls `/.netlify/functions/game` directly.
+- **Who can act:** each pilot has a private token that authorises every action. The server is authoritative for heat clocks, sim-pilot scores (rubber-banded to the human field) and score caps (by time flown).
+- **Zaps and steals:** zap inboxes and confirmed steals are scoped by room, season round and heat.
+- **Challenges:** stored with ladders. Ladder writes use server-recorded scores only.
 
-To enable the AI World Forge, set `OPENAI_API_KEY` in **Site configuration → Environment variables** on Netlify. Optional: `OPENAI_MODEL` (default `gpt-5-mini`) and `OPENAI_REASONING_EFFORT` (default `minimal`; set it empty for models without reasoning). The key stays server-side; the browser only calls `/.netlify/functions/forge`.
+## Development
 
-The companion `netlify-ready-game.zip` contains the source, lockfile, Netlify configuration, and function. Upload it using the publishing flow from the competition brief. After Netlify gives you a public URL, test two devices in the same lobby before sharing it as your submission.
+```bash
+npm install
+npm run dev
+```
+That serves http://127.0.0.1:5180, running the real Netlify functions with an in-memory Blobs store. `window.__starwake` exposes dev hooks: `state`, `scene`, `combat`, `capture()` and `stats()`.
+
+```bash
+npm run test:battle
+```
+A laptop and an emulated iPhone, in isolated browsers, play a full PvP season. They join through an invite link, zap each other (the keyboard on one, the touch FIRE button on the other), check credits, emotes, standings and security, and run a rematch. 27 checks.
+
+## Deploy (Netlify)
+
+`netlify.toml` builds with `npm run build`, publishes `dist/` and serves functions from `netlify/functions`. Set `OPENAI_API_KEY` (and optionally `OPENAI_MODEL`, default `gpt-5-mini`) in the site's environment variables, redeploy, then run `npm run warm:ai https://<site>`.

@@ -50,4 +50,6 @@ export default defineConfig(({ command }) => ({
   plugins: [netlifyFunctionsDev()],
   resolve: command === 'serve' ? { alias: { '@netlify/blobs': fileURLToPath(new URL('./dev/blobs-shim.js', import.meta.url)) } } : {},
   ssr: { noExternal: command === 'serve' ? ['@netlify/blobs'] : [] },
+  // three.js ships as its own long-cached chunk (~810 kB, the whole library is imported); the game code stays small.
+  build: { rollupOptions: { output: { manualChunks: (id) => (id.includes('node_modules/three') ? 'three' : undefined) } }, chunkSizeWarningLimit: 900 },
 }));

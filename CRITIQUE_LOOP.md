@@ -293,3 +293,8 @@ Score each 1–10 with evidence. A 10 is demo-ready on a phone with no explanati
   - **Late joiners:** auto-join when the heat ends (retry for up to 2 min).
   - **Copy:** "X DROPPED OUT" when a rival leaves mid-race; solo resume only claims "progress restored" when there was telemetry; a solo-results reload goes home.
   - **Tests:** e2e 34/34.
+- Cycle 22: coverage and build hygiene.
+  - **Async e2e:** new `tests/challenge.e2e.mjs` (`npm run test:challenge`, 11/11): dare link, named landing, briefing, ghost, verdict == ladder, the sender's card shows the reply, TRY AGAIN targets the reply run.
+  - **Scripts:** `npm test` runs both suites.
+  - **Build:** three.js split into its own vendor chunk (game code 224 kB); no bundle warning.
+  - **Fix:** the reload test tolerance accounts for telemetry age (it was flaky at 5 m).

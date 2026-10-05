@@ -73,6 +73,11 @@ npm run test:battle
 ```
 A laptop and an emulated iPhone, in isolated browsers, play a full PvP season. They join through an invite link, zap each other (the keyboard on one, the touch FIRE button on the other), check credits, emotes, standings and security, keep the room when the host finishes last, survive phone reloads mid-heat and between heats, send emotes in the lobby and in the race, bounce a zap back with a barrel roll, and run a rematch. 34 checks.
 
+```bash
+npm run test:challenge
+```
+The async dare flow on two isolated devices: a laptop sends a "beat my run" link, a phone opens it (the landing names the target), races the ghost, and gets a verdict that matches the ladder. Then the sender's hub card shows the reply, and TRY AGAIN races the phone's run. 11 checks. `npm test` runs both suites.
+
 ## Deploy (Netlify)
 
 `netlify.toml` builds with `npm run build`, publishes `dist/` and serves functions from `netlify/functions`. Set `OPENAI_API_KEY` (and optionally `OPENAI_MODEL`, default `gpt-5-mini`) in the site's environment variables, redeploy, then run `npm run warm:ai https://<site>`.

@@ -149,7 +149,8 @@ try {
   await phone.reload();
   // The very first frames after the resume must already be at the old distance (no restart at 0).
   const firstSeen = await until(phone, () => window.__starwake?.state.race?.started && document.querySelector('#race-screen.active') && Math.round(window.__starwake.state.race.distance), null, { timeout: 20000 });
-  check('phone reloads mid-heat and resumes at its distance', firstSeen >= before.d - 5, `distance before ${before.d}, first frame after resume ${firstSeen}`);
+  // Telemetry is up to ~450 ms old (about 8 m at race speed); the bug this guards against was a restart at 0.
+  check('phone reloads mid-heat and resumes at its distance', firstSeen >= before.d - 20, `distance before ${before.d}, first frame after resume ${firstSeen}`);
   await wait(2500); // a few sync rounds: any replayed hits or double credits would land now
   const after = await phone.evaluate(() => window.__starwake.state.race.zapPoints);
   check('reload replays no hits and no phantom credits', after === 0, `zap balance before ${before.zap}, after resume ${after} (restored into the score, ledger continues)`);

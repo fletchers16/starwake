@@ -71,7 +71,7 @@ That serves http://127.0.0.1:5180, running the real Netlify functions with an in
 ```bash
 npm run test:battle
 ```
-A laptop and an emulated iPhone, in isolated browsers, play a full PvP season. They join through an invite link, zap each other (the keyboard on one, the touch FIRE button on the other), check credits, emotes, standings and security, keep the room when the host finishes last, survive phone reloads mid-heat and between heats, send emotes in the lobby and in the race, bounce a zap back with a barrel roll, and run a rematch. 34 checks.
+A laptop and an emulated iPhone, in isolated browsers, play a full PvP season. They join through an invite link, zap each other (the keyboard on one, the touch FIRE button on the other), check credits, emotes, standings and security, keep the room when the host finishes last, survive phone reloads mid-heat and between heats, send emotes in the lobby and in the race, bounce a zap back with a barrel roll, and run a rematch. 35 checks.
 
 ```bash
 npm run test:challenge

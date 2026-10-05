@@ -44,6 +44,7 @@ Score each 1–10 with evidence. A 10 is demo-ready on a phone with no explanati
 | 17 (grade) | 6 | 7 | 7 | 6 | Deadlock fix holds (close tab, hangar and simultaneous finish all OK); live and async loops work end to end; session fragility: reload = permanently out, VIEW FLIGHT DECK doesn't leave, rematch scores stale telemetry. Read: edging into top 5 |
 | 19 (grade) | 6 | 7 | 7 | 6 | Between-heat reload, late join, rematch and emotes all work; a mid-heat reload restarts at 0; the seat can expire on the intro; silent drops never evicted (+13 s per heat); fake results for late joiners; device ids leak; bfcache. Read: about #4–5 |
 | 21 (grade) | 5 | 7 | 7 | 6 | Mid-heat resume broken in multiplayer (sync posts d=0 before the restore reads); a reload wipes the zap ledger (phantom credits, replayed hits, dropped zaps); dodge toast overwritten; roll untimeable (no warning); late joiner bounced. Silent-drop eviction verified (39–47 s). Read: about #5 |
+| 23 (grade) | 6 | 7 | 7 | 6 | Resume holds adversarially (guest and host mid-heat, late join auto-seated); both suites green; a reload repairs hull and drops the item (an exploit worth up to 140); hull double-counted on resume; phone roll timing; late-joiner waiting state; HUD clutter; stale tab title. Read: about #4, credible top 3 |
 
 ## Backlog
 (ready / in-progress / done; each item notes the criterion it moves)
@@ -164,6 +165,14 @@ Score each 1–10 with evidence. A 10 is demo-ready on a phone with no explanati
 93. `done` (C21) [Polish] The PvP shooter can't tell it was reflected.
 94. `done` (C21) [Usefulness] Late joiner during a heat: wait and auto-join when the heat ends.
 95. `done` (C21) [Polish] Copy: solo resume says "progress restored"; dropped friends vanish silently; solo-results reload lands in the lobby.
+
+**From grade 23:**
+96. `done` (C23) [Execution] Telemetry must carry hull, item, ammo, the raw score and bot swings; restore them on resume (no hull repair, no double-counted hull, no NPC score jumps).
+97. `done` (C23) [Polish] Phone roll: a single-tap ROLL button, and a 0.6 s lock-on on touch.
+98. `done` (C23) [Usefulness/Polish] Late joiners: a pinned waiting banner, and lobby copy that names the heat they'll join.
+99. `done` (C23) [Polish] Declutter the race HUD (compact emote row everywhere); the GO banner can stick.
+100. `done` (C23) [Polish] Stale tab title "Pilot the impossible".
+101. `idea` [Polish/Usefulness] A 20-second interactive first flight (forced pod, zap and roll prompt).
 
 ## Log
 - Cycle 2: fixed the top grade-1 findings.
@@ -298,3 +307,10 @@ Score each 1–10 with evidence. A 10 is demo-ready on a phone with no explanati
   - **Scripts:** `npm test` runs both suites.
   - **Build:** three.js split into its own vendor chunk (game code 224 kB); no bundle warning.
   - **Fix:** the reload test tolerance accounts for telemetry age (it was flaky at 5 m).
+- Cycle 23: fixed the grade-23 findings.
+  - **Reload exploit:** telemetry carries the raw score, hull, held item and ammo, plus sim-pilot swings, and resume restores them exactly. That closes the hull-repair exploit and the double-counted hull bonus, keeps the held item, and stops NPC standings jumping. New e2e check: hull 1 and a held seeker survive a reload.
+  - **Phone roll:** the ROLL chip is a single-tap button on touch, and the lock-on lasts 0.6 s on touch (0.45 s on keyboards).
+  - **Late joiners:** a pinned "⚔ JOINING CODE" banner with CANCEL while waiting; the lobby copy names the heat they'll race from.
+  - **HUD:** a compact horizontal emote row everywhere; the GO banner clears against the race clock.
+  - **Tab title:** "Starwake: Zap Your Friends".
+  - **Tests:** e2e 35/35 + 11/11.

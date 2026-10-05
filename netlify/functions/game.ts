@@ -42,7 +42,9 @@ type Room = {
   updatedAt: number;
 };
 
-type Live = { id: string; name: string; ship: string; d: number; x: number; y: number; score: number; at: number };
+// rs/hull/item/ammo/ba are the pilot's own state, kept so a reloaded tab can continue exactly (raw score, hull, held item, sim-pilot swings).
+type Live = { id: string; name: string; ship: string; d: number; x: number; y: number; score: number; at: number; rs?: number; hull?: number; item?: string; ammo?: number; ba?: number[] };
+const ITEM_IDS = ["blaster", "seeker", "shield", "turbo"];
 
 const COURSES = ["neon-rift", "io-storm", "titan-veil", "helix-deep", "earthfall-circuit", "jovian-shear"];
 const SHIPS = ["kite", "bastion", "needle", "manta"];
@@ -446,7 +448,9 @@ export default async (request: Request) => {
       if (!pilot) return json({ error: "Your pilot is no longer in this lobby." }, 409);
       if (!authorised(pilot, body)) return json({ error: "This device isn't signed in as that pilot." }, 403);
       const t = body.telemetry || {};
-      const entry: Live = { id: pilot.id, name: pilot.name, ship: pilot.ship, d: finite(t.d, 0, 1e6), x: finite(t.x, -12, 12), y: finite(t.y, -12, 12), score: Math.floor(finite(t.score, 0, MAX_HEAT_SCORE)), at: Date.now() };
+      const entry: Live = { id: pilot.id, name: pilot.name, ship: pilot.ship, d: finite(t.d, 0, 1e6), x: finite(t.x, -12, 12), y: finite(t.y, -12, 12), score: Math.floor(finite(t.score, 0, MAX_HEAT_SCORE)), at: Date.now(),
+        rs: Math.floor(finite(t.rs, 0, MAX_HEAT_SCORE)), hull: Math.floor(finite(t.hull, 0, 12)), item: ITEM_IDS.includes(t.item) ? t.item : "", ammo: Math.floor(finite(t.ammo, 0, 3)),
+        ba: Array.isArray(t.ba) ? t.ba.slice(0, 8).map((v: unknown) => Math.round(finite(v, -3000, 3000))) : [] };
       await store().setJSON(liveKey(code, pilot.id), entry);
       // Outgoing zaps: cumulative counts per human target in this room.
       const zaps = Array.isArray(body.zaps) ? body.zaps.slice(0, 8) : [];
@@ -577,7 +581,7 @@ export default async (request: Request) => {
       return json({
         room: publicRoom(room),
         resume: {
-          me: me && room.phase === "race" ? { d: me.d, x: me.x, y: me.y, score: me.score } : null,
+          me: me && room.phase === "race" ? { d: me.d, x: me.x, y: me.y, score: me.score, rs: me.rs, hull: me.hull, item: me.item, ammo: me.ammo, ba: me.ba } : null,
           zapSeen: zapsOnMe.map((e) => ({ from: e.key, count: e.value!.count, reflected: (e.value as Zap & { reflected?: number }).reflected || 0 })),
           zapCounts: myZaps,
           paid: paid.filter((p) => p.from === playerId).map((p) => ({ to: p.shooter, amount: p.amount })),

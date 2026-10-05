@@ -553,3 +553,15 @@ button:disabled{cursor:not-allowed;filter:saturate(.55);opacity:.58}
 .lock-warn b{margin-left:8px;color:#fff;font:400 15px var(--display);letter-spacing:.04em}
 @keyframes lock-pulse{from{box-shadow:0 0 0 rgba(255,77,138,0)}to{box-shadow:0 0 22px rgba(255,77,138,.75)}}
 @media(max-width:760px){.lock-warn{font-size:10px;bottom:34%}.lock-warn b{font-size:12px}}
+
+/* Decluttered race HUD: one compact emote row everywhere (short labels), tappable ROLL chip */
+.emote-bar{left:56px;bottom:16px;flex-direction:row;gap:5px}
+.emote-bar button{font-size:12px;padding:5px 9px}
+.emote-bar .l{display:none}.emote-bar .s{display:inline}
+.roll-chip{pointer-events:auto;cursor:pointer;user-select:none;-webkit-user-select:none}
+@media (pointer:coarse){.roll-chip{padding:6px 12px;font-size:13px}.roll-chip span::after{content:' · TAP'}}
+.join-wait{position:fixed;z-index:200;left:50%;top:14px;transform:translateX(-50%);display:flex;align-items:center;gap:12px;padding:10px 14px;border-radius:14px;background:#1b1430;border:2px solid #ffd84d;color:#fff;box-shadow:0 6px 0 rgba(0,0,0,.4);max-width:calc(100vw - 24px)}
+.join-wait b{font:400 15px var(--display);letter-spacing:.03em;color:#ffd84d;white-space:nowrap}
+.join-wait span{font:500 12px system-ui,sans-serif;color:rgba(255,255,255,.8)}
+.join-wait button{padding:5px 10px;border-radius:9px;border:1px solid rgba(255,255,255,.3);background:transparent;color:#fff;font:700 10px 'DM Mono',monospace;letter-spacing:.1em}
+@media(max-width:760px){.emote-bar{left:10px}.join-wait{flex-wrap:wrap;gap:6px}}

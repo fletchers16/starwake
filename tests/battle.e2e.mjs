@@ -143,7 +143,8 @@ try {
   await laptop.screenshot({ path: `${OUT}/6-laptop-zapped.png` });
 
   // ---- The phone reloads mid-heat (well into the lap): same distance, same zap balance, zaps still work ----
-  await phone.evaluate(() => { const r = window.__starwake.state.race; r.distance = Math.max(r.distance, 260); });
+  // Damaged and holding an item: a reload must not repair the hull or drop the item.
+  await phone.evaluate(() => { const r = window.__starwake.state.race; r.distance = Math.max(r.distance, 260); r.hull = 1; r.item = 'seeker'; r.ammo = 1; r.rolling = 0; });
   await wait(1200); // let telemetry carry the new distance
   const before = await phone.evaluate(() => ({ d: Math.round(window.__starwake.state.race.distance), zap: window.__starwake.state.race.zapPoints }));
   await phone.reload();
@@ -151,6 +152,8 @@ try {
   const firstSeen = await until(phone, () => window.__starwake?.state.race?.started && document.querySelector('#race-screen.active') && Math.round(window.__starwake.state.race.distance), null, { timeout: 20000 });
   // Telemetry is up to ~450 ms old (about 8 m at race speed); the bug this guards against was a restart at 0.
   check('phone reloads mid-heat and resumes at its distance', firstSeen >= before.d - 20, `distance before ${before.d}, first frame after resume ${firstSeen}`);
+  const kept = await phone.evaluate(() => ({ hull: window.__starwake.state.race.hull, item: window.__starwake.state.race.item }));
+  check('reload keeps hull damage and the held item', kept.hull === 1 && kept.item === 'seeker', JSON.stringify(kept));
   await wait(2500); // a few sync rounds: any replayed hits or double credits would land now
   const after = await phone.evaluate(() => window.__starwake.state.race.zapPoints);
   check('reload replays no hits and no phantom credits', after === 0, `zap balance before ${before.zap}, after resume ${after} (restored into the score, ledger continues)`);

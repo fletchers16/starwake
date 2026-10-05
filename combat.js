@@ -164,7 +164,7 @@ function canvasSprite(THREE, draw, size = 128) {
   return t;
 }
 
-export function createCombat(THREE, { world, getRoute, routeAt, makeShipMesh, ships, nameTag, glow, sfx, toast, onPlayerHit = () => {}, say = () => {}, onSteal = () => {}, onLockOn = () => {}, myScore = (r) => r.score }) {
+export function createCombat(THREE, { world, getRoute, routeAt, makeShipMesh, ships, nameTag, glow, sfx, toast, onPlayerHit = () => {}, say = () => {}, onSteal = () => {}, onLockOn = () => {}, myScore = (r) => r.score, aimTime = AIM_TIME }) {
   const starTex = new THREE.TextureLoader().load('/assets/kenney/particles/star_06.png');
   const reticleTex = canvasSprite(THREE, (g, s) => {
     g.strokeStyle = '#ffffff';
@@ -575,7 +575,7 @@ export function createCombat(THREE, { world, getRoute, routeAt, makeShipMesh, sh
     // Telegraph: a short lock-on warning before a sim pilot fires at you, so a barrel roll can be timed.
     if (target.kind === 'player') {
       if (!b.aimAt) { b.aimAt = r.time; onLockOn(b.name, true); sfx.countdown?.(false); return; }
-      if (r.time - b.aimAt < AIM_TIME) return;
+      if (r.time - b.aimAt < aimTime) return;
       b.aimAt = 0;
       onLockOn(b.name, false);
     }
@@ -707,6 +707,8 @@ export function createCombat(THREE, { world, getRoute, routeAt, makeShipMesh, sh
   return {
     makeRacerMesh: (opts) => makeNpcShip(0, opts),
     roll,
+    /** After a reload: sim pilots keep the point swings they had (no visible standings jump). */
+    restoreBotAdjust: (list = []) => racers.forEach((b, i) => { if (Number.isFinite(list[i])) b.adj = list[i]; }),
     /** After a reload: continue the heat's zap/steal ledger the server kept, so nothing replays or double-counts. */
     restoreLedger(ledger = {}) {
       for (const z of ledger.zapSeen || []) { zapSeen[z.from] = z.count; reflectedSeen[z.from] = z.reflected || 0; }

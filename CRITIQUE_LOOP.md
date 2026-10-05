@@ -110,7 +110,7 @@ Score each 1–10 with evidence. A 10 is demo-ready on a phone with no explanati
 54. `done` (C11) [Polish] Strip gaps unlabeled: show "175 AHEAD" / "40 BEHIND".
 55. `done` (C11) [Polish] "Sticker unlocked" repeats every PB.
 56. `done` (C11, verified: at full scroll every card clears the pinned CTA; the briefing is centred, 20 px each side, no horizontal overflow; the critic's screenshot included pane padding) [Polish] Phone first impression: hub sticky CTA covers course cards; briefing off-centre (now the top-3 blocker).
-57. `idea` [Usefulness] Challenge ladder: per-link leaderboard of replies.
+57. `done` (C12) [Usefulness] Challenge ladder: per-link leaderboard of replies.
 
 ## Log
 - Cycle 2: fixed the top grade-1 findings.
@@ -177,3 +177,8 @@ Score each 1–10 with evidence. A 10 is demo-ready on a phone with no explanati
   - **Recap:** the PvP heat recap names the human rival's margin.
   - **Stickers:** the unlock line shows only when newly earned.
   - **Tests:** e2e 27/27.
+- Cycle 12: challenge ladders.
+  - **Server:** every chain of challenge links (the original plus each send-it-back) shares one leaderboard keyed by the root challenge, holding each pilot's best (new `challenge-result` action; `challenge-get` returns the ladder).
+  - **Results:** a challenge heat posts its score and shows "★ THIS TRACK'S LADDER · N PILOTS".
+  - **Landing:** adds "N pilots have tried; best X by NAME". The dare headline is smaller for long course names, and a placeholder dare replaces the flash of the generic slogan.
+  - **Verified:** two pilots on one link, ladder ordering, landing copy; e2e 27/27.

@@ -513,3 +513,12 @@ button:disabled{cursor:not-allowed;filter:saturate(.55);opacity:.58}
 .emote-bar .s{display:none}
 /* Phones: one compact row above the pause button, clear of the speech bubble and the track centre. */
 @media(max-width:760px){.emote-bar{left:10px;bottom:16px;flex-direction:row;gap:4px}.emote-bar button{font-size:10px;padding:5px 7px}.emote-bar .l{display:none}.emote-bar .s{display:inline}}
+
+.challenge-ladder{display:grid;gap:3px;padding:12px 14px;border-radius:16px;background:rgba(255,216,77,.07);border:2px solid rgba(255,216,77,.35)}
+.challenge-ladder small{font:700 9px 'DM Mono',monospace;letter-spacing:.16em;color:#ffd84d;margin-bottom:4px}
+.challenge-ladder div{display:grid;grid-template-columns:20px 1fr auto;gap:8px;font:600 12px 'DM Mono',monospace;color:#d8e2f0;padding:3px 0}
+.challenge-ladder div.me{color:#fff}.challenge-ladder div.me span::after{content:'  · YOU';color:#ffd84d}
+.challenge-ladder b{color:#ffd84d;font-weight:700}
+
+/* The dare headline carries a course name, so it runs smaller than the default two-line slogan. */
+#app .launch-copy h1.dare{font-size:clamp(40px,5.4vw,78px);line-height:1}

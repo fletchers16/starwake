@@ -128,6 +128,20 @@ const emoteKey = (code: string, pilot: string) => `emote/${code}/${pilot}`;
 
 // "Beat my run" challenges: a recorded run plus the exact course layout, shared by link.
 const challengeKey = (id: string) => `challenge/${id}`;
+// A ladder is the leaderboard for a chain of challenges (an original link and every "send it back"),
+// keyed by the chain's root challenge: each pilot's best score on that track.
+type Rung = { name: string; score: number; at: number };
+const ladderKey = (root: string) => `ladder/${root}`;
+async function addRung(root: string, name: string, score: number) {
+  const s = store();
+  const rungs = ((await s.get(ladderKey(root), { type: "json" })) as Rung[] | null) || [];
+  const mine = rungs.find((r) => r.name === name);
+  if (mine) { if (score > mine.score) { mine.score = score; mine.at = Date.now(); } }
+  else rungs.push({ name, score, at: Date.now() });
+  rungs.sort((a, b) => b.score - a.score);
+  await s.setJSON(ladderKey(root), rungs.slice(0, 50));
+  return rungs.slice(0, 10);
+}
 const validChallengeId = (id: unknown): id is string => typeof id === "string" && /^[a-z0-9]{8}$/.test(id);
 function cleanRun(run: unknown) {
   if (!Array.isArray(run)) return [];
@@ -304,14 +318,31 @@ export default async (request: Request) => {
         courseSeed: Number(c.courseSeed) >>> 0, layoutCode: c.layoutCode, heat: Math.max(1, Math.min(3, Number(c.heat) || 1)),
         name: cleanName(c.name), ship: cleanShip(c.ship), score: Math.floor(finite(c.score, 0, MAX_HEAT_SCORE)),
         duration: finite(c.duration, 10, 600), run: cleanRun(c.run), parent: validChallengeId(c.parent) ? c.parent : null, createdAt: Date.now(),
+        root: id,
       };
+      // Rematch links join their parent's ladder.
+      if (challenge.parent) {
+        const parent = (await store().get(challengeKey(challenge.parent), { type: "json" })) as { id: string; root?: string } | null;
+        if (parent) challenge.root = parent.root || parent.id;
+      }
       await store().setJSON(challengeKey(id), challenge);
+      await addRung(challenge.root, challenge.name, challenge.score);
       return json({ id });
     }
     if (action === "challenge-get") {
       if (!validChallengeId(body.id)) return json({ error: "That challenge link is broken." }, 400);
-      const challenge = await store().get(challengeKey(body.id), { type: "json" });
-      return challenge ? json({ challenge }) : json({ error: "That challenge has expired." }, 404);
+      const challenge = (await store().get(challengeKey(body.id), { type: "json" })) as { root?: string; id: string } | null;
+      if (!challenge) return json({ error: "That challenge has expired." }, 404);
+      const ladder = (((await store().get(ladderKey(challenge.root || challenge.id), { type: "json" })) as Rung[] | null) || []).slice(0, 10);
+      return json({ challenge, ladder });
+    }
+    if (action === "challenge-result") {
+      // A pilot finished a challenge heat: their score goes on that chain's ladder.
+      if (!validChallengeId(body.id)) return json({ error: "That challenge link is broken." }, 400);
+      const challenge = (await store().get(challengeKey(body.id), { type: "json" })) as { root?: string; id: string } | null;
+      if (!challenge) return json({ error: "That challenge has expired." }, 404);
+      const ladder = await addRung(challenge.root || challenge.id, cleanName(body.name), Math.floor(finite(body.score, 0, MAX_HEAT_SCORE)));
+      return json({ ladder });
     }
 
     const code = String(body.code || "").toUpperCase();

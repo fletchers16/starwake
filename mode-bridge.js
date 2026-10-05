@@ -22,7 +22,10 @@ let launched = false;
     if (eyebrow) eyebrow.innerHTML = from ? `<i></i> ⚔ ${from} CHALLENGES YOU TO A LIVE BATTLE` : `<i></i> YOU'VE BEEN INVITED TO A PRIVATE RACE`;
   } else if (/^[a-z0-9]{8}$/.test(challenge)) {
     if (label) label.textContent = 'ACCEPT CHALLENGE';
-    if (eyebrow) eyebrow.innerHTML = `<i></i> ★ A FRIEND DARES YOU TO BEAT THEIR RUN`;
+    if (eyebrow) eyebrow.innerHTML = `<i></i> ★ A FRIEND DARES YOU`;
+    // Placeholder dare until the details load, so the generic slogan never flashes.
+    const placeholder = document.querySelector('.launch-copy h1');
+    if (placeholder) { placeholder.classList.add('dare'); placeholder.innerHTML = 'BEAT <em>THEIR RUN.</em>'; }
     // Name the dare before the player commits: who, what score, which course.
     fetch('/.netlify/functions/game', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'challenge-get', id: challenge }) })
       .then((r) => (r.ok ? r.json() : null))
@@ -33,9 +36,11 @@ let launched = false;
         const safe = (t) => String(t).replace(/[<>&"]/g, '').toUpperCase();
         eyebrow.innerHTML = `<i></i> ★ ${safe(c.name)} DARES YOU`;
         const headline = document.querySelector('.launch-copy h1');
-        if (headline) headline.innerHTML = `BEAT <em>${Number(c.score || 0).toLocaleString()}</em><br />ON ${safe(course)}.`;
+        if (headline) { headline.classList.add('dare'); headline.innerHTML = `BEAT <em>${Number(c.score || 0).toLocaleString()}</em><br />ON ${safe(course)}.`; }
         const sub = document.querySelector('.launch-copy > p:not(.launch-eyebrow)');
-        if (sub) sub.textContent = `${safe(c.name)} flew this exact track. Their ship replays the run beside you, and you can zap it. One heat.`;
+        const ladder = Array.isArray(data.ladder) ? data.ladder : [];
+        const tried = ladder.length > 1 ? ` ${ladder.length} pilots have tried; best ${Number(ladder[0].score).toLocaleString()} by ${safe(ladder[0].name)}.` : '';
+        if (sub) sub.textContent = `${safe(c.name)} flew this exact track. Their ship replays the run beside you, and you can zap it. One heat.${tried}`;
       })
       .catch(() => {});
   }

@@ -35,6 +35,7 @@ Score each 1–10 with evidence. A 10 is demo-ready on a phone with no explanati
 |---|---|---|---|---|---|
 | 1 (grade) | 6 | 7 | 6 | 6 | Build OK, battle test 16/16; server trusts scores, PvP steal desync, solo scoring lopsided (bots ~10k vs human ~1k), 287 draw calls mid-heat, intro headline unreadable |
 | 3 (grade) | 6 | 7 | 6 | 5 | C2 fixes hold mostly; `--ink` override made titles dark on dark (regression); novices still crushed by the bot floor and minimum steal; end-of-heat steals lost; player ids double as secrets; bot swings stackable; 279 draw calls on phone |
+| 5 (grade) | 7 | 7 | 6 | 6 | No errors across solo, season, challenge and PvP; max 183 calls; recap written from partial standings; cast cache poisonable; zap counts unbounded; challenge still a 3-heat season; bot lap times 59.5 s |
 
 ## Backlog
 (ready / in-progress / done; each item notes the criterion it moves)
@@ -65,6 +66,16 @@ Score each 1–10 with evidence. A 10 is demo-ready on a phone with no explanati
 21. `in-progress` (C3: lap times; the CTA overlap, briefing centring and winner-name repeat remain) [Polish] **Small UI faults:** bot lap times always 59.5 s; repeated winner name; mobile CTA overlap; mobile briefing off-centre.
 22. `idea` [Polish/Usefulness] Live standings strip with a steal ticker ("−120 → BLIX"), crown and Frenzy markers.
 
+**From grade 5:**
+23. `done` (C5) [Execution/Polish] Recap written once from incomplete standings: write it when the room reaches results or complete, and redo it if standings change.
+24. `done` (C5) [Execution/Security] Banter cast cache keyed by client-supplied course: use the server catalog for built-ins, hash forged courses, add a version.
+25. `done` (C5) [Execution] Victims apply any claimed zap count: cap new zaps per shooter per sync on both sides.
+26. `done` (C5) [Polish] Bot lap times still 59.5 s at rookie scores: base them on pace, not score.
+27. `done` (C5) [Usefulness/Polish] A challenge continues into a 3-heat season: end after one heat and lead with SEND IT BACK.
+28. `done` (C5) [Polish] Fallback recap wording is wrong ("kept it clean" after being zapped); include place.
+29. `done` (C5) [Polish] Taunt bubble covers the item card on mobile; checkpoint label wraps.
+30. `in-progress` (C5: names, pause cap, 403; the rate-limit atomicity and forge helper dedupe remain) [Execution] Duplicate pilot names; non-atomic, non-expiring rate limit; unbounded solo pause; auth errors return 400; forge duplicates helpers; PB sticker on an idle run.
+
 ## Log
 - Cycle 2: fixed the top grade-1 findings.
   - **Bots:** rubber-banded to the human field (`0.55·pace·field + 0.45·base`, identical on client and server); steals are 6% of the target's score (min 150). In a solo test the bots stayed within about 20% of the player.
@@ -88,3 +99,13 @@ Score each 1–10 with evidence. A 10 is demo-ready on a phone with no explanati
   - **Fallbacks:** canned lines and a template recap without a key.
   - **Rate limits:** shared `netlify/lib/openai.ts` (structured outputs plus a per-IP daily limit); the forge is limited to 15/day/IP with a prompt cache.
   - **Verified:** 503 fallback path, taunt bubble, recap card; e2e 20/20. The real AI path needs `OPENAI_API_KEY` on Netlify.
+- Cycle 5: fixed the grade-5 findings.
+  - **Recap:** written only from final standings and redone when they change; the fallback names your place and zap balance.
+  - **Cast cache:** keyed from the server catalog (built-ins) or a hash (forged), versioned.
+  - **Zaps:** max 2 new per shooter per update on server and client; back-to-back hits steal from the remaining score.
+  - **Bot laps:** from pace and skill (now 51–54 s instead of always 59.5).
+  - **Challenges:** one heat (HUD "★ CHALLENGE · 1 HEAT", results say BACK TO HANGAR plus the verdict).
+  - **Mobile:** the taunt bubble sits above FIRE/BOOST; the checkpoint label no longer wraps.
+  - **Server:** duplicate names get a number, solo pause is capped at 120 s per heat, auth failures return 403.
+  - **Deploy:** `npm run warm:ai <url>` pre-warms the AI lines for all six courses.
+  - **Tests:** e2e 20/20.

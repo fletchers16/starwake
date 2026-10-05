@@ -30,6 +30,7 @@ type Room = {
   botSkill?: number;
   // Zap swings on sim pilots, summed over every human's report: heat -> per-bot points.
   botAdjust?: Record<number, number[]>;
+  extendedMs?: number;
   scores: Array<{ playerId: string; score: number; heat: number; name?: string; kind?: "human" | "bot"; flightTime?: number; dnf?: boolean }>;
   updatedAt: number;
 };
@@ -130,9 +131,9 @@ function botSeed(code: string, heat: number, i: number) {
   return h >>> 0;
 }
 
-// Faster laps for stronger sim pilots (matches the client's botLapTime).
-function botLapTime(score: number, seed: number) {
-  return Math.max(38, Math.min(59.5, 64 - score / 260 + (seed % 900) / 300));
+function botLapTime(pace: number, skill: number, seed: number) {
+  // Laps come from the pilot's pace and the league's skill (scores at rookie level all hit the cap before).
+  return Math.round(Math.max(38, Math.min(59.5, 57 - (pace - 0.8) * 20 - Math.min(2, skill) * 2 + (seed % 300) / 100)) * 10) / 10;
 }
 
 /**
@@ -158,7 +159,7 @@ function scoreBots(room: Room) {
     const score = Math.floor(finite(Math.round(0.55 * pace * field + 0.45 * Math.min(base, field * 1.4 + 300)) + (adjust[i] || 0), 0, MAX_HEAT_SCORE));
     const entry = room.scores.find((e) => e.playerId === botId && e.heat === room.heat);
     if (entry) entry.score = score;
-    else room.scores.push({ playerId: botId, name: BOT_NAMES[i % BOT_NAMES.length], kind: "bot", score, heat: room.heat, flightTime: botLapTime(score, seed) });
+    else room.scores.push({ playerId: botId, name: BOT_NAMES[i % BOT_NAMES.length], kind: "bot", score, heat: room.heat, flightTime: botLapTime(pace, room.botSkill ?? 1, seed) });
   }
 }
 
@@ -171,6 +172,7 @@ function startHeat(room: Room) {
   room.startsAt = Date.now() + COUNTDOWN_MS;
   room.endsAt = room.startsAt + HEAT_MS;
   room.players.forEach((p) => { p.progress = 0; p.score = 0; p.finished = false; });
+  room.extendedMs = 0;
 }
 
 function removePilot(room: Room, playerId: string) {
@@ -310,7 +312,10 @@ export default async (request: Request) => {
         if (draft.players.length >= 8) throw new Error("This lobby is full.");
         // Humans take priority over sim pilots: drop a bot to make room.
         if (totalOccupancy(draft) >= 8) draft.bots = Math.max(0, draft.bots - 1);
-        draft.players.push({ id, token, name: cleanName(body.name), ship: cleanShip(body.ship), kind: "human", progress: 0, score: 0, finished: false, lastSeen: Date.now() });
+        // Two pilots can't share a name in one room: the newcomer gets a number.
+        let name = cleanName(body.name);
+        for (let n = 2; draft.players.some((p) => p.name === name); n++) name = `${cleanName(body.name).slice(0, 15)} ${n}`;
+        draft.players.push({ id, token, name, ship: cleanShip(body.ship), kind: "human", progress: 0, score: 0, finished: false, lastSeen: Date.now() });
       });
       return json({ room: publicRoom(room), playerId: id, token, host: room.hostId === id });
     }
@@ -335,8 +340,13 @@ export default async (request: Request) => {
       await store().setJSON(liveKey(code, pilot.id), entry);
       // Outgoing zaps: cumulative counts per human target in this room.
       const zaps = Array.isArray(body.zaps) ? body.zaps.slice(0, 8) : [];
-      await Promise.all(zaps.filter((z: { target?: string }) => z && z.target !== pilot.id && found.room.players.some((p) => p.id === z.target)).map((z: { target: string; count: number }) =>
-        store().setJSON(zapKey(code, found.room.heat, z.target, pilot.id), { from: pilot.id, name: pilot.name, count: Math.floor(finite(z.count, 0, 999)), at: Date.now() })));
+      // At most 2 new zaps per target per update (a blaster fires 3 shots a few hundred ms apart).
+      await Promise.all(zaps.filter((z: { target?: string }) => z && z.target !== pilot.id && found.room.players.some((p) => p.id === z.target)).map(async (z: { target: string; count: number }) => {
+        const key = zapKey(code, found.room.heat, z.target, pilot.id);
+        const prev = Number(((await store().get(key, { type: "json" })) as Zap | null)?.count || 0);
+        const count = Math.min(Math.floor(finite(z.count, 0, 999)), prev + 2);
+        if (count > prev) await store().setJSON(key, { from: pilot.id, name: pilot.name, count, at: Date.now() });
+      }));
       const paid = Array.isArray(body.paid) ? body.paid.slice(0, 8) : [];
       await Promise.all(paid.filter((p: { to?: string }) => p && p.to !== pilot.id && found.room.players.some((x) => x.id === p.to)).map((p: { to: string; amount: number }) =>
         store().setJSON(paidKey(code, found.room.heat, p.to, pilot.id), { from: pilot.id, name: pilot.name, amount: Math.floor(finite(p.amount, 0, MAX_HEAT_SCORE)) })));
@@ -395,7 +405,9 @@ export default async (request: Request) => {
       } else if (action === "extend") {
         // Solo pause: only a room with a single human may stretch its heat clock.
         if (draft.phase !== "race" || draft.players.length !== 1) throw new Error("Only solo heats can pause.");
-        const ms = Math.max(0, Math.min(120000, Number(body.ms) || 0));
+        // At most two minutes of pausing per heat.
+        const ms = Math.max(0, Math.min(120000 - (draft.extendedMs || 0), Number(body.ms) || 0));
+        draft.extendedMs = (draft.extendedMs || 0) + ms;
         draft.startsAt = (draft.startsAt || 0) + ms;
         draft.endsAt = (draft.endsAt || 0) + ms;
       } else if (action === "next") {
@@ -414,7 +426,7 @@ export default async (request: Request) => {
     return json({ room: publicRoom(room) });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Something went wrong in the flight deck.";
-    const status = /not found/i.test(message) ? 404 : /full|started|host|running|finished|no longer|valid|just started/i.test(message) ? 409 : 400;
+    const status = /signed in/i.test(message) ? 403 : /not found/i.test(message) ? 404 : /full|started|host|running|finished|no longer|valid|just started/i.test(message) ? 409 : 400;
     return json({ error: message }, status);
   }
 };

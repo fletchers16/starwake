@@ -314,6 +314,7 @@ export function createCombat(THREE, { world, getRoute, routeAt, makeShipMesh, sh
     if (r.time < r.shieldUntil) { r.shieldUntil = -9; sfx.pop?.(); toast('SHIELD POPPED', `BLOCKED ${shooterName}`); return 0; }
     const stolen = Math.min(steal('player', r.score), Math.max(0, Math.floor(r.score)));
     r.zapPoints -= stolen;
+    r.score = Math.max(0, r.score - stolen); // so back-to-back hits steal from what's actually left
     r.lostPts = (r.lostPts || 0) + stolen;
     r.stunUntil = r.time + STUN;
     r.combo = 0;
@@ -514,7 +515,8 @@ export function createCombat(THREE, { world, getRoute, routeAt, makeShipMesh, sh
   /** Apply zaps other humans landed on us: [{ from, name, count }] (cumulative per shooter). */
   function receiveZaps(r, list = []) {
     for (const z of list) {
-      const fresh = (Number(z.count) || 0) - (zapSeen[z.from] || 0);
+      // At most 2 new hits per shooter per update, however many a client claims.
+      const fresh = Math.min(2, (Number(z.count) || 0) - (zapSeen[z.from] || 0));
       if (fresh <= 0) continue;
       zapSeen[z.from] = Number(z.count) || 0;
       if (r.started && !r.done) for (let k = 0; k < fresh; k++) paid[z.from] = (paid[z.from] || 0) + hitPlayer(r, String(z.name || 'RIVAL').toUpperCase(), '#ff7ca7');

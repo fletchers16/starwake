@@ -1,5 +1,6 @@
 import { getStore } from "@netlify/blobs";
 import { json, hasKey, structured, underDailyLimit, MODEL } from "../lib/openai";
+import { COURSE_CATALOG } from "../../course-catalog.js";
 
 // AI rivals with OpenAI:
 // - "cast": trash talk for the alien racers, written for a specific course. Generated once
@@ -53,13 +54,18 @@ export default async (request: Request) => {
   if (!hasKey()) return json({ error: "AI rivals are not configured on this deployment.", code: "unconfigured" }, 503);
   let body: any = {};
   try { body = await request.json(); } catch {}
-  const course = { id: clean(body.course?.id, 40), name: clean(body.course?.name, 40), planet: clean(body.course?.planet, 40), world: clean(body.course?.world, 60) };
+  // Built-in courses come from the server's own catalog (clients can't rename them); forged ones are
+  // keyed by a hash of what was sent, so a crafted request can't overwrite another course's lines.
+  const sent = { id: clean(body.course?.id, 40), name: clean(body.course?.name, 40), planet: clean(body.course?.planet, 40), world: clean(body.course?.world, 60) };
+  const known = (COURSE_CATALOG as any[]).find((c) => c.id === sent.id);
+  const course = known ? { id: known.id, name: clean(known.name, 40), planet: clean(known.planet, 40), world: clean(known.world, 60) } : sent;
+  const hash = (text: string) => [...text].reduce((h, c) => Math.imul(h ^ c.charCodeAt(0), 16777619) >>> 0, 2166136261).toString(36);
 
   try {
     if (body.kind === "cast") {
       if (!course.id) return json({ error: "Missing course." }, 400);
       const store = getStore({ name: "starwake-ai", consistency: "strong" });
-      const key = `cast/${course.id}`;
+      const key = known ? `cast/v1/${course.id}` : `cast/v1/forged-${hash(`${course.name}|${course.planet}|${course.world}`)}`;
       const cached = await store.get(key, { type: "json" }).catch(() => null);
       if (cached) return json({ cast: cached, model: MODEL, cached: true });
       if (!(await underDailyLimit(request, "cast", 20))) return json({ error: "Daily AI limit reached.", code: "limited" }, 429);

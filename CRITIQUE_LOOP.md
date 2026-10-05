@@ -37,6 +37,7 @@ Score each 1–10 with evidence. A 10 is demo-ready on a phone with no explanati
 | 3 (grade) | 6 | 7 | 6 | 5 | C2 fixes hold mostly; `--ink` override made titles dark on dark (regression); novices still crushed by the bot floor and minimum steal; end-of-heat steals lost; player ids double as secrets; bot swings stackable; 279 draw calls on phone |
 | 5 (grade) | 7 | 7 | 6 | 6 | No errors across solo, season, challenge and PvP; max 183 calls; recap written from partial standings; cast cache poisonable; zap counts unbounded; challenge still a 3-heat season; bot lap times 59.5 s |
 | 7 (grade) | 6 | 7 | 6 | 6 | Draw calls back over budget (alien ships about 26 meshes each, peak 293); HUD, crown and standings use different scores; challenge results contradict themselves; strip text 7–9 px; late PvP zaps dropped; paid steals unchecked |
+| 9 (grade) | 6 | 7 | 6 | 6 | REMATCH reuses the last season's zap/paid records (phantom credits, dropped zaps); REMATCH button visible mid-season; pinned rivals hidden on phones; no second-season bonus; false leader toast at 0–0; vague challenge landing; Io peaks 217–223 |
 
 ## Backlog
 (ready / in-progress / done; each item notes the criterion it moves)
@@ -88,6 +89,16 @@ Score each 1–10 with evidence. A 10 is demo-ready on a phone with no explanati
 38. `done` (C8) [Creativity/Usefulness] Season-end AI story card with share/challenge buttons.
 39. `in-progress` (C8: REMATCH done; the steal broadcast and emotes remain) [Usefulness/Polish] Social PvP: broadcast all human steals, emote taunts, REMATCH.
 
+**From grade 9:**
+40. `done` (C9) [Execution] REMATCH must not reuse zap/paid records (add a round to the keys; guard pre-start credits) and needs an e2e check.
+41. `done` (C9) [Polish] `[hidden]` overridden by `.secondary-button{display:flex}`, so REMATCH shows mid-season.
+42. `done` (C9) [Usefulness] Pinned rivals hidden on phones by an nth-child rule.
+43. `done` (C9) [Usefulness/Polish] Season bonus keyed by score count, so it isn't paid after a rematch.
+44. `done` (C9) [Polish] "YOU TOOK 1ST" toast at a 0–0 tie during staging.
+45. `done` (C9) [Usefulness] Challenge landing should say who dared you, the score and the course.
+46. `done` (C9) [Polish] Guest results button text; season fallback ignores human rivals; client name not synced after the server renames a duplicate.
+47. `ready` [Execution] Io draw-call peaks 217–223.
+
 ## Log
 - Cycle 2: fixed the top grade-1 findings.
   - **Bots:** rubber-banded to the human field (`0.55·pace·field + 0.45·base`, identical on client and server); steals are 6% of the target's score (min 150). In a solo test the bots stayed within about 20% of the player.
@@ -134,3 +145,10 @@ Score each 1–10 with evidence. A 10 is demo-ready on a phone with no explanati
   - **Season story:** after heat 3 the recap becomes a three-sentence story (OpenAI `season` request: champion, rivalry, a dare to run it back), with a template fallback built from the season table and accumulated zap/cow stats.
   - **REMATCH · SAME CREW:** a new host-only `rematch` server action restarts heat 1 for the whole room with scores and bot swings cleared. Other players are pulled in by the poll (heat 3→1 resets their total); non-hosts see "waiting for the host".
   - **Verified:** full 3-heat solo season → story → rematch → heat 1; e2e 20/20.
+- Cycle 9: fixed the rematch path end to end.
+  - **Server:** zap/paid records are keyed by a season round, bumped by REMATCH.
+  - **Client:** ignores pre-start credits; the season bonus is keyed by the round.
+  - **e2e:** now plays a full PvP season and a rematch, and asserts no phantom credits and that zaps work afterwards (26/26).
+  - **Bugs:** `[hidden]` always wins (REMATCH no longer shows mid-season); phones keep pinned rivals visible; no crown or "you took 1st" at 0–0.
+  - **Copy:** the challenge landing names the dare ("★ LYRA-99 DARES YOU: BEAT 145 ON HELIX DEEP"); guests see "WAITING FOR THE HOST"; the season story names your human rival; the client name syncs after a server rename.
+  - **Still open:** Io peaks (47).

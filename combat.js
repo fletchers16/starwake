@@ -455,6 +455,8 @@ export function createCombat(THREE, { world, getRoute, routeAt, makeShipMesh, sh
     // Same score the HUD and standings show, so the crown always sits on the row marked 1st.
     let best = { id: 'player', score: myScore(r) };
     for (const o of opponents(r, rivals)) if (o.score > best.score) best = o;
+    // No crown (and no "you took 1st") until someone has actually scored.
+    if (best.score <= 0) best = { id: null, score: 0 };
     if (best.id !== leaderId) {
       if (best.id === 'player' && leaderId) toast('YOU TOOK 1ST ♛', 'YOU WEAR THE BOUNTY · ZAPS ON YOU STEAL ×2');
       if (leaderId === 'player' && best.kind === 'bot') say(best.name, 'lead');
@@ -559,6 +561,7 @@ export function createCombat(THREE, { world, getRoute, routeAt, makeShipMesh, sh
   /** Credit points other humans confirmed losing to our zaps: [{ from, name, amount }] (cumulative per victim). */
   let creditBy = {};
   function receiveCredits(r, list = []) {
+    if (!r.started) return; // nothing can have been stolen before the start
     for (const c of list) {
       const gain = Math.max(0, Number(c.amount) || 0) - (creditBy[c.from] || 0);
       if (gain > 0) onSteal({ thief: 'YOU', victim: String(c.name || 'RIVAL').toUpperCase(), amount: gain, mine: true });

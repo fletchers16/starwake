@@ -31,6 +31,8 @@ type Room = {
   // Zap swings on sim pilots, summed over every human's report: heat -> per-bot points.
   botAdjust?: Record<number, number[]>;
   extendedMs?: number;
+  // Bumped by each rematch so zap/steal records from an earlier season never leak into the next.
+  round?: number;
   scores: Array<{ playerId: string; score: number; heat: number; name?: string; kind?: "human" | "bot"; flightTime?: number; dnf?: boolean }>;
   updatedAt: number;
 };
@@ -94,8 +96,10 @@ async function readLive(code: string): Promise<Live[]> {
 // under its own key (zap/CODE/HEAT/TARGET/SHOOTER), so simultaneous hits never overwrite
 // each other. The target reads its inbox with each telemetry update.
 type Zap = { from: string; name: string; count: number; at: number };
-const zapKey = (code: string, heat: number, target: string, from: string) => `zap/${code}/${heat}/${target}/${from}`;
-async function readZaps(code: string, heat: number, target: string): Promise<Zap[]> {
+// `heat` here is a round-qualified heat key (see heatKey), so a rematch starts with clean records.
+const heatKey = (room: Room) => `${room.round || 0}.${room.heat}`;
+const zapKey = (code: string, heat: string, target: string, from: string) => `zap/${code}/${heat}/${target}/${from}`;
+async function readZaps(code: string, heat: string, target: string): Promise<Zap[]> {
   const s = store();
   const { blobs } = await s.list({ prefix: `zap/${code}/${heat}/${target}/` });
   const entries = await Promise.all(blobs.map((blob) => s.get(blob.key, { type: "json" }) as Promise<Zap | null>));
@@ -105,8 +109,8 @@ async function readZaps(code: string, heat: number, target: string): Promise<Zap
 // Confirmed steals: the victim reports what each zap actually cost it (after shields,
 // bounty and frenzy), so the shooter is credited exactly that: paid/CODE/HEAT/SHOOTER/VICTIM.
 type Paid = { from: string; name: string; amount: number };
-const paidKey = (code: string, heat: number, shooter: string, victim: string) => `paid/${code}/${heat}/${shooter}/${victim}`;
-async function readPaid(code: string, heat: number, shooter: string): Promise<Paid[]> {
+const paidKey = (code: string, heat: string, shooter: string, victim: string) => `paid/${code}/${heat}/${shooter}/${victim}`;
+async function readPaid(code: string, heat: string, shooter: string): Promise<Paid[]> {
   const s = store();
   const { blobs } = await s.list({ prefix: `paid/${code}/${heat}/${shooter}/` });
   const entries = await Promise.all(blobs.map((blob) => s.get(blob.key, { type: "json" }) as Promise<Paid | null>));
@@ -342,7 +346,7 @@ export default async (request: Request) => {
       const zaps = Array.isArray(body.zaps) ? body.zaps.slice(0, 8) : [];
       // At most 2 new zaps per target per update (a blaster fires 3 shots a few hundred ms apart).
       await Promise.all(zaps.filter((z: { target?: string }) => z && z.target !== pilot.id && found.room.players.some((p) => p.id === z.target)).map(async (z: { target: string; count: number }) => {
-        const key = zapKey(code, found.room.heat, z.target, pilot.id);
+        const key = zapKey(code, heatKey(found.room), z.target, pilot.id);
         const prev = Number(((await store().get(key, { type: "json" })) as Zap | null)?.count || 0);
         const count = Math.min(Math.floor(finite(z.count, 0, 999)), prev + 2);
         if (count > prev) await store().setJSON(key, { from: pilot.id, name: pilot.name, count, at: Date.now() });
@@ -350,11 +354,11 @@ export default async (request: Request) => {
       const paid = Array.isArray(body.paid) ? body.paid.slice(0, 8) : [];
       // A payment is only valid against zaps that shooter actually landed on us, capped per zap.
       await Promise.all(paid.filter((p: { to?: string }) => p && p.to !== pilot.id && found.room.players.some((x) => x.id === p.to)).map(async (p: { to: string; amount: number }) => {
-        const zaps = Number(((await store().get(zapKey(code, found.room.heat, pilot.id, p.to), { type: "json" })) as Zap | null)?.count || 0);
+        const zaps = Number(((await store().get(zapKey(code, heatKey(found.room), pilot.id, p.to), { type: "json" })) as Zap | null)?.count || 0);
         if (!zaps) return;
-        await store().setJSON(paidKey(code, found.room.heat, p.to, pilot.id), { from: pilot.id, name: pilot.name, amount: Math.floor(finite(p.amount, 0, zaps * 1500)) });
+        await store().setJSON(paidKey(code, heatKey(found.room), p.to, pilot.id), { from: pilot.id, name: pilot.name, amount: Math.floor(finite(p.amount, 0, zaps * 1500)) });
       }));
-      const [live, zapped, credits] = await Promise.all([readLive(code), readZaps(code, found.room.heat, pilot.id), readPaid(code, found.room.heat, pilot.id)]);
+      const [live, zapped, credits] = await Promise.all([readLive(code), readZaps(code, heatKey(found.room), pilot.id), readPaid(code, heatKey(found.room), pilot.id)]);
       return json({ live: live.filter((other) => other.id !== pilot.id && found.room.players.some((p) => p.id === other.id)), zapped, credits, phase: found.room.phase, heat: found.room.heat });
     }
 
@@ -417,6 +421,7 @@ export default async (request: Request) => {
       } else if (action === "rematch") {
         // Same crew, fresh season: the host restarts heat 1 for everyone once a season is complete.
         if (draft.hostId !== playerId || draft.phase !== "complete") throw new Error("The host can call a rematch once the season is over.");
+        draft.round = (draft.round || 0) + 1;
         draft.heat = 1;
         draft.scores = [];
         draft.botAdjust = {};

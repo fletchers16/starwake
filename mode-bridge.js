@@ -1,4 +1,5 @@
 import { mountModeHub } from './mode-hub.js';
+import { COURSE_CATALOG } from './course-catalog.js';
 
 const app = document.querySelector('#app');
 if (!app) throw new Error('Starwake app root was not found');
@@ -22,6 +23,17 @@ let launched = false;
   } else if (/^[a-z0-9]{8}$/.test(challenge)) {
     if (label) label.textContent = 'ACCEPT CHALLENGE';
     if (eyebrow) eyebrow.innerHTML = `<i></i> ★ A FRIEND DARES YOU TO BEAT THEIR RUN`;
+    // Name the dare before the player commits: who, what score, which course.
+    fetch('/.netlify/functions/game', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'challenge-get', id: challenge }) })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((data) => {
+        const c = data?.challenge;
+        if (!c || !eyebrow) return;
+        const course = c.course?.name || COURSE_CATALOG.find((x) => x.id === c.courseId)?.name || 'THEIR TRACK';
+        const safe = (t) => String(t).replace(/[<>&"]/g, '').toUpperCase();
+        eyebrow.innerHTML = `<i></i> ★ ${safe(c.name)} DARES YOU: BEAT ${Number(c.score || 0).toLocaleString()} ON ${safe(course)}`;
+      })
+      .catch(() => {});
   }
 }
 let savedProfile = {};

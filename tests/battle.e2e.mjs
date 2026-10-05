@@ -163,6 +163,38 @@ try {
   check('both screens agree on the standings', rowsL && rowsL === rowsP, rowsL === rowsP ? rowsL : `laptop: ${rowsL}\n        phone: ${rowsP}`);
   await laptop.screenshot({ path: `${OUT}/7-laptop-results.png` });
   await phone.screenshot({ path: `${OUT}/8-phone-results.png` });
+  check('REMATCH hidden mid-season', await laptop.evaluate(() => getComputedStyle(document.querySelector('#rematch-button')).display === 'none'));
+
+  // ---- Finish the season (heats 2 and 3), then REMATCH with the same crew ----
+  const finishHeat = async () => {
+    for (const page of [laptop, phone]) await until(page, () => window.__starwake.state.race?.started && !window.__starwake.state.race.done, null, { timeout: 25000 });
+    for (const page of [laptop, phone]) await page.evaluate(() => { const S = window.__starwake; S.state.race.endsAt = Date.now() + (S.state.serverOffset || 0) + 1200; });
+    return until(laptop, () => document.querySelector('#results-screen.active') && ['results', 'complete'].includes(window.__starwake.state.room?.phase) && window.__starwake.state.room.phase, null, { timeout: 30000 });
+  };
+  for (const heat of [2, 3]) {
+    await until(laptop, () => !document.querySelector('#continue-button').disabled, null, { timeout: 15000 });
+    await laptop.click('#continue-button');
+    const phase = await finishHeat();
+    if (heat === 3) check('season completes after heat 3', phase === 'complete', String(phase));
+  }
+  const rematchShown = await until(laptop, () => getComputedStyle(document.querySelector('#rematch-button')).display !== 'none' && !document.querySelector('#rematch-button').disabled);
+  check('host sees REMATCH when the season ends', rematchShown);
+  await laptop.click('#rematch-button');
+  const backL = await until(laptop, () => window.__starwake.state.race?.started && window.__starwake.state.heat === 1, null, { timeout: 25000 });
+  const backP = await until(phone, () => window.__starwake.state.race?.started && window.__starwake.state.heat === 1 && document.querySelector('#race-screen.active'), null, { timeout: 25000 });
+  check('rematch pulls both players into a fresh heat 1', backL && backP);
+  await wait(2500);
+  // Last season's zap/steal records must not leak into the rematch.
+  const phantom = await laptop.evaluate(() => window.__starwake.state.race.zapPoints);
+  check('no phantom steal credits after the rematch', phantom === 0, `laptop zapPoints ${phantom}`);
+  await laptop.evaluate(async () => {
+    const S = window.__starwake, r = S.state.race, g = Object.values(S.state.rivals).find((x) => x.name === 'PHONE');
+    r.distance = (g.shown ?? g.d) - 12; r.x = g.x; r.y = g.y; r.item = 'blaster'; r.ammo = 3; r.rolling = 0;
+    await new Promise((res) => setTimeout(res, 150));
+  });
+  await laptop.keyboard.down('f'); await wait(120); await laptop.keyboard.up('f');
+  const rematchHit = await until(phone, () => window.__starwake.state.race.stunUntil > 0, null, { timeout: 8000 });
+  check('zaps land in the rematch season', rematchHit);
 } catch (error) {
   check('test ran to completion', false, error.message);
 }

@@ -489,7 +489,7 @@ button:disabled{cursor:not-allowed;filter:saturate(.55);opacity:.58}
 .steal-feed span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 @keyframes steal-in{from{opacity:0;transform:translateX(16px)}}
 /* Phones: a compact top-3 strip and feed under the place/timer instead of hiding standings. */
-@media(max-width:760px){.hud2 .standings-ticker{display:grid;width:124px;font-size:7px;margin-top:6px}.hud2 .standings-ticker[hidden]{display:none}.standings-ticker div{padding:3px 5px;gap:4px;grid-template-columns:12px 1fr auto}.standings-ticker div:nth-child(n+4):not(.me){display:none}.steal-feed{width:124px}.steal-feed div{font-size:7px;padding:3px 5px}.steal-feed b{font-size:9px}}
+@media(max-width:760px){.hud2 .standings-ticker{display:grid;width:124px;font-size:7px;margin-top:6px}.hud2 .standings-ticker[hidden]{display:none}.standings-ticker div{padding:3px 5px;gap:4px;grid-template-columns:12px 1fr auto}.standings-ticker div:nth-child(n+4):not(.me):not(.human){display:none}.steal-feed{width:124px}.steal-feed div{font-size:7px;padding:3px 5px}.steal-feed b{font-size:9px}}
 
 /* Legibility pass: battle HUD text at least 11 px (9 px on phones); banners sit beneath the HUD. */
 .race-toast{z-index:7}
@@ -500,3 +500,6 @@ button:disabled{cursor:not-allowed;filter:saturate(.55);opacity:.58}
 @media(max-width:760px){.hud2 .standings-ticker{font-size:9px;width:140px}.hud2 .standings-ticker div{padding:3px 5px}.steal-feed{width:140px}.steal-feed div{font-size:9px}.steal-feed b{font-size:10px}.standings-ticker.frenzy::before{font-size:8px}}
 
 .rematch-button{margin-top:10px;width:100%;border:2px solid #ffd84d;color:#ffd84d;font-weight:700;letter-spacing:.12em}.rematch-button:disabled{opacity:.55;border-color:rgba(255,255,255,.25);color:rgba(255,255,255,.7)}
+
+/* The hidden attribute always wins (component display rules like .secondary-button{display:flex} used to override it). */
+[hidden]{display:none!important}

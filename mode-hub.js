@@ -85,7 +85,7 @@ export function mountModeHub({ root, onAction = () => {}, initialCourse = 'neon-
         <section class="sw-hub-intro">
           <p class="sw-hub-kicker">FLIGHT DECK <span></span> 01 / 03</p>
           <h1 id="sw-hub-title">Blast your<br><em>friends.</em></h1>
-          <p>A cartoon battle racer. Grab ? pods, snipe rivals with laser blasters and steal their points. Race your crew live on any device, or dare them to beat your run.</p>
+          <p>A cartoon battle racer. Grab <span class="pod-chip">?</span> pods, snipe rivals with laser blasters and steal their points. Race your crew live on any device, or dare them to beat your run.</p>
           <div class="sw-hub-signal"><span>⚔</span><div><b>BATTLE ROOMS</b><small>Send a link. Friends join from a phone or laptop, no install.</small></div></div>
         </section>
         <section class="sw-hub-main" aria-label="Choose a flight mode">

@@ -39,6 +39,7 @@ Score each 1–10 with evidence. A 10 is demo-ready on a phone with no explanati
 | 7 (grade) | 6 | 7 | 6 | 6 | Draw calls back over budget (alien ships about 26 meshes each, peak 293); HUD, crown and standings use different scores; challenge results contradict themselves; strip text 7–9 px; late PvP zaps dropped; paid steals unchecked |
 | 9 (grade) | 6 | 7 | 6 | 6 | REMATCH reuses the last season's zap/paid records (phantom credits, dropped zaps); REMATCH button visible mid-season; pinned rivals hidden on phones; no second-season bonus; false leader toast at 0–0; vague challenge landing; Io peaks 217–223 |
 | 11 (grade) | 6 | 7 | 7 | 6 | Social loop complete (invite, season, rematch, feed, emotes, named dare); bots drain the challenge ghost's score (wrong verdicts); phone overlaps; PvP heat recap ignores the human rival. Read: top 5–8, not reliably top 3; blocker = phone first impression and challenge trust |
+| 13 (grade) | 6 | 7 | 7 | 6 | Ladder writes unauthenticated (60,000 posted with curl); verdict vs ladder disagree on the challenger's score; briefing opens scrolled to the bottom (focus); the sender never sees replies. Read unchanged (top 5–8); blocker = challenge trust |
 
 ## Backlog
 (ready / in-progress / done; each item notes the criterion it moves)
@@ -112,6 +113,16 @@ Score each 1–10 with evidence. A 10 is demo-ready on a phone with no explanati
 56. `done` (C11, verified: at full scroll every card clears the pinned CTA; the briefing is centred, 20 px each side, no horizontal overflow; the critic's screenshot included pane padding) [Polish] Phone first impression: hub sticky CTA covers course cards; briefing off-centre (now the top-3 blocker).
 57. `done` (C12) [Usefulness] Challenge ladder: per-link leaderboard of replies.
 
+**From grade 13:**
+58. `done` (C13) [Execution/Usefulness] Trusted ladder: challenge-result must use the server-recorded score of an authenticated pilot in a room tied to that challenge.
+59. `done` (C13) [Polish/Execution] One target number: the verdict should use the challenger's raw score (zaps on the ghost add to your score but don't move the target).
+60. `done` (C13) [Polish] Briefing opens scrolled to the bottom (`go.focus` without preventScroll).
+61. `done` (C13) [Usefulness] The sender never sees replies: add a hub card of sent dares with ladder counts and RACE BACK.
+62. `done` (C13) [Usefulness] Each BEAT MY RUN tap creates a new ladder; reuse the saved id per race.
+63. `done` (C13) [Polish] Live-invite landing should headline "JOIN NAME ON COURSE".
+64. `done` (C13) [Polish] "Grab ? pods" reads like a broken glyph; render the ? as a chip.
+65. `done` (C13) [Polish] Duplicate hangar buttons on challenge results.
+
 ## Log
 - Cycle 2: fixed the top grade-1 findings.
   - **Bots:** rubber-banded to the human field (`0.55·pace·field + 0.45·base`, identical on client and server); steals are 6% of the target's score (min 150). In a solo test the bots stayed within about 20% of the player.
@@ -182,3 +193,10 @@ Score each 1–10 with evidence. A 10 is demo-ready on a phone with no explanati
   - **Results:** a challenge heat posts its score and shows "★ THIS TRACK'S LADDER · N PILOTS".
   - **Landing:** adds "N pilots have tried; best X by NAME". The dare headline is smaller for long course names, and a placeholder dare replaces the flash of the generic slogan.
   - **Verified:** two pilots on one link, ladder ordering, landing copy; e2e 27/27.
+- Cycle 13: trusted challenges.
+  - **Ladder:** `challenge-result` now needs the room code and the pilot's token, the room must have been opened for that challenge (`challengeId` at create), and it posts the score the server already recorded and capped for that pilot, once per pilot. The critic's 60,000 forgery is rejected.
+  - **One target number:** the verdict uses the challenger's raw score; zapping the ghost adds to your score but doesn't move the target, so the verdict matches the ladder (1,940 vs 1,040 on both).
+  - **Sender loop:** a "★ YOUR DARES" hub card lists your sent dares with "N tried · best X by NAME" and RACE BACK; BEAT MY RUN reuses one link per race.
+  - **Landings:** live invites say "JOIN ORION-7 ON TITAN VEIL." plus the lobby count.
+  - **Polish:** the briefing opens at the top (preventScroll); the "?" pods render as a chip; one hangar button on challenge results.
+  - **Tests:** e2e 27/27.

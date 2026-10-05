@@ -33,6 +33,9 @@ type Room = {
   extendedMs?: number;
   // Bumped by each rematch so zap/steal records from an earlier season never leak into the next.
   round?: number;
+  // Set when the room was opened to race a challenge link; its pilots' scores may join that ladder.
+  challengeId?: string;
+  ladderPosted?: string[];
   scores: Array<{ playerId: string; score: number; heat: number; name?: string; kind?: "human" | "bot"; flightTime?: number; dnf?: boolean }>;
   updatedAt: number;
 };
@@ -296,6 +299,7 @@ export default async (request: Request) => {
           bots: Math.max(0, Math.min(7, Number(body.bots) || 0)),
           // Sim-pilot strength picked by the host's rank: 0.45 for rookies up to 2 (competitive with clean runs).
           botSkill: Math.max(0.45, Math.min(2, Number(body.botSkill) || 1)),
+          challengeId: validChallengeId(body.challengeId) ? body.challengeId : undefined,
           scores: [],
           updatedAt: Date.now(),
         };
@@ -337,11 +341,23 @@ export default async (request: Request) => {
       return json({ challenge, ladder });
     }
     if (action === "challenge-result") {
-      // A pilot finished a challenge heat: their score goes on that chain's ladder.
-      if (!validChallengeId(body.id)) return json({ error: "That challenge link is broken." }, 400);
+      // A pilot finished a challenge heat. Only the score the server already recorded (and capped)
+      // for that signed-in pilot, in a room opened for this challenge, goes on the ladder, once.
+      if (!validChallengeId(body.id) || !validCode(String(body.code || "").toUpperCase())) return json({ error: "That challenge link is broken." }, 400);
       const challenge = (await store().get(challengeKey(body.id), { type: "json" })) as { root?: string; id: string } | null;
       if (!challenge) return json({ error: "That challenge has expired." }, 404);
-      const ladder = await addRung(challenge.root || challenge.id, cleanName(body.name), Math.floor(finite(body.score, 0, MAX_HEAT_SCORE)));
+      let entry: { name: string; score: number } | null = null;
+      await mutateRoom(String(body.code).toUpperCase(), (draft) => {
+        const pilot = draft.players.find((p) => p.id === String(body.playerId || ""));
+        if (!authorised(pilot, body)) throw new Error("This device isn't signed in as that pilot.");
+        if (draft.challengeId !== challenge.id) throw new Error("This room wasn't opened for that challenge.");
+        const recorded = draft.scores.find((e) => e.playerId === pilot!.id && e.heat === 1);
+        if (!recorded) throw new Error("Finish the heat first.");
+        if ((draft.ladderPosted ||= []).includes(pilot!.id)) return;
+        draft.ladderPosted.push(pilot!.id);
+        entry = { name: pilot!.name, score: recorded.score };
+      });
+      const ladder = entry ? await addRung(challenge.root || challenge.id, (entry as { name: string }).name, (entry as { score: number }).score) : (((await store().get(ladderKey(challenge.root || challenge.id), { type: "json" })) as Rung[] | null) || []).slice(0, 10);
       return json({ ladder });
     }
 

@@ -20,6 +20,19 @@ let launched = false;
   if (/^[A-Z0-9]{5}$/.test(invitedRoom)) {
     if (label) label.textContent = `JOIN ROOM ${invitedRoom}`;
     if (eyebrow) eyebrow.innerHTML = from ? `<i></i> ⚔ ${from} CHALLENGES YOU TO A LIVE BATTLE` : `<i></i> YOU'VE BEEN INVITED TO A PRIVATE RACE`;
+    // Headline the invite: who's waiting and on which course.
+    const headline = document.querySelector('.launch-copy h1');
+    if (headline && from) { headline.classList.add('dare'); headline.innerHTML = `JOIN <em>${from}</em><br />FOR A BATTLE.`; }
+    fetch(`/.netlify/functions/game?code=${invitedRoom}`).then((r) => (r.ok ? r.json() : null)).then((data) => {
+      const room = data?.room;
+      if (!room) return;
+      const course = room.course?.name || COURSE_CATALOG.find((x) => x.id === room.courseId)?.name || 'THEIR TRACK';
+      const safe = (t) => String(t).replace(/[<>&"]/g, '').toUpperCase();
+      if (headline && from) headline.innerHTML = `JOIN <em>${from}</em><br />ON ${safe(course)}.`;
+      const sub = document.querySelector('.launch-copy > p:not(.launch-eyebrow)');
+      const n = room.players?.length || 0;
+      if (sub) sub.textContent = room.phase === 'lobby' ? `${n} pilot${n === 1 ? ' is' : 's are'} in the lobby. Grab pods, zap rivals, steal their points. No install, no account.` : 'This battle has already started. Ask your friend for a fresh invite after the heat.';
+    }).catch(() => {});
   } else if (/^[a-z0-9]{8}$/.test(challenge)) {
     if (label) label.textContent = 'ACCEPT CHALLENGE';
     if (eyebrow) eyebrow.innerHTML = `<i></i> ★ A FRIEND DARES YOU`;
@@ -193,3 +206,25 @@ window.addEventListener('starwake:freeflight-exit', () => {
 // Keep the hub mounted for the full session; its event listeners are shared
 // with the existing lobby and race screens.
 window.starwakeModeHub = hub;
+
+// Dares you've sent: show who took them on (from each link's ladder), with a one-tap race back.
+(async () => {
+  let dares = [];
+  try { dares = JSON.parse(localStorage.getItem('starwake-sent-dares') || '[]').slice(0, 3); } catch {}
+  if (!dares.length) return;
+  const results = await Promise.all(dares.map((d) => fetch('/.netlify/functions/game', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'challenge-get', id: d.id }) }).then((r) => (r.ok ? r.json() : null)).catch(() => null)));
+  const safe = (t) => String(t ?? '').replace(/[<>&"]/g, '');
+  const rows = dares.map((d, i) => {
+    const ladder = results[i]?.ladder || [];
+    if (!results[i]) return '';
+    // The ladder includes your own run, so replies are everyone else.
+    const tried = Math.max(0, ladder.length - 1), best = ladder[0];
+    const status = tried ? `${tried} tried · best ${Number(best.score).toLocaleString()} by ${safe(best.name)}` : 'No one has tried yet';
+    return `<a class="sw-dare-row" href="?challenge=${d.id}"><b>${safe(d.course)}</b><span>${status}</span><em>${tried ? 'RACE BACK ↗' : 'OPEN ↗'}</em></a>`;
+  }).filter(Boolean);
+  if (!rows.length) return;
+  const card = document.createElement('div');
+  card.className = 'sw-dares';
+  card.innerHTML = `<small>★ YOUR DARES</small>${rows.join('')}`;
+  document.querySelector('#mode-hub-root .sw-hub-signal')?.after(card);
+})();

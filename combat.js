@@ -363,8 +363,8 @@ export function createCombat(THREE, { world, getRoute, routeAt, makeShipMesh, sh
     }
     if (target.kind === 'ext') {
       if (!t.zappable) return 0;
-      const live = Math.max(0, Math.floor(t.score(r.time) + t.adj)), stolen = Math.min(steal(t.id, live), live);
-      t.adj -= stolen;
+      // The challenge target is fixed: your steals add to your score but don't lower theirs.
+      const live = Math.max(0, Math.floor(t.score(r.time))), stolen = Math.min(steal(t.id, live), live);
       t.stunUntil = r.time + STUN;
       if (stolen) onSteal({ thief: shooter === 'player' ? 'YOU' : racers.find((b) => b.id === shooter)?.name || 'RIVAL', victim: t.name, amount: stolen, mine: shooter === 'player' });
       return stolen;

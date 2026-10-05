@@ -68,6 +68,7 @@ function makePodTexture(THREE) {
   g.fillText('?', 64, 70);
   podTexture = new THREE.CanvasTexture(c);
   podTexture.colorSpace = THREE.SRGBColorSpace;
+  podTexture.userData.shared = true;
   return podTexture;
 }
 
@@ -147,6 +148,8 @@ export function createCombat(THREE, { world, getRoute, routeAt, makeShipMesh, sh
   let pods = [];            // pod distances (one lap)
   let zapCounts = {};       // human target id -> cumulative zaps we've landed
   let zapSeen = {};         // shooter id -> zaps on us already applied
+  let paid = {};            // shooter id -> points we've actually lost to them (reported back)
+  let credited = 0;         // points other humans have confirmed losing to us
   let lastPlayerHitByBot = -9;
   let rollTimer = 0;
   const shield = new THREE.Mesh(new THREE.SphereGeometry(1.75, 24, 16), new THREE.MeshBasicMaterial({ color: '#9dffcf', transparent: true, opacity: 0.22, depthWrite: false, blending: THREE.AdditiveBlending }));
@@ -164,7 +167,8 @@ export function createCombat(THREE, { world, getRoute, routeAt, makeShipMesh, sh
   world.add(crown);
   let leaderId = null, frenzy = false;
   /** Steal multiplier against a target: ×2 on the crowned leader, ×2 during the frenzy. */
-  const steal = (id) => ZAP_STEAL * (id === leaderId ? 2 : 1) * (frenzy ? 2 : 1);
+  // Steal: 6% of the target's score (at least ZAP_STEAL), ×2 on the crowned leader, ×2 in the frenzy.
+  const steal = (id, score = 0) => Math.max(ZAP_STEAL, Math.round(score * 0.06)) * (id === leaderId ? 2 : 1) * (frenzy ? 2 : 1);
 
   function dizzyStars() {
     const g = new THREE.Group();
@@ -195,21 +199,29 @@ export function createCombat(THREE, { world, getRoute, routeAt, makeShipMesh, sh
     return { ship, pilot, tag, alien };
   }
 
+  // Shared textures (glow, stars, reticle, pod) are never disposed; only per-object ones (name tags).
+  const sharedMaps = new Set([glow, starTex, reticleTex]);
   function disposeObject(o) {
     world.remove(o);
-    o.traverse((c) => { c.geometry?.dispose?.(); if (c.material && !Array.isArray(c.material)) { c.material.map?.dispose?.(); c.material.dispose?.(); } });
+    o.traverse((c) => {
+      c.geometry?.dispose?.();
+      if (c.material && !Array.isArray(c.material)) { if (c.material.map && !sharedMaps.has(c.material.map) && !c.material.map.userData?.shared) c.material.map.dispose(); c.material.dispose?.(); }
+    });
   }
+  const disposeStars = (g) => { world.remove(g); g.children.forEach((s) => s.material.dispose()); };
 
   // ---------- lifecycle ----------
 
-  function start(r, { botPaces = [], botFinals = [], podDistances = [] } = {}) {
+  let field = () => 0;
+  function start(r, { botPaces = [], botFinals = [], podDistances = [], fieldScore = null } = {}) {
+    if (fieldScore) field = fieldScore;
     dispose();
     pods = podDistances.slice().sort((a, b) => a - b);
     racers = botPaces.map((pace, i) => {
       const view = makeNpcShip(i);
       return {
         id: `bot-${i}`, index: i, name: view.alien.name, color: view.alien.color, alien: view.alien, ...view,
-        pace, final: botFinals[i] || 0, adj: 0,
+        pace, profile: botFinals[i] || { base: 0, pace: 1 }, adj: 0,
         d: i % 2 ? 9 + i * 3 : -6 - i * 3, x: (i % 2 ? 1 : -1) * (1.8 + Math.floor(i / 2) * 1.3), y: 0,
         tx: 0, ty: 0, nextWeave: 0, stunUntil: -9, shieldUntil: -9, item: null, ammo: 0, cooldown: 2 + i, nextPod: 0, spin: 0,
         stars: (() => { const s = dizzyStars(); world.add(s); return s; })(),
@@ -217,6 +229,8 @@ export function createCombat(THREE, { world, getRoute, routeAt, makeShipMesh, sh
     });
     zapCounts = {};
     zapSeen = {};
+    paid = {};
+    credited = 0;
     lastPlayerHitByBot = -9;
     leaderId = null;
     frenzy = false;
@@ -224,9 +238,9 @@ export function createCombat(THREE, { world, getRoute, routeAt, makeShipMesh, sh
   }
 
   function dispose() {
-    for (const b of racers) { disposeObject(b.ship); world.remove(b.stars); }
+    for (const b of racers) { disposeObject(b.ship); disposeStars(b.stars); }
     for (const e of effects) disposeObject(e.mesh);
-    for (const e of externals) { disposeObject(e.mesh); world.remove(e.stars); }
+    for (const e of externals) { disposeObject(e.mesh); disposeStars(e.stars); }
     racers = [];
     effects = [];
     externals = [];
@@ -241,7 +255,8 @@ export function createCombat(THREE, { world, getRoute, routeAt, makeShipMesh, sh
 
   // ---------- helpers ----------
 
-  const liveBotScore = (b, r) => Math.max(0, Math.floor(b.final * (r.time / r.duration) + b.adj));
+  // Rubber-banded to the human field (matches the server's scoreBots at the end of the heat).
+  const liveBotScore = (b, r) => Math.max(0, Math.floor(0.55 * b.profile.pace * field(r) + 0.45 * b.profile.base * (r.time / r.duration) + b.adj));
 
   /** Everyone except the player, as targetable records with route distance d and lane x/y. */
   function opponents(r, rivals) {
@@ -292,7 +307,7 @@ export function createCombat(THREE, { world, getRoute, routeAt, makeShipMesh, sh
 
   function hitPlayer(r, shooterName, color) {
     if (r.time < r.shieldUntil) { r.shieldUntil = -9; sfx.pop?.(); toast('SHIELD POPPED', `BLOCKED ${shooterName}`); return 0; }
-    const stolen = Math.min(steal('player'), Math.max(0, Math.floor(r.score)));
+    const stolen = Math.min(steal('player', r.score), Math.max(0, Math.floor(r.score)));
     r.zapPoints -= stolen;
     r.stunUntil = r.time + STUN;
     r.combo = 0;
@@ -306,14 +321,14 @@ export function createCombat(THREE, { world, getRoute, routeAt, makeShipMesh, sh
     const t = target.ref;
     if (target.kind === 'bot') {
       if (r.time < t.shieldUntil) { t.shieldUntil = -9; return 0; }
-      const stolen = Math.min(steal(t.id), liveBotScore(t, r));
+      const live = liveBotScore(t, r), stolen = Math.min(steal(t.id, live), live);
       t.adj -= stolen;
       t.stunUntil = r.time + STUN;
       return stolen;
     }
     if (target.kind === 'ext') {
       if (!t.zappable) return 0;
-      const stolen = Math.min(steal(t.id), Math.max(0, Math.floor(t.score(r.time) + t.adj)));
+      const live = Math.max(0, Math.floor(t.score(r.time) + t.adj)), stolen = Math.min(steal(t.id, live), live);
       t.adj -= stolen;
       t.stunUntil = r.time + STUN;
       return stolen;
@@ -321,8 +336,9 @@ export function createCombat(THREE, { world, getRoute, routeAt, makeShipMesh, sh
     // Human rival: the hit is resolved on their screen; we spin their ship locally.
     if (shooter === 'player') zapCounts[t.id] = (zapCounts[t.id] || 0) + 1;
     t.stunUntil = r.time + STUN;
-    // Can't steal more than they have (their client applies the same cap).
-    return Math.min(steal(t.id), Math.max(0, Math.floor(t.score || 0)));
+    // The victim's client decides what it actually lost (shield, bounty, frenzy) and reports it
+    // back through the server; we're credited in `receiveCredits`, so nothing is banked here.
+    return 0;
   }
 
   // ---------- player actions ----------
@@ -347,7 +363,7 @@ export function createCombat(THREE, { world, getRoute, routeAt, makeShipMesh, sh
         const stolen = hitOpponent(r, target, 'player');
         r.zapPoints += stolen;
         beam(from, worldPos(r, target.d, target.x, target.y), ITEMS.blaster.color);
-        toast(`SNIPED ${target.name}!`, stolen ? `+${stolen} STOLEN${target.id === leaderId ? ' · BOUNTY ♛' : ''}` : 'SHIELD BLOCKED IT');
+        toast(`SNIPED ${target.name}!`, target.kind === 'human' ? 'STEALING…' : stolen ? `+${stolen} STOLEN${target.id === leaderId ? ' · BOUNTY ♛' : ''}` : 'SHIELD BLOCKED IT');
       } else {
         beam(from, worldPos(r, r.distance + 70, r.x, r.y), ITEMS.blaster.color);
       }
@@ -448,7 +464,7 @@ export function createCombat(THREE, { world, getRoute, routeAt, makeShipMesh, sh
           r.zapPoints += stolen;
           flash(to, ITEMS.seeker.color, 4);
           sfx.zapped?.();
-          toast(`COMET HIT ${t.name}`, stolen ? `+${stolen} STOLEN` : 'SHIELD BLOCKED IT');
+          toast(`COMET HIT ${t.name}`, t.kind === 'human' ? 'STEALING…' : stolen ? `+${stolen} STOLEN` : 'SHIELD BLOCKED IT');
         }
       }
     }
@@ -486,8 +502,22 @@ export function createCombat(THREE, { world, getRoute, routeAt, makeShipMesh, sh
       const fresh = (Number(z.count) || 0) - (zapSeen[z.from] || 0);
       if (fresh <= 0) continue;
       zapSeen[z.from] = Number(z.count) || 0;
-      if (r.started && !r.done) hitPlayer(r, String(z.name || 'RIVAL').toUpperCase(), '#ff7ca7');
+      if (r.started && !r.done) for (let k = 0; k < fresh; k++) paid[z.from] = (paid[z.from] || 0) + hitPlayer(r, String(z.name || 'RIVAL').toUpperCase(), '#ff7ca7');
     }
+  }
+
+  /** Points we've lost to each human shooter (cumulative), reported so they can be credited. */
+  const outgoingPaid = () => Object.entries(paid).map(([to, amount]) => ({ to, amount }));
+
+  /** Credit points other humans confirmed losing to our zaps: [{ from, name, amount }] (cumulative per victim). */
+  function receiveCredits(r, list = []) {
+    const total = list.reduce((sum, c) => sum + Math.max(0, Number(c.amount) || 0), 0);
+    if (total > credited && !r.done) {
+      const gained = total - credited;
+      r.zapPoints += gained;
+      toast('ZAP CONFIRMED', `+${gained} STOLEN`);
+    }
+    credited = Math.max(credited, total);
   }
 
   // ---------- rendering ----------
@@ -551,7 +581,7 @@ export function createCombat(THREE, { world, getRoute, routeAt, makeShipMesh, sh
   return {
     makeRacerMesh: (opts) => makeNpcShip(0, opts),
     start, dispose, addExternal, pickup, fire, update, render, currentLock,
-    outgoingZaps, receiveZaps,
+    outgoingZaps, receiveZaps, outgoingPaid, receiveCredits,
     /** Live scores of sim pilots for standings. */
     botScores: (r) => racers.map((b) => ({ id: b.id, name: b.name, score: liveBotScore(b, r) })),
     externalScores: (r) => externals.map((e) => ({ id: e.id, name: e.name, score: Math.max(0, Math.floor(e.score(r.time) + e.adj)) })),

@@ -112,6 +112,9 @@ try {
   check('laptop locks on and snipes PHONE with F', shot.lock === 'PHONE' && landed, `lock=${shot.lock}`);
   const phoneHit = await until(phone, () => window.__starwake.state.race.stunUntil > 0 && { zapPoints: window.__starwake.state.race.zapPoints }, null, { timeout: 8000 });
   check('phone receives the zap through the server', phoneHit, phoneHit ? `spun out, ${phoneHit.zapPoints} pts` : 'no zap');
+  // The shooter is credited exactly what the victim's screen says it lost (no points from nothing).
+  const credited = phoneHit && await until(laptop, (lost) => (window.__starwake.state.race.zapPoints === lost ? 'ok' : null), -phoneHit.zapPoints, { timeout: 8000 });
+  check('laptop is credited exactly what the phone lost', credited === 'ok', `phone lost ${phoneHit ? -phoneHit.zapPoints : '?'}, laptop credited ${await laptop.evaluate(() => window.__starwake.state.race.zapPoints)}`);
   await phone.screenshot({ path: `${OUT}/5-phone-zapped.png` });
 
   // ---- Phone snipes back with the touch FIRE button ----

@@ -26,6 +26,8 @@ type Room = {
   players: Pilot[];
   bots: number;
   botSkill?: number;
+  // Zap swings on sim pilots, summed over every human's report: heat -> per-bot points.
+  botAdjust?: Record<number, number[]>;
   scores: Array<{ playerId: string; score: number; heat: number; name?: string; kind?: "human" | "bot"; flightTime?: number; dnf?: boolean }>;
   updatedAt: number;
 };
@@ -94,6 +96,17 @@ async function readZaps(code: string, heat: number, target: string): Promise<Zap
   return entries.filter((entry): entry is Zap => !!entry);
 }
 
+// Confirmed steals: the victim reports what each zap actually cost it (after shields,
+// bounty and frenzy), so the shooter is credited exactly that: paid/CODE/HEAT/SHOOTER/VICTIM.
+type Paid = { from: string; name: string; amount: number };
+const paidKey = (code: string, heat: number, shooter: string, victim: string) => `paid/${code}/${heat}/${shooter}/${victim}`;
+async function readPaid(code: string, heat: number, shooter: string): Promise<Paid[]> {
+  const s = store();
+  const { blobs } = await s.list({ prefix: `paid/${code}/${heat}/${shooter}/` });
+  const entries = await Promise.all(blobs.map((blob) => s.get(blob.key, { type: "json" }) as Promise<Paid | null>));
+  return entries.filter((entry): entry is Paid => !!entry);
+}
+
 // "Beat my run" challenges: a recorded run plus the exact course layout, shared by link.
 const challengeKey = (id: string) => `challenge/${id}`;
 const validChallengeId = (id: unknown): id is string => typeof id === "string" && /^[a-z0-9]{8}$/.test(id);
@@ -117,12 +130,29 @@ function botLapTime(score: number, seed: number) {
   return Math.max(38, Math.min(59.5, 64 - score / 700 + (seed % 900) / 300));
 }
 
+/**
+ * Sim-pilot heat score (same formula as the client's botLiveScore): rubber-banded to
+ * the human field, so races stay close and zaps swing the standings, plus a
+ * rank-scaled base so stronger leagues field stronger pilots.
+ *   score = 0.55 * pace * fieldAverage + 0.45 * base + zap swings
+ */
+function botProfile(code: string, heat: number, i: number, skill = 1) {
+  const seed = botSeed(code, heat, i);
+  return { seed, base: (1500 + (seed % 2500)) * skill, pace: 0.8 + (seed % 46) / 100 };
+}
+
+// Upserts this heat's sim-pilot scores from the humans reported so far (re-run on every report).
 function scoreBots(room: Room) {
+  const humans = room.scores.filter((e) => e.kind === "human" && e.heat === room.heat && !e.dnf);
+  const field = humans.length ? humans.reduce((sum, e) => sum + e.score, 0) / humans.length : 0;
+  const adjust = room.botAdjust?.[room.heat] || [];
   for (let i = 0; i < room.bots; i++) {
     const botId = `bot-${i}`;
-    if (room.scores.some((entry) => entry.playerId === botId && entry.heat === room.heat)) continue;
-    const seed = botSeed(room.code, room.heat, i);
-    room.scores.push({ playerId: botId, name: BOT_NAMES[i % BOT_NAMES.length], kind: "bot", score: Math.round((4000 + (seed % 7000)) * (room.botSkill ?? 1)), heat: room.heat, flightTime: botLapTime(Math.round((4000 + (seed % 7000)) * (room.botSkill ?? 1)), seed) });
+    const { seed, base, pace } = botProfile(room.code, room.heat, i, room.botSkill ?? 1);
+    const score = Math.floor(finite(Math.round(0.55 * pace * field + 0.45 * base) + (adjust[i] || 0), 0, MAX_HEAT_SCORE));
+    const entry = room.scores.find((e) => e.playerId === botId && e.heat === room.heat);
+    if (entry) entry.score = score;
+    else room.scores.push({ playerId: botId, name: BOT_NAMES[i % BOT_NAMES.length], kind: "bot", score, heat: room.heat, flightTime: botLapTime(score, seed) });
   }
 }
 
@@ -298,14 +328,24 @@ export default async (request: Request) => {
       const zaps = Array.isArray(body.zaps) ? body.zaps.slice(0, 8) : [];
       await Promise.all(zaps.filter((z: { target?: string }) => z && z.target !== pilot.id && found.room.players.some((p) => p.id === z.target)).map((z: { target: string; count: number }) =>
         store().setJSON(zapKey(code, found.room.heat, z.target, pilot.id), { from: pilot.id, name: pilot.name, count: Math.floor(finite(z.count, 0, 999)), at: Date.now() })));
-      const [live, zapped] = await Promise.all([readLive(code), readZaps(code, found.room.heat, pilot.id)]);
-      return json({ live: live.filter((other) => other.id !== pilot.id && found.room.players.some((p) => p.id === other.id)), zapped, phase: found.room.phase, heat: found.room.heat });
+      const paid = Array.isArray(body.paid) ? body.paid.slice(0, 8) : [];
+      await Promise.all(paid.filter((p: { to?: string }) => p && p.to !== pilot.id && found.room.players.some((x) => x.id === p.to)).map((p: { to: string; amount: number }) =>
+        store().setJSON(paidKey(code, found.room.heat, p.to, pilot.id), { from: pilot.id, name: pilot.name, amount: Math.floor(finite(p.amount, 0, MAX_HEAT_SCORE)) })));
+      const [live, zapped, credits] = await Promise.all([readLive(code), readZaps(code, found.room.heat, pilot.id), readPaid(code, found.room.heat, pilot.id)]);
+      return json({ live: live.filter((other) => other.id !== pilot.id && found.room.players.some((p) => p.id === other.id)), zapped, credits, phase: found.room.phase, heat: found.room.heat });
     }
 
     if (action === "leave") {
       const { room } = await mutateRoom(code, (draft) => removePilot(draft, playerId));
       await store().delete(liveKey(code, playerId)).catch(() => {});
-      if (!room.players.length) await store().delete(code).catch(() => {});
+      if (!room.players.length) {
+        await store().delete(code).catch(() => {});
+        // Empty room: drop its telemetry, zap and steal records too.
+        for (const prefix of [`live/${code}/`, `zap/${code}/`, `paid/${code}/`]) {
+          const { blobs } = await store().list({ prefix }).catch(() => ({ blobs: [] as { key: string }[] }));
+          await Promise.all(blobs.map((b) => store().delete(b.key).catch(() => {})));
+        }
+      }
       return json({ ok: true });
     }
 
@@ -323,20 +363,20 @@ export default async (request: Request) => {
         if (draft.phase !== "race") throw new Error("This heat is not running.");
         if (Date.now() < (draft.startsAt || 0) + 5000) throw new Error("This heat has only just started.");
         const result = body.result || {};
-        const score = Math.floor(finite(result.score, 0, MAX_HEAT_SCORE));
+        // A heat can't out-score the time actually flown: ~240 pts/s is a flawless run; allow headroom.
+        const flown = Math.max(0, Math.min(HEAT_MS, Date.now() - (draft.startsAt || 0))) / 1000;
+        const score = Math.floor(finite(result.score, 0, Math.min(MAX_HEAT_SCORE, 1500 + flown * 320)));
         pilot.progress = 1;
         pilot.score = score;
         pilot.finished = true;
         if (!draft.scores.some((entry) => entry.playerId === playerId && entry.heat === draft.heat)) {
           draft.scores.push({ playerId, score, heat: draft.heat, name: pilot.name, kind: "human", flightTime: finite(result.flightTime, 0, 600) });
         }
-        scoreBots(draft);
-        // Zap swings: points this pilot stole from (or lost to) each sim pilot.
+        // Zap swings: points this pilot stole from (or lost to) each sim pilot, capped per report.
         const adjust = Array.isArray(result.botAdjust) ? result.botAdjust : [];
-        for (let i = 0; i < draft.bots; i++) {
-          const entry = draft.scores.find((e) => e.playerId === `bot-${i}` && e.heat === draft.heat);
-          if (entry) entry.score = Math.floor(finite(entry.score + finite(adjust[i], -3000, 3000), 0, MAX_HEAT_SCORE));
-        }
+        const totals = (draft.botAdjust ||= {})[draft.heat] ||= [];
+        for (let i = 0; i < draft.bots; i++) totals[i] = (totals[i] || 0) + Math.round(finite(adjust[i], -1500, 1500));
+        scoreBots(draft);
         settleHeat(draft);
       } else if (action === "extend") {
         // Solo pause: only a room with a single human may stretch its heat clock.

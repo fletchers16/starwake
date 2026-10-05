@@ -441,17 +441,17 @@ button:disabled{cursor:not-allowed;filter:saturate(.55);opacity:.58}
 @media(max-width:560px){.brief-cards.four{grid-template-columns:1fr}}
 
 /* ===== Cartoon type: chunky display font with ink offset shadows (sticker look) ===== */
-:root{--display:'Lilita One','Space Grotesk',system-ui,sans-serif;--ink:#1b1430}
+:root{--display:'Lilita One','Space Grotesk',system-ui,sans-serif;--outline:#1b1430}
 #app .launch-copy h1,#mode-hub-root .sw-hub-intro h1,.brief-head h2,#results-title,.panel-wrap h2,.race-start strong,.challenge-verdict strong,.landmark-caption b{font-family:var(--display);font-weight:400;letter-spacing:.005em;line-height:.95}
 /* Outline built from shadows (a text stroke eats the fill of the chunky face). */
-#app .launch-copy h1{color:#fbf7ff;-webkit-text-stroke:0;text-shadow:2px 2px 0 var(--ink),-2px 2px 0 var(--ink),2px -2px 0 var(--ink),-2px -2px 0 var(--ink),0 7px 0 var(--ink),0 12px 40px rgba(0,0,0,.55)}
+#app .launch-copy h1{color:#fbf7ff;-webkit-text-stroke:0;text-shadow:2px 2px 0 var(--outline),-2px 2px 0 var(--outline),2px -2px 0 var(--outline),-2px -2px 0 var(--outline),0 7px 0 var(--outline),0 12px 40px rgba(0,0,0,.55)}
 .launch-copy h1 em{color:#ffd84d}
-#mode-hub-root .sw-hub-intro h1{text-shadow:0 5px 0 var(--ink),0 9px 45px rgba(0,0,0,.45)}
+#mode-hub-root .sw-hub-intro h1{text-shadow:0 5px 0 var(--outline),0 9px 45px rgba(0,0,0,.45)}
 #mode-hub-root .sw-hub-intro h1 em{color:#ffd84d;font-weight:400}
-.hud2-score,.hud2-place{font-family:var(--display);font-weight:400;letter-spacing:.01em;text-shadow:0 3px 0 var(--ink)}
-.race-start strong{text-shadow:3px 3px 0 var(--ink),-3px 3px 0 var(--ink),3px -3px 0 var(--ink),-3px -3px 0 var(--ink),0 8px 0 var(--ink),0 0 40px rgba(0,0,0,.5);color:#ffd84d}
-.race-toast b{font-family:var(--display);font-weight:400;font-size:1.35em;letter-spacing:.02em;color:#ffd84d;text-shadow:0 2px 0 var(--ink)}
-.landmark-caption b{text-shadow:0 3px 0 var(--ink)}
+.hud2-score,.hud2-place{font-family:var(--display);font-weight:400;letter-spacing:.01em;text-shadow:0 3px 0 var(--outline)}
+.race-start strong{text-shadow:3px 3px 0 var(--outline),-3px 3px 0 var(--outline),3px -3px 0 var(--outline),-3px -3px 0 var(--outline),0 8px 0 var(--outline),0 0 40px rgba(0,0,0,.5);color:#ffd84d}
+.race-toast b{font-family:var(--display);font-weight:400;font-size:1.35em;letter-spacing:.02em;color:#ffd84d;text-shadow:0 2px 0 var(--outline)}
+.landmark-caption b{text-shadow:0 3px 0 var(--outline)}
 #mode-hub-root .sw-hub-section-head h2,#mode-hub-root .sw-destination-copy h2,#mode-hub-root .sw-designer h2{font-family:var(--display);font-weight:400;letter-spacing:.01em}
 
 /* ===== Zap Frenzy: final 15 seconds ===== */

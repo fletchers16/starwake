@@ -34,6 +34,7 @@ Score each 1–10 with evidence. A 10 is demo-ready on a phone with no explanati
 | Cycle | Execution | Creativity | Usefulness | Polish | Notes |
 |---|---|---|---|---|---|
 | 1 (grade) | 6 | 7 | 6 | 6 | Build OK, battle test 16/16; server trusts scores, PvP steal desync, solo scoring lopsided (bots ~10k vs human ~1k), 287 draw calls mid-heat, intro headline unreadable |
+| 3 (grade) | 6 | 7 | 6 | 5 | C2 fixes hold mostly; `--ink` override made titles dark on dark (regression); novices still crushed by the bot floor and minimum steal; end-of-heat steals lost; player ids double as secrets; bot swings stackable; 279 draw calls on phone |
 
 ## Backlog
 (ready / in-progress / done; each item notes the criterion it moves)
@@ -54,6 +55,16 @@ Score each 1–10 with evidence. A 10 is demo-ready on a phone with no explanati
 13. `idea` [Usefulness] Challenge ladder plus a daily "Zap Cup" (chain challenge links via `parent`, home-screen rematch nudges).
 14. `idea` [Creativity] Signature items with counterplay: Cow Catapult, a reflecting dodge-roll, team mode.
 
+**From grade 3:**
+15. `done` (C3) [Polish] **`--ink` regression:** the cartoon outline variable overrode the light text colour, so titles render dark on dark.
+16. `done` (C3) [Execution] **End-of-heat steals lost:** live sync stops at done, and credits after done are ignored.
+17. `done` (C3) [Execution/Security] **Player ids double as secrets** (broadcast to everyone; they authorise leave, complete and start). Issue a separate token.
+18. `done` (C3) [Execution] **Bot swings stackable:** `botAdjust` is added on every `complete` call.
+19. `done` (C3) [Usefulness] **Novices crushed:** the 0.45·base bot floor and the 150 minimum steal. Scale with time flown, cap bot zaps per heat, steal 8%.
+20. `done` (C3) [Polish] **Rules text wrong:** "steals 150"; bounty, Frenzy and shield not explained; the challenge says three heats; the challenger is missing from the standings.
+21. `in-progress` (C3: lap times; the CTA overlap, briefing centring and winner-name repeat remain) [Polish] **Small UI faults:** bot lap times always 59.5 s; repeated winner name; mobile CTA overlap; mobile briefing off-centre.
+22. `idea` [Polish/Usefulness] Live standings strip with a steal ticker ("−120 → BLIX"), crown and Frenzy markers.
+
 ## Log
 - Cycle 2: fixed the top grade-1 findings.
   - **Bots:** rubber-banded to the human field (`0.55·pace·field + 0.45·base`, identical on client and server); steals are 6% of the target's score (min 150). In a solo test the bots stayed within about 20% of the player.
@@ -62,3 +73,11 @@ Score each 1–10 with evidence. A 10 is demo-ready on a phone with no explanati
   - **Reliability:** live sync has an in-flight guard; empty rooms clean up their blobs; heat reports retry with backoff.
   - **Polish:** the intro headline uses a shadow outline instead of a stroke; failed shares show a copyable link.
   - **Cleanup:** the dead ghost system is removed (two leftover loops would have thrown in Free Flight); shared textures are no longer disposed per effect.
+- Cycle 3: fixed the grade-3 findings.
+  - **Regression:** `--ink` (my cartoon CSS had overridden the light text colour) is now `--outline`, with a luminance check added to the e2e test.
+  - **Late steals:** multiplayer keeps syncing 2 s past the clock and applies late credits before reporting.
+  - **Security:** pilots get a private token (never sent in room data), required for live/leave/complete/start/next; e2e confirms you can't act with someone else's public id.
+  - **Bot swings:** counted once per pilot per heat.
+  - **Novices:** the bot floor is capped at 1.4× the field + 300; steals are 8% (min 40); sim pilots zap you at most 3 times per heat.
+  - **Rules text:** the briefing states the real rules (8%, crown ×2, Frenzy ×2, item list); a challenge says one heat; the challenger is listed in the results table; bot lap times vary.
+  - **Tests:** e2e 20/20.

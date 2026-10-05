@@ -6,7 +6,7 @@
  * - Items: Laser Blaster (3 auto-aimed shots at the racer ahead), Comet Seeker
  *   (homes in on whoever is 1st), Bubble Shield (blocks one zap), Turbo Snack.
  * - A zap spins the target out (slow + dizzy for 1.2 s, combo lost) and the
- *   shooter steals ZAP_STEAL points from them. Zaps never cost hull.
+ *   shooter steals 8% of their points. Zaps never cost hull.
  * - Sim pilots are NPC racers flown by cartoon aliens: they weave, grab pods,
  *   shoot back and can be shot. Their point swings are reported to the server
  *   so the final standings match what you saw.
@@ -22,7 +22,11 @@
 import { ALIENS, makeAlienPilot, toon, inkOutline } from './aliens.js';
 import { makeCrown } from './critters.js';
 
-export const ZAP_STEAL = 150;
+// A zap steals STEAL_RATE of the target's points (minimum ZAP_STEAL).
+export const STEAL_RATE = 0.08;
+export const ZAP_STEAL = 40;
+// Sim pilots can zap a human at most this many times per heat.
+const BOT_HITS_PER_HEAT = 3;
 const FRENZY_SECONDS = 15;
 const STUN = 1.2;
 const Z0 = 4.7;
@@ -150,7 +154,7 @@ export function createCombat(THREE, { world, getRoute, routeAt, makeShipMesh, sh
   let zapSeen = {};         // shooter id -> zaps on us already applied
   let paid = {};            // shooter id -> points we've actually lost to them (reported back)
   let credited = 0;         // points other humans have confirmed losing to us
-  let lastPlayerHitByBot = -9;
+  let lastPlayerHitByBot = -9, botHitsOnPlayer = 0;
   let rollTimer = 0;
   const shield = new THREE.Mesh(new THREE.SphereGeometry(1.75, 24, 16), new THREE.MeshBasicMaterial({ color: '#9dffcf', transparent: true, opacity: 0.22, depthWrite: false, blending: THREE.AdditiveBlending }));
   const shieldRim = new THREE.Mesh(new THREE.TorusGeometry(1.75, 0.05, 6, 40), new THREE.MeshBasicMaterial({ color: '#d8fff0', transparent: true, opacity: 0.7, depthWrite: false }));
@@ -167,8 +171,8 @@ export function createCombat(THREE, { world, getRoute, routeAt, makeShipMesh, sh
   world.add(crown);
   let leaderId = null, frenzy = false;
   /** Steal multiplier against a target: ×2 on the crowned leader, ×2 during the frenzy. */
-  // Steal: 6% of the target's score (at least ZAP_STEAL), ×2 on the crowned leader, ×2 in the frenzy.
-  const steal = (id, score = 0) => Math.max(ZAP_STEAL, Math.round(score * 0.06)) * (id === leaderId ? 2 : 1) * (frenzy ? 2 : 1);
+  // Steal: 8% of the target's score (at least ZAP_STEAL), ×2 on the crowned leader, ×2 in the frenzy.
+  const steal = (id, score = 0) => Math.max(ZAP_STEAL, Math.round(score * STEAL_RATE)) * (id === leaderId ? 2 : 1) * (frenzy ? 2 : 1);
 
   function dizzyStars() {
     const g = new THREE.Group();
@@ -232,6 +236,7 @@ export function createCombat(THREE, { world, getRoute, routeAt, makeShipMesh, sh
     paid = {};
     credited = 0;
     lastPlayerHitByBot = -9;
+    botHitsOnPlayer = 0;
     leaderId = null;
     frenzy = false;
     Object.assign(r, { item: null, ammo: 0, shieldUntil: -9, stunUntil: -9, zapPoints: 0, spin: 0, rolling: 0 });
@@ -256,7 +261,7 @@ export function createCombat(THREE, { world, getRoute, routeAt, makeShipMesh, sh
   // ---------- helpers ----------
 
   // Rubber-banded to the human field (matches the server's scoreBots at the end of the heat).
-  const liveBotScore = (b, r) => Math.max(0, Math.floor(0.55 * b.profile.pace * field(r) + 0.45 * b.profile.base * (r.time / r.duration) + b.adj));
+  const liveBotScore = (b, r) => { const k = r.time / r.duration, f = field(r); return Math.max(0, Math.floor(0.55 * b.profile.pace * f + 0.45 * Math.min(b.profile.base * k, f * 1.4 + 300 * k) + b.adj)); };
 
   /** Everyone except the player, as targetable records with route distance d and lane x/y. */
   function opponents(r, rivals) {
@@ -478,12 +483,13 @@ export function createCombat(THREE, { world, getRoute, routeAt, makeShipMesh, sh
     const target = lockTarget(me, [player, ...others]);
     if (!target) return;
     // Fairness: you can be zapped by sim pilots at most once every 5 seconds.
-    if (target.kind === 'player' && r.time - lastPlayerHitByBot < 5) return;
+    if (target.kind === 'player' && (r.time - lastPlayerHitByBot < 5 || botHitsOnPlayer >= BOT_HITS_PER_HEAT)) return;
     b.cooldown = 2.4 + Math.random() * 1.6;
     const from = worldPos(r, b.d, b.x, b.y).add(new THREE.Vector3(0, 0.2, -1.4));
     beam(from, worldPos(r, target.d, target.x, target.y), b.color);
     if (target.kind === 'player') {
       lastPlayerHitByBot = r.time;
+      botHitsOnPlayer++;
       b.adj += hitPlayer(r, b.name, b.color);
     } else {
       b.adj += hitOpponent(r, target, b.id);
@@ -512,9 +518,10 @@ export function createCombat(THREE, { world, getRoute, routeAt, makeShipMesh, sh
   /** Credit points other humans confirmed losing to our zaps: [{ from, name, amount }] (cumulative per victim). */
   function receiveCredits(r, list = []) {
     const total = list.reduce((sum, c) => sum + Math.max(0, Number(c.amount) || 0), 0);
-    if (total > credited && !r.done) {
+    if (total > credited) {
       const gained = total - credited;
       r.zapPoints += gained;
+      if (r.done) r.score += gained; // late credit after the clock: the score is no longer recomputed
       toast('ZAP CONFIRMED', `+${gained} STOLEN`);
     }
     credited = Math.max(credited, total);

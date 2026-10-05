@@ -10,6 +10,8 @@ type Pilot = {
   score: number;
   finished: boolean;
   lastSeen?: number;
+  // Private session secret: only this pilot's device knows it. The public `id` is shown to everyone.
+  token?: string;
 };
 
 type Room = {
@@ -58,6 +60,9 @@ const cleanName = (name: unknown) =>
 const cleanShip = (ship: unknown) => (typeof ship === "string" && SHIPS.includes(ship) ? ship : "kite");
 const finite = (value: unknown, min: number, max: number) => Math.max(min, Math.min(max, Number(value) || 0));
 const totalOccupancy = (room: Room) => room.players.length + room.bots;
+// Rooms go out without pilot tokens; a request acts for a pilot only with that pilot's token.
+const publicRoom = (room: Room): Room => ({ ...room, players: room.players.map(({ token, ...p }) => p) });
+const authorised = (pilot: Pilot | undefined, body: { token?: unknown }) => !!pilot && (!pilot.token || pilot.token === body.token);
 
 async function readRoom(code: string) {
   const entry = await store().getWithMetadata(code, { consistency: "strong", type: "json" });
@@ -127,7 +132,7 @@ function botSeed(code: string, heat: number, i: number) {
 
 // Faster laps for stronger sim pilots (matches the client's botLapTime).
 function botLapTime(score: number, seed: number) {
-  return Math.max(38, Math.min(59.5, 64 - score / 700 + (seed % 900) / 300));
+  return Math.max(38, Math.min(59.5, 64 - score / 260 + (seed % 900) / 300));
 }
 
 /**
@@ -149,7 +154,8 @@ function scoreBots(room: Room) {
   for (let i = 0; i < room.bots; i++) {
     const botId = `bot-${i}`;
     const { seed, base, pace } = botProfile(room.code, room.heat, i, room.botSkill ?? 1);
-    const score = Math.floor(finite(Math.round(0.55 * pace * field + 0.45 * base) + (adjust[i] || 0), 0, MAX_HEAT_SCORE));
+    // The rank-scaled floor never towers over the field, so a first-timer still has a race.
+    const score = Math.floor(finite(Math.round(0.55 * pace * field + 0.45 * Math.min(base, field * 1.4 + 300)) + (adjust[i] || 0), 0, MAX_HEAT_SCORE));
     const entry = room.scores.find((e) => e.playerId === botId && e.heat === room.heat);
     if (entry) entry.score = score;
     else room.scores.push({ playerId: botId, name: BOT_NAMES[i % BOT_NAMES.length], kind: "bot", score, heat: room.heat, flightTime: botLapTime(score, seed) });
@@ -234,7 +240,7 @@ export default async (request: Request) => {
       const code = params.get("code")?.toUpperCase();
       if (!validCode(code)) return json({ error: "Enter a valid five-character room code." }, 400);
       const observed = await observeRoom(code, params.get("player") || undefined);
-      return observed ? json(observed) : json({ error: "That room code was not found." }, 404);
+      return observed ? json({ ...observed, room: publicRoom(observed.room) }) : json({ error: "That room code was not found." }, 404);
     }
     if (request.method !== "POST") return json({ error: "Use GET or POST for game actions." }, 405);
 
@@ -247,6 +253,7 @@ export default async (request: Request) => {
         const code = Math.random().toString(36).slice(2, 7).toUpperCase();
         if (!validCode(code)) continue;
         const hostId = crypto.randomUUID();
+        const token = crypto.randomUUID();
         const room: Room = {
           code,
           hostId,
@@ -256,7 +263,7 @@ export default async (request: Request) => {
           course: forged && body.courseId === forged.id ? forged : null,
           coursePrompt: typeof body.coursePrompt === "string" ? body.coursePrompt.slice(0, 120) : "",
           courseSeed: Number.isFinite(Number(body.courseSeed)) ? Number(body.courseSeed) >>> 0 : 0,
-          players: [{ id: hostId, name: cleanName(body.name), ship: cleanShip(body.ship), kind: "human", progress: 0, score: 0, finished: false, lastSeen: Date.now() }],
+          players: [{ id: hostId, token, name: cleanName(body.name), ship: cleanShip(body.ship), kind: "human", progress: 0, score: 0, finished: false, lastSeen: Date.now() }],
           bots: Math.max(0, Math.min(7, Number(body.bots) || 0)),
           // Sim-pilot strength picked by the host's rank: 0.45 for rookies up to 2 (competitive with clean runs).
           botSkill: Math.max(0.45, Math.min(2, Number(body.botSkill) || 1)),
@@ -264,7 +271,7 @@ export default async (request: Request) => {
           updatedAt: Date.now(),
         };
         const result = await store().setJSON(code, room, { onlyIfNew: true });
-        if (result.modified) return json({ room, playerId: hostId, host: true });
+        if (result.modified) return json({ room: publicRoom(room), playerId: hostId, token, host: true });
       }
       return json({ error: "Could not reserve a lobby code. Try again." }, 503);
     }
@@ -297,19 +304,20 @@ export default async (request: Request) => {
 
     if (action === "join") {
       const id = crypto.randomUUID();
+      const token = crypto.randomUUID();
       const { room } = await mutateRoom(code, (draft) => {
         if (draft.phase !== "lobby") throw new Error("This race has already started. Ask the host to open a new room.");
         if (draft.players.length >= 8) throw new Error("This lobby is full.");
         // Humans take priority over sim pilots: drop a bot to make room.
         if (totalOccupancy(draft) >= 8) draft.bots = Math.max(0, draft.bots - 1);
-        draft.players.push({ id, name: cleanName(body.name), ship: cleanShip(body.ship), kind: "human", progress: 0, score: 0, finished: false, lastSeen: Date.now() });
+        draft.players.push({ id, token, name: cleanName(body.name), ship: cleanShip(body.ship), kind: "human", progress: 0, score: 0, finished: false, lastSeen: Date.now() });
       });
-      return json({ room, playerId: id, host: room.hostId === id });
+      return json({ room: publicRoom(room), playerId: id, token, host: room.hostId === id });
     }
 
     if (action === "get") {
       const observed = await observeRoom(code, body.playerId);
-      return observed ? json(observed) : json({ error: "That room code was not found." }, 404);
+      return observed ? json({ ...observed, room: publicRoom(observed.room) }) : json({ error: "That room code was not found." }, 404);
     }
 
     const playerId = String(body.playerId || "");
@@ -321,6 +329,7 @@ export default async (request: Request) => {
       if (!found) return json({ error: "That room code was not found." }, 404);
       const pilot = found.room.players.find((p) => p.id === playerId);
       if (!pilot) return json({ error: "Your pilot is no longer in this lobby." }, 409);
+      if (!authorised(pilot, body)) return json({ error: "This device isn't signed in as that pilot." }, 403);
       const t = body.telemetry || {};
       const entry: Live = { id: pilot.id, name: pilot.name, ship: pilot.ship, d: finite(t.d, 0, 1e6), x: finite(t.x, -12, 12), y: finite(t.y, -12, 12), score: Math.floor(finite(t.score, 0, MAX_HEAT_SCORE)), at: Date.now() };
       await store().setJSON(liveKey(code, pilot.id), entry);
@@ -336,7 +345,11 @@ export default async (request: Request) => {
     }
 
     if (action === "leave") {
-      const { room } = await mutateRoom(code, (draft) => removePilot(draft, playerId));
+      const { room } = await mutateRoom(code, (draft) => {
+        const pilot = draft.players.find((p) => p.id === playerId);
+        if (pilot && !authorised(pilot, body)) throw new Error("This device isn't signed in as that pilot.");
+        removePilot(draft, playerId);
+      });
       await store().delete(liveKey(code, playerId)).catch(() => {});
       if (!room.players.length) {
         await store().delete(code).catch(() => {});
@@ -352,6 +365,7 @@ export default async (request: Request) => {
     const { room } = await mutateRoom(code, (draft) => {
       const pilot = draft.players.find((candidate) => candidate.id === playerId);
       if (!pilot) throw new Error("Your pilot is no longer in this lobby.");
+      if (!authorised(pilot, body)) throw new Error("This device isn't signed in as that pilot.");
       pilot.lastSeen = Date.now();
       if (action === "bots") {
         if (draft.hostId !== playerId || draft.phase !== "lobby") throw new Error("Only the lobby host can change sim pilots.");
@@ -371,11 +385,11 @@ export default async (request: Request) => {
         pilot.finished = true;
         if (!draft.scores.some((entry) => entry.playerId === playerId && entry.heat === draft.heat)) {
           draft.scores.push({ playerId, score, heat: draft.heat, name: pilot.name, kind: "human", flightTime: finite(result.flightTime, 0, 600) });
+          // Zap swings on sim pilots: counted once per pilot per heat (retries and repeats are ignored).
+          const adjust = Array.isArray(result.botAdjust) ? result.botAdjust : [];
+          const totals = (draft.botAdjust ||= {})[draft.heat] ||= [];
+          for (let i = 0; i < draft.bots; i++) totals[i] = (totals[i] || 0) + Math.round(finite(adjust[i], -1500, 1500));
         }
-        // Zap swings: points this pilot stole from (or lost to) each sim pilot, capped per report.
-        const adjust = Array.isArray(result.botAdjust) ? result.botAdjust : [];
-        const totals = (draft.botAdjust ||= {})[draft.heat] ||= [];
-        for (let i = 0; i < draft.bots; i++) totals[i] = (totals[i] || 0) + Math.round(finite(adjust[i], -1500, 1500));
         scoreBots(draft);
         settleHeat(draft);
       } else if (action === "extend") {
@@ -397,7 +411,7 @@ export default async (request: Request) => {
       const { blobs } = await store().list({ prefix: `live/${code}/` });
       await Promise.all(blobs.map((blob) => store().delete(blob.key).catch(() => {})));
     }
-    return json({ room });
+    return json({ room: publicRoom(room) });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Something went wrong in the flight deck.";
     const status = /not found/i.test(message) ? 404 : /full|started|host|running|finished|no longer|valid|just started/i.test(message) ? 409 : 400;

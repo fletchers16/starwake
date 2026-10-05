@@ -69,6 +69,9 @@ try {
   const code = await until(laptop, () => document.querySelector('#lobby-screen.active') && window.__starwake?.state.code);
   check('laptop opens a battle room', code, code || 'no room code');
   await laptop.screenshot({ path: `${OUT}/1-laptop-lobby.png` });
+  // Regression guard: page text must stay light on the dark UI (a CSS variable clash once made titles near-black).
+  const textLum = await laptop.evaluate(() => { const [r, g, b] = getComputedStyle(document.querySelector('#lobby-title') || document.body).color.match(/\d+/g).map(Number); return (0.2126 * r + 0.7152 * g + 0.0722 * b) / 255; });
+  check('lobby text is light on the dark UI', textLum > 0.6, `luminance ${textLum.toFixed(2)}`);
 
   // ---- Phone follows the invite link ----
   await phone.goto(`${BASE}/?room=${code}&from=LAPTOP`);
@@ -133,6 +136,18 @@ try {
   const laptopHit = await until(laptop, () => window.__starwake.state.race.stunUntil > 0 && { zapPoints: window.__starwake.state.race.zapPoints }, null, { timeout: 8000 });
   check('laptop receives the zap back', laptopHit, laptopHit ? `spun out, ${laptopHit.zapPoints} pts` : 'no zap');
   await laptop.screenshot({ path: `${OUT}/6-laptop-zapped.png` });
+
+  // ---- Security: a player's public id must not let another device act for them ----
+  const spoof = await phone.evaluate(async (code) => {
+    const laptopId = Object.values(window.__starwake.state.rivals).find((x) => x.name === 'LAPTOP')?.id;
+    const room = await fetch(`/.netlify/functions/game?code=${code}`).then((r) => r.json());
+    const leaked = (room.room?.players || []).some((p) => 'token' in p);
+    const res = await fetch('/.netlify/functions/game', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'leave', code, playerId: laptopId }) });
+    return { status: res.status, leaked };
+  }, code);
+  const stillIn = await laptop.evaluate(() => fetch(`/.netlify/functions/game?code=${window.__starwake.state.code}`).then((r) => r.json()).then((d) => d.room.players.some((p) => p.id === window.__starwake.state.playerId)));
+  check('room data never exposes pilot tokens', !spoof.leaked);
+  check("phone can't kick the laptop with its public id", spoof.status >= 400 && stillIn, `status ${spoof.status}, laptop still in room: ${stillIn}`);
 
   // ---- Finish the heat early on both and compare standings ----
   for (const page of [laptop, phone]) await page.evaluate(() => { const S = window.__starwake; S.state.race.endsAt = Date.now() + (S.state.serverOffset || 0) + 1500; });

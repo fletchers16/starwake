@@ -21,6 +21,7 @@
  */
 import { ALIENS, makeAlienPilot, toon, inkOutline } from './aliens.js';
 import { makeCrown } from './critters.js';
+import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 
 // A zap steals STEAL_RATE of the target's points (minimum ZAP_STEAL).
 export const STEAL_RATE = 0.08;
@@ -76,11 +77,12 @@ function makePodTexture(THREE) {
   return podTexture;
 }
 
-/** Item pod: a bobbing, spinning rainbow "?" box with an ink outline. */
+let podGeometry = null;
+/** Item pod: a bobbing, spinning rainbow "?" box. */
 export function makeItemPod(THREE) {
   const group = new THREE.Group();
-  const box = new THREE.Mesh(new THREE.BoxGeometry(1.25, 1.25, 1.25), new THREE.MeshBasicMaterial({ map: makePodTexture(THREE) }));
-  inkOutline(THREE, box, 1.1);
+  // The texture carries its own thick ink border, so no outline mesh (saves a draw call per pod).
+  const box = new THREE.Mesh(podGeometry ||= new THREE.BoxGeometry(1.25, 1.25, 1.25), new THREE.MeshBasicMaterial({ map: makePodTexture(THREE) }));
   group.add(box);
   const phase = Math.random() * 6.28;
   group.userData.animate = (now) => {
@@ -96,22 +98,43 @@ export function makeItemPod(THREE) {
  * big parts, the glass canopy swapped for a fishbowl, and an alien pilot seated in it.
  * Returns { pilot }; `ship.userData.tick(now, dizzy)` animates the pilot.
  */
-export function toonifyShip(THREE, ship, { color, alien = ALIENS[0], trimColor = '#2a2244' }) {
+export function toonifyShip(THREE, ship, { color, alien = ALIENS[0], trimColor = '#2a2244', mergeGlow = false }) {
   if (ship.userData.toon) return { pilot: ship.userData.pilot };
   ship.userData.toon = true;
   const body = toon(THREE, color), trim = toon(THREE, trimColor);
+  // Merge the hull into three meshes (body tone, trim tone, ink outline) so a ship costs a few draw
+  // calls instead of ~26. Glowing parts (engines, lights, boost flames) stay separate and animated.
+  ship.updateMatrixWorld(true);
+  const toRoot = new THREE.Matrix4().copy(ship.matrixWorld).invert();
+  const parts = { body: [], trim: [], ink: [] }, drop = [], glow = {};
+  const plain = (g, m) => { const out = g.index ? g.toNonIndexed() : g.clone(); for (const k of Object.keys(out.attributes)) if (k !== 'position' && k !== 'normal') out.deleteAttribute(k); return out.applyMatrix4(m); };
   ship.traverse((o) => {
     if (o.isPointLight) { o.intensity = 0; return; }
     if (!o.isMesh || !o.material || o.userData.ink) return;
-    if (o.material.isMeshPhysicalMaterial) { o.visible = false; return; }
+    if (o.material.isMeshPhysicalMaterial) { drop.push(o); return; }
     const glowy = o.material.isMeshBasicMaterial || (o.material.emissiveIntensity || 0) > 0.6;
-    if (glowy) return;
+    const local = new THREE.Matrix4().multiplyMatrices(toRoot, o.matrixWorld);
+    if (glowy) {
+      // NPC ships never animate their lights or flames, so glowing parts that look alike merge too.
+      if (!mergeGlow) return;
+      const m = o.material, key = `${m.type}|${m.color?.getHexString()}|${m.emissive?.getHexString?.() || ''}|${m.opacity}|${m.blending}|${m.transparent}`;
+      (glow[key] ||= { material: m, list: [] }).list.push(plain(o.geometry, local));
+      drop.push(o);
+      return;
+    }
     const bright = (o.material.color?.getHSL?.({}).l ?? 0.5) > 0.35;
-    o.material.dispose?.();
-    o.material = bright ? body : trim;
+    parts[bright ? 'body' : 'trim'].push(plain(o.geometry, local));
     o.geometry.computeBoundingSphere();
-    if (o.geometry.boundingSphere.radius > 0.4) inkOutline(THREE, o, 1.06);
+    if (o.geometry.boundingSphere.radius > 0.4) parts.ink.push(plain(o.geometry, local.clone().multiply(new THREE.Matrix4().makeScale(1.06, 1.06, 1.06))));
+    drop.push(o);
   });
+  const keep = new Set(Object.values(glow).map((g) => g.material));
+  for (const o of drop) { o.parent?.remove(o); o.geometry?.dispose?.(); if (!keep.has(o.material)) o.material?.dispose?.(); }
+  for (const g of Object.values(glow)) ship.add(new THREE.Mesh(mergeGeometries(g.list), g.material));
+  const add = (list, material) => { if (list.length) ship.add(new THREE.Mesh(mergeGeometries(list), material)); };
+  add(parts.body, body);
+  add(parts.trim, trim);
+  add(parts.ink, new THREE.MeshBasicMaterial({ color: '#140f24', side: THREE.BackSide }));
   const pilot = makeAlienPilot(THREE, alien);
   // Oversized so the pilot reads from the chase camera.
   pilot.position.set(0, 0.74, -0.28);
@@ -121,6 +144,7 @@ export function toonifyShip(THREE, ship, { color, alien = ALIENS[0], trimColor =
   bowl.position.copy(pilot.position);
   ship.add(bowl);
   ship.userData.pilot = pilot;
+  ship.userData.bowl = bowl;
   ship.userData.tick = (now, dizzy) => pilot.userData.tick(now, dizzy);
   return { pilot };
 }
@@ -134,7 +158,7 @@ function canvasSprite(THREE, draw, size = 128) {
   return t;
 }
 
-export function createCombat(THREE, { world, getRoute, routeAt, makeShipMesh, ships, nameTag, glow, sfx, toast, onPlayerHit = () => {}, say = () => {}, onSteal = () => {} }) {
+export function createCombat(THREE, { world, getRoute, routeAt, makeShipMesh, ships, nameTag, glow, sfx, toast, onPlayerHit = () => {}, say = () => {}, onSteal = () => {}, myScore = (r) => r.score }) {
   const starTex = new THREE.TextureLoader().load('/assets/kenney/particles/star_06.png');
   const reticleTex = canvasSprite(THREE, (g, s) => {
     g.strokeStyle = '#ffffff';
@@ -194,7 +218,7 @@ export function createCombat(THREE, { world, getRoute, routeAt, makeShipMesh, sh
   /** Recolour a ship into toon materials in its alien's colours and seat the pilot. */
   function makeNpcShip(index, { alien = ALIENS[index % ALIENS.length], color = alien.color, label = alien.name, shipDef = ships[(index + 1) % ships.length] } = {}) {
     const ship = makeShipMesh(shipDef);
-    const { pilot } = toonifyShip(THREE, ship, { color, alien });
+    const { pilot } = toonifyShip(THREE, ship, { color, alien, mergeGlow: true });
     const tag = nameTag(label, color);
     tag.position.set(0, 2.2, 0);
     ship.add(tag);
@@ -313,7 +337,7 @@ export function createCombat(THREE, { world, getRoute, routeAt, makeShipMesh, sh
 
   function hitPlayer(r, shooterName, color) {
     if (r.time < r.shieldUntil) { r.shieldUntil = -9; sfx.pop?.(); toast('SHIELD POPPED', `BLOCKED ${shooterName}`); return 0; }
-    const stolen = Math.min(steal('player', r.score), Math.max(0, Math.floor(r.score)));
+    const stolen = Math.min(steal('player', myScore(r)), Math.max(0, Math.floor(r.score)));
     r.zapPoints -= stolen;
     r.score = Math.max(0, r.score - stolen); // so back-to-back hits steal from what's actually left
     r.lostPts = (r.lostPts || 0) + stolen;
@@ -428,7 +452,8 @@ export function createCombat(THREE, { world, getRoute, routeAt, makeShipMesh, sh
     if (!r.started) return;
     const lap = r.lapDistance;
     // Bounty leader and the final-seconds frenzy.
-    let best = { id: 'player', score: r.score };
+    // Same score the HUD and standings show, so the crown always sits on the row marked 1st.
+    let best = { id: 'player', score: myScore(r) };
     for (const o of opponents(r, rivals)) if (o.score > best.score) best = o;
     if (best.id !== leaderId) {
       if (best.id === 'player' && leaderId) toast('YOU TOOK 1ST ♛', 'YOU WEAR THE BOUNTY · ZAPS ON YOU STEAL ×2');
@@ -522,8 +547,9 @@ export function createCombat(THREE, { world, getRoute, routeAt, makeShipMesh, sh
       // At most 2 new hits per shooter per update, however many a client claims.
       const fresh = Math.min(2, (Number(z.count) || 0) - (zapSeen[z.from] || 0));
       if (fresh <= 0) continue;
-      zapSeen[z.from] = Number(z.count) || 0;
-      if (r.started && !r.done) for (let k = 0; k < fresh; k++) paid[z.from] = (paid[z.from] || 0) + hitPlayer(r, String(z.name || 'RIVAL').toUpperCase(), '#ff7ca7');
+      zapSeen[z.from] = (zapSeen[z.from] || 0) + fresh; // the rest arrive on the next update
+      // Hits landing in the 2 s grace after the clock still count (the shooter is credited for them).
+      if (r.started && (!r.done || Date.now() - (r.doneAt || 0) < 2500)) for (let k = 0; k < fresh; k++) paid[z.from] = (paid[z.from] || 0) + hitPlayer(r, String(z.name || 'RIVAL').toUpperCase(), '#ff7ca7');
     }
   }
 
@@ -559,7 +585,11 @@ export function createCombat(THREE, { world, getRoute, routeAt, makeShipMesh, sh
       // Racers just behind you stay visible beside the ship, but never between the camera and the ship.
       b.ship.visible = gap > -1.5 && gap < 130;
       b.ship.rotation.z = -(b.tx - b.x) * 0.06 + b.spin;
-      b.tag.visible = gap > 4 && r.started;
+      // Level of detail: past ~45 m the pilot and fishbowl are a few pixels, so skip their draw calls.
+      const near = gap < 45;
+      b.pilot.visible = near;
+      if (b.ship.userData.bowl) b.ship.userData.bowl.visible = near;
+      b.tag.visible = gap > 4 && gap < 70 && r.started;
       const stunned = r.time < b.stunUntil;
       b.pilot.userData.tick(now, stunned);
       tickStars(b.stars, now, stunned && b.ship.visible, b.ship.position.x, b.ship.position.y, b.ship.position.z);

@@ -490,3 +490,11 @@ button:disabled{cursor:not-allowed;filter:saturate(.55);opacity:.58}
 @keyframes steal-in{from{opacity:0;transform:translateX(16px)}}
 /* Phones: a compact top-3 strip and feed under the place/timer instead of hiding standings. */
 @media(max-width:760px){.hud2 .standings-ticker{display:grid;width:124px;font-size:7px;margin-top:6px}.hud2 .standings-ticker[hidden]{display:none}.standings-ticker div{padding:3px 5px;gap:4px;grid-template-columns:12px 1fr auto}.standings-ticker div:nth-child(n+4):not(.me){display:none}.steal-feed{width:124px}.steal-feed div{font-size:7px;padding:3px 5px}.steal-feed b{font-size:9px}}
+
+/* Legibility pass: battle HUD text at least 11 px (9 px on phones); banners sit beneath the HUD. */
+.race-toast{z-index:7}
+.hud2 .standings-ticker{font-size:11px;width:190px}
+.hud2 .standings-ticker div{padding:5px 8px}
+.steal-feed{width:190px}.steal-feed div{font-size:11px}.steal-feed b{font-size:13px}
+.standings-ticker.frenzy::before{font-size:10px}
+@media(max-width:760px){.hud2 .standings-ticker{font-size:9px;width:140px}.hud2 .standings-ticker div{padding:3px 5px}.steal-feed{width:140px}.steal-feed div{font-size:9px}.steal-feed b{font-size:10px}.standings-ticker.frenzy::before{font-size:8px}}

@@ -23,8 +23,9 @@ export function createSkyline(THREE, { accent = '#71f5dc', glowTexture } = {}) {
   const group = new THREE.Group();
   const hull = addRim(new THREE.MeshStandardMaterial({ color: '#1c2c48', emissive: '#0a1a30', emissiveIntensity: 0.6, metalness: 0.5, roughness: 0.55, flatShading: true }), { strength: 1.3, power: 1.8 });
   const strip = new THREE.MeshBasicMaterial({ color: accent, fog: false });
-  const beaconMat = new THREE.SpriteMaterial({ map: glowTexture, color: '#bff6ff', transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, fog: false });
-  const beacons = [];
+  // Beacons are one point cloud (one draw call) whose per-beacon brightness blinks via vertex colours.
+  const beaconSpots = [];
+  let beaconPoints = null;
 
   // Everything here shares two materials, so geometry is merged into a few
   // meshes (one hull, one light) to keep the skyline to a handful of draw calls.
@@ -62,12 +63,15 @@ export function createSkyline(THREE, { accent = '#71f5dc', glowTexture } = {}) {
       // A vertical light strip and a beacon on each structure.
       const height = Math.max(4, top - box.min.y);
       stripParts.push(clean(new THREE.BoxGeometry(0.5, height * 0.8, 0.5).translate(model.position.x + (hash(i * 13) - 0.5) * scale * 0.6, box.min.y + height * 0.45, model.position.z + scale * 0.3)));
-      const beacon = new THREE.Sprite(beaconMat.clone());
-      beacon.scale.setScalar(7);
-      beacon.position.set(model.position.x, top + 2, model.position.z);
-      beacon.userData.phase = hash(i * 17) * 6.28;
-      group.add(beacon);
-      beacons.push(beacon);
+      beaconSpots.push({ x: model.position.x, y: top + 2, z: model.position.z, phase: hash(i * 17) * 6.28 });
+    }
+    if (beaconSpots.length) {
+      const geometry = new THREE.BufferGeometry();
+      geometry.setAttribute('position', new THREE.BufferAttribute(new Float32Array(beaconSpots.flatMap((b) => [b.x, b.y, b.z])), 3));
+      geometry.setAttribute('color', new THREE.BufferAttribute(new Float32Array(beaconSpots.length * 3), 3));
+      beaconPoints = new THREE.Points(geometry, new THREE.PointsMaterial({ map: glowTexture, size: 7, sizeAttenuation: true, vertexColors: true, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, fog: false }));
+      beaconPoints.frustumCulled = false;
+      group.add(beaconPoints);
     }
     if (towerParts.length) {
       const towers = new THREE.Mesh(mergeGeometries(towerParts), hull);
@@ -78,7 +82,10 @@ export function createSkyline(THREE, { accent = '#71f5dc', glowTexture } = {}) {
   });
 
   group.userData.tick = (now) => {
-    for (const b of beacons) b.material.opacity = 0.35 + 0.65 * Math.max(0, Math.sin(now * 0.003 + b.userData.phase));
+    if (!beaconPoints) return;
+    const colors = beaconPoints.geometry.attributes.color, tint = [0.75, 0.96, 1];
+    beaconSpots.forEach((b, i) => { const k = 0.35 + 0.65 * Math.max(0, Math.sin(now * 0.003 + b.phase)); colors.setXYZ(i, tint[0] * k, tint[1] * k, tint[2] * k); });
+    colors.needsUpdate = true;
   };
   return group;
 }

@@ -348,8 +348,12 @@ export default async (request: Request) => {
         if (count > prev) await store().setJSON(key, { from: pilot.id, name: pilot.name, count, at: Date.now() });
       }));
       const paid = Array.isArray(body.paid) ? body.paid.slice(0, 8) : [];
-      await Promise.all(paid.filter((p: { to?: string }) => p && p.to !== pilot.id && found.room.players.some((x) => x.id === p.to)).map((p: { to: string; amount: number }) =>
-        store().setJSON(paidKey(code, found.room.heat, p.to, pilot.id), { from: pilot.id, name: pilot.name, amount: Math.floor(finite(p.amount, 0, MAX_HEAT_SCORE)) })));
+      // A payment is only valid against zaps that shooter actually landed on us, capped per zap.
+      await Promise.all(paid.filter((p: { to?: string }) => p && p.to !== pilot.id && found.room.players.some((x) => x.id === p.to)).map(async (p: { to: string; amount: number }) => {
+        const zaps = Number(((await store().get(zapKey(code, found.room.heat, pilot.id, p.to), { type: "json" })) as Zap | null)?.count || 0);
+        if (!zaps) return;
+        await store().setJSON(paidKey(code, found.room.heat, p.to, pilot.id), { from: pilot.id, name: pilot.name, amount: Math.floor(finite(p.amount, 0, zaps * 1500)) });
+      }));
       const [live, zapped, credits] = await Promise.all([readLive(code), readZaps(code, found.room.heat, pilot.id), readPaid(code, found.room.heat, pilot.id)]);
       return json({ live: live.filter((other) => other.id !== pilot.id && found.room.players.some((p) => p.id === other.id)), zapped, credits, phase: found.room.phase, heat: found.room.heat });
     }

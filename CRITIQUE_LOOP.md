@@ -36,6 +36,7 @@ Score each 1–10 with evidence. A 10 is demo-ready on a phone with no explanati
 | 1 (grade) | 6 | 7 | 6 | 6 | Build OK, battle test 16/16; server trusts scores, PvP steal desync, solo scoring lopsided (bots ~10k vs human ~1k), 287 draw calls mid-heat, intro headline unreadable |
 | 3 (grade) | 6 | 7 | 6 | 5 | C2 fixes hold mostly; `--ink` override made titles dark on dark (regression); novices still crushed by the bot floor and minimum steal; end-of-heat steals lost; player ids double as secrets; bot swings stackable; 279 draw calls on phone |
 | 5 (grade) | 7 | 7 | 6 | 6 | No errors across solo, season, challenge and PvP; max 183 calls; recap written from partial standings; cast cache poisonable; zap counts unbounded; challenge still a 3-heat season; bot lap times 59.5 s |
+| 7 (grade) | 6 | 7 | 6 | 6 | Draw calls back over budget (alien ships about 26 meshes each, peak 293); HUD, crown and standings use different scores; challenge results contradict themselves; strip text 7–9 px; late PvP zaps dropped; paid steals unchecked |
 
 ## Backlog
 (ready / in-progress / done; each item notes the criterion it moves)
@@ -76,6 +77,17 @@ Score each 1–10 with evidence. A 10 is demo-ready on a phone with no explanati
 29. `done` (C5) [Polish] Taunt bubble covers the item card on mobile; checkpoint label wraps.
 30. `in-progress` (C5: names, pause cap, 403; the rate-limit atomicity and forge helper dedupe remain) [Execution] Duplicate pilot names; non-atomic, non-expiring rate limit; unbounded solo pause; auth errors return 400; forge duplicates helpers; PB sticker on an idle run.
 
+**From grade 7:**
+31. `in-progress` (C7: ships 27→~12 meshes, LOD, beacons 16→1, pods without outlines; Io max 196, Neon Rift median 160–185 but peaks 225–240) [Execution] Draw calls 267–293: merge ship parts by material.
+32. `done` (C7) [Polish/Execution] One score everywhere: the HUD shows r.score while standings show the projected score; the crown uses r.score too.
+33. `done` (C7) [Polish/Usefulness] Challenge results: subtitle says "heat 1 of 3"; the recap ignores the head-to-head.
+34. `done` (C7) [Usefulness] Pin the challenger and human rivals in the live strip.
+35. `done` (C7) [Polish] Strip and feed text 7–9 px; the LAP banner covers the HUD; "−0 pts" on ties.
+36. `done` (C7) [Execution] Late PvP zaps dropped after done; zapSeen jumps past the 2-hit cap.
+37. `done` (C7) [Execution/Security] Paid steals need a matching zap record and a cap; the C6 log overstated the feed (it shows your own steals only).
+38. `idea` [Creativity/Usefulness] Season-end AI story card with share/challenge buttons.
+39. `idea` [Usefulness/Polish] Social PvP: broadcast all human steals, emote taunts, REMATCH.
+
 ## Log
 - Cycle 2: fixed the top grade-1 findings.
   - **Bots:** rubber-banded to the human field (`0.55·pace·field + 0.45·base`, identical on client and server); steals are 6% of the target's score (min 150). In a solo test the bots stayed within about 20% of the player.
@@ -109,4 +121,12 @@ Score each 1–10 with evidence. A 10 is demo-ready on a phone with no explanati
   - **Server:** duplicate names get a number, solo pause is capped at 120 s per heat, auth failures return 403.
   - **Deploy:** `npm run warm:ai <url>` pre-warms the AI lines for all six courses.
   - **Tests:** e2e 20/20.
-- Cycle 6: live battle readability. The standings strip marks the crowned leader (♛) and shows a ZAP FRENZY header in the final 15 s. A new steal feed lists every point swing as it happens ("YOU +47 from BLIX", NPC-on-NPC, rivals' confirmed PvP steals), coloured by whether you gained or lost. Phones now get a compact top-3 strip and feed (standings used to be hidden under 760 px). e2e 20/20.
+- Cycle 6: live battle readability. The standings strip marks the crowned leader (♛) and shows a ZAP FRENZY header in the final 15 s. A new steal feed lists every point swing as it happens ("YOU +47 from BLIX", NPC-on-NPC, and your own confirmed PvP steals; other players' steals aren't broadcast), coloured by whether you gained or lost. Phones now get a compact top-3 strip and feed (standings used to be hidden under 760 px). e2e 20/20.
+- Cycle 7: fixed the grade-7 findings.
+  - **Draw calls:** ship hulls are merged by material (body, trim, ink) with NPC glow parts merged too, so a ship is about 12 meshes instead of 27. Distant NPCs hide their pilot, bowl and tag. Neon Rift's 16 beacon sprites are one point cloud, and pods dropped their outline mesh. Io max is now 196; Neon Rift peaks are still 225–240 (median about 170).
+  - **One score:** projectedScore everywhere (HUD, standings, crown and steal size).
+  - **Challenges:** a head-to-head subtitle, and the recap includes the duel (fallback and AI input).
+  - **Strip:** pins human rivals and the challenger; text at least 11 px (9 px on phones); toasts sit beneath the HUD; ties show ±0.
+  - **Late PvP zaps:** accepted during the 2 s grace; zapSeen advances only by applied hits.
+  - **Paid steals:** need a matching zap record and are capped at 1500 per zap.
+  - **Tests:** e2e 20/20.

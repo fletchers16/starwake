@@ -1,4 +1,6 @@
+import { getStore } from "@netlify/blobs";
 import { FORGE_INSTRUCTIONS, FORGE_SCHEMA, sanitizeForgedCourse } from "../../course-forge.js";
+import { underDailyLimit } from "../lib/openai";
 
 // World Forge: turn a pilot's prompt into a raceable course with OpenAI
 // structured outputs. Requires OPENAI_API_KEY; OPENAI_MODEL and
@@ -31,6 +33,13 @@ export default async (request: Request) => {
   } catch {}
   if (prompt.length < 3) return json({ error: "Describe a world to forge." }, 400);
 
+  // Same prompt, same world: serve repeats from cache. New prompts are rate-limited per IP per day.
+  const cacheKey = `forge/${[...prompt.toLowerCase()].reduce((h, c) => Math.imul(h ^ c.charCodeAt(0), 16777619) >>> 0, 2166136261).toString(36)}-${prompt.length}`;
+  const cache = getStore({ name: "starwake-ai", consistency: "strong" });
+  const cached = await cache.get(cacheKey, { type: "json" }).catch(() => null);
+  if (cached) return json({ course: cached, model: MODEL, cached: true });
+  if (!(await underDailyLimit(request, "forge", 15))) return json({ error: "You've forged a lot of worlds today. Try again tomorrow, or race one you've made.", code: "limited" }, 429);
+
   try {
     const response = await fetch("https://api.openai.com/v1/responses", {
       method: "POST",
@@ -52,6 +61,7 @@ export default async (request: Request) => {
       return json({ error: "The forge is overloaded. Try again in a moment." }, 502);
     }
     const course = sanitizeForgedCourse(JSON.parse(outputText(data)), prompt);
+    await cache.setJSON(cacheKey, course).catch(() => {});
     return json({ course, model: MODEL });
   } catch (error) {
     const message = error instanceof Error ? error.message : "";

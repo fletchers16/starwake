@@ -43,15 +43,15 @@ Score each 1–10 with evidence. A 10 is demo-ready on a phone with no explanati
 1. `done` (C2) [Usefulness/Polish] **Scoring balance.** Bots score ~10k against a human's ~1k, so a 150-point zap barely matters. Bots should track the human field (rubber-banded), and steals should scale with the target's score.
 2. `done` (C2) [Execution] **Server trusts scores.** Cap a heat score by elapsed time, and cap bot adjustments.
 3. `done` (C2) [Execution] **PvP steal desync.** The shooter banks points even when the victim's shield blocks; leader multipliers differ per client. The victim should report the actual amount stolen back through the zap inbox.
-4. `ready` [Usefulness] **OpenAI optional.** The forge 503s without a key. Add an always-on AI touch (rival personalities and taunts, an AI race recap), with a key check on deploy.
-5. `ready` [Execution/Security] **Forge rate limit** (per IP per day) plus a prompt cache.
+4. `done` (C4, needs OPENAI_API_KEY on deploy) [Usefulness] **OpenAI optional.** The forge 503s without a key. Add an always-on AI touch (rival personalities and taunts, an AI race recap), with a key check on deploy.
+5. `done` (C4) [Execution/Security] **Forge rate limit** (per IP per day) plus a prompt cache.
 6. `in-progress` (C2: in-flight guard, empty-room cleanup; challenge blobs still have no TTL) [Execution] **Live sync.** No in-flight guard on the 450 ms interval; zap, challenge and room blobs never expire.
 7. `done` (C2, retry with backoff) [Polish] **Failed finish.** Retry `complete` with backoff, and fall back to the local score in solo (currently DNF 0 after ~70 s).
 8. `done` (C2) [Polish] **Intro headline unreadable** ("RACE YOUR FRIENDS." dark on dark).
 9. `in-progress` (C2: copyable link fallback; the mobile CTA overlap remains) [Polish] **Share failure.** Shows "LINK READY ✓" next to a failure toast, with no copyable URL. The mobile sticky CTA covers the course cards.
 10. `in-progress` (C2: ghosts removed, shared textures kept, star sprites disposed; game.js split remains) [Execution] **Dead code and textures.** botGhosts remnants; combat.js disposes shared glow/star textures on every effect; bot dizzy sprites never disposed; game.js monolith.
 11. `ready` [Execution] **Draw calls** 287 mid-heat on Io (budget 220).
-12. `idea` [Creativity/Usefulness] AI rival personalities (OpenAI): names, taunts on zap, AI-written recap.
+12. `done` (C4) [Creativity/Usefulness] AI rival personalities (OpenAI): names, taunts on zap, AI-written recap.
 13. `idea` [Usefulness] Challenge ladder plus a daily "Zap Cup" (chain challenge links via `parent`, home-screen rematch nudges).
 14. `idea` [Creativity] Signature items with counterplay: Cow Catapult, a reflecting dodge-roll, team mode.
 
@@ -81,3 +81,10 @@ Score each 1–10 with evidence. A 10 is demo-ready on a phone with no explanati
   - **Novices:** the bot floor is capped at 1.4× the field + 300; steals are 8% (min 40); sim pilots zap you at most 3 times per heat.
   - **Rules text:** the briefing states the real rules (8%, crown ×2, Frenzy ×2, item list); a challenge says one heat; the challenger is listed in the results table; bot lap times vary.
   - **Tests:** e2e 20/20.
+- Cycle 4: always-on OpenAI layer.
+  - **Rivals:** `netlify/functions/banter.ts` writes per-course trash talk for the five aliens (cached per course in Blobs, so about one call per course ever) and a two-sentence announcer recap after each heat.
+  - **In race:** a speech bubble when an alien zaps you, gets zapped or takes the lead ("AI" tag when OpenAI wrote it).
+  - **Results:** a race-recap card ("WRITTEN BY OPENAI").
+  - **Fallbacks:** canned lines and a template recap without a key.
+  - **Rate limits:** shared `netlify/lib/openai.ts` (structured outputs plus a per-IP daily limit); the forge is limited to 15/day/IP with a prompt cache.
+  - **Verified:** 503 fallback path, taunt bubble, recap card; e2e 20/20. The real AI path needs `OPENAI_API_KEY` on Netlify.

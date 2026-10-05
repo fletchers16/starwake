@@ -104,3 +104,15 @@ export function makeAlienPilot(THREE, alien = ALIENS[0]) {
   };
   return group;
 }
+
+/**
+ * Fallback trash talk when the AI announcer isn't available (no OpenAI key on the
+ * deployment). With a key, netlify/functions/banter.ts writes per-course lines.
+ */
+export const CANNED_LINES = {
+  ZORP: { zap: ['Zorp sees all. Zorp zaps all.', 'One eye, zero mercy!', 'Smile for the laser!'], zapped: ['My beautiful eye!', 'Lucky shot, earthling.', 'Zorp will remember this.'], lead: ['Behold: first place. As usual.', 'Bow before the eye!', 'See you at the finish. Not.'] },
+  BLIX: { zap: ['Pew pew pew! Three times!', 'All three eyes saw that!', 'Ha! Dizzy now, aren\'t you?'], zapped: ['The room is spinning!', 'Which way is forward?!', 'Ouch, ouch, and ouch.'], lead: ['Blix is in front! Wheee!', 'Triple-eyed and first!', 'Catch me if you can! You can\'t.'] },
+  MUNGO: { zap: ['Mungo is not sorry.', 'Out of my lane!', 'That is for last week.'], zapped: ['Mungo is mad now.', 'You will regret that.', 'Grrrrrr.'], lead: ['Mungo first. Finally.', 'Move. Mungo is winning.', 'Hmph. As it should be.'] },
+  QUEEP: { zap: ['QUEEP QUEEP! Got you!', 'Tiny ship, big laser!', 'Zappity zap!'], zapped: ['Queeeeep!', 'No fair! I\'m tiny!', 'Waaah, my points!'], lead: ['Queep in first! Queep in first!', 'So fast! So small!', 'Bye bye!'] },
+  GLORB: { zap: ['The cosmos zapped you, man.', 'It\'s nothing personal. It\'s physics.', 'Glorb happens.'], zapped: ['All things are temporary. Even points.', 'Whoa. Heavy.', 'I felt that in my soul, dude.'], lead: ['First is just a state of mind.', 'Glorb is one with the lead.', 'Far out. I\'m winning.'] },
+};

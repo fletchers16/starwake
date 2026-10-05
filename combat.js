@@ -134,7 +134,7 @@ function canvasSprite(THREE, draw, size = 128) {
   return t;
 }
 
-export function createCombat(THREE, { world, getRoute, routeAt, makeShipMesh, ships, nameTag, glow, sfx, toast, onPlayerHit = () => {} }) {
+export function createCombat(THREE, { world, getRoute, routeAt, makeShipMesh, ships, nameTag, glow, sfx, toast, onPlayerHit = () => {}, say = () => {} }) {
   const starTex = new THREE.TextureLoader().load('/assets/kenney/particles/star_06.png');
   const reticleTex = canvasSprite(THREE, (g, s) => {
     g.strokeStyle = '#ffffff';
@@ -314,6 +314,7 @@ export function createCombat(THREE, { world, getRoute, routeAt, makeShipMesh, sh
     if (r.time < r.shieldUntil) { r.shieldUntil = -9; sfx.pop?.(); toast('SHIELD POPPED', `BLOCKED ${shooterName}`); return 0; }
     const stolen = Math.min(steal('player', r.score), Math.max(0, Math.floor(r.score)));
     r.zapPoints -= stolen;
+    r.lostPts = (r.lostPts || 0) + stolen;
     r.stunUntil = r.time + STUN;
     r.combo = 0;
     sfx.zapped?.();
@@ -329,6 +330,7 @@ export function createCombat(THREE, { world, getRoute, routeAt, makeShipMesh, sh
       const live = liveBotScore(t, r), stolen = Math.min(steal(t.id, live), live);
       t.adj -= stolen;
       t.stunUntil = r.time + STUN;
+      if (shooter === 'player' && stolen) say(t.name, 'zapped');
       return stolen;
     }
     if (target.kind === 'ext') {
@@ -367,6 +369,8 @@ export function createCombat(THREE, { world, getRoute, routeAt, makeShipMesh, sh
       if (target) {
         const stolen = hitOpponent(r, target, 'player');
         r.zapPoints += stolen;
+        r.zapsLanded = (r.zapsLanded || 0) + 1;
+        r.stolenPts = (r.stolenPts || 0) + stolen;
         beam(from, worldPos(r, target.d, target.x, target.y), ITEMS.blaster.color);
         toast(`SNIPED ${target.name}!`, target.kind === 'human' ? 'STEALING…' : stolen ? `+${stolen} STOLEN${target.id === leaderId ? ' · BOUNTY ♛' : ''}` : 'SHIELD BLOCKED IT');
       } else {
@@ -423,6 +427,7 @@ export function createCombat(THREE, { world, getRoute, routeAt, makeShipMesh, sh
     for (const o of opponents(r, rivals)) if (o.score > best.score) best = o;
     if (best.id !== leaderId) {
       if (best.id === 'player' && leaderId) toast('YOU TOOK 1ST ♛', 'YOU WEAR THE BOUNTY · ZAPS ON YOU STEAL ×2');
+      if (leaderId === 'player' && best.kind === 'bot') say(best.name, 'lead');
       leaderId = best.id;
     }
     const nowFrenzy = r.duration - r.time <= FRENZY_SECONDS;
@@ -467,6 +472,8 @@ export function createCombat(THREE, { world, getRoute, routeAt, makeShipMesh, sh
           e.done = true;
           const stolen = hitOpponent(r, t, 'player');
           r.zapPoints += stolen;
+          r.zapsLanded = (r.zapsLanded || 0) + 1;
+          r.stolenPts = (r.stolenPts || 0) + stolen;
           flash(to, ITEMS.seeker.color, 4);
           sfx.zapped?.();
           toast(`COMET HIT ${t.name}`, t.kind === 'human' ? 'STEALING…' : stolen ? `+${stolen} STOLEN` : 'SHIELD BLOCKED IT');
@@ -490,7 +497,9 @@ export function createCombat(THREE, { world, getRoute, routeAt, makeShipMesh, sh
     if (target.kind === 'player') {
       lastPlayerHitByBot = r.time;
       botHitsOnPlayer++;
-      b.adj += hitPlayer(r, b.name, b.color);
+      const took = hitPlayer(r, b.name, b.color);
+      b.adj += took;
+      if (took) say(b.name, 'zap');
     } else {
       b.adj += hitOpponent(r, target, b.id);
     }
@@ -521,6 +530,7 @@ export function createCombat(THREE, { world, getRoute, routeAt, makeShipMesh, sh
     if (total > credited) {
       const gained = total - credited;
       r.zapPoints += gained;
+      r.stolenPts = (r.stolenPts || 0) + gained;
       if (r.done) r.score += gained; // late credit after the clock: the score is no longer recomputed
       toast('ZAP CONFIRMED', `+${gained} STOLEN`);
     }

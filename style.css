@@ -503,3 +503,11 @@ button:disabled{cursor:not-allowed;filter:saturate(.55);opacity:.58}
 
 /* The hidden attribute always wins (component display rules like .secondary-button{display:flex} used to override it). */
 [hidden]{display:none!important}
+
+/* Quick-chat emotes (multiplayer races only) */
+.emote-bar{position:absolute;z-index:9;left:24px;bottom:84px;display:flex;flex-direction:column;gap:6px}
+.emote-bar button{display:flex;align-items:center;gap:8px;padding:6px 10px;border-radius:12px;border:2px solid rgba(255,255,255,.22);background:rgba(20,14,40,.7);color:#fff;font:400 13px var(--display);letter-spacing:.03em;cursor:pointer}
+.emote-bar button:active{transform:scale(.96);border-color:#ff8be8}
+.emote-bar kbd{font:600 9px 'DM Mono',monospace;padding:1px 5px;border-radius:5px;background:rgba(255,255,255,.12)}
+@media (pointer:coarse){.emote-bar kbd{display:none}}
+@media(max-width:760px){.emote-bar{left:10px;bottom:150px;gap:4px}.emote-bar button{font-size:11px;padding:5px 8px}}

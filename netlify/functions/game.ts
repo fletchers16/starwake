@@ -110,12 +110,21 @@ async function readZaps(code: string, heat: string, target: string): Promise<Zap
 // bounty and frenzy), so the shooter is credited exactly that: paid/CODE/HEAT/SHOOTER/VICTIM.
 type Paid = { from: string; name: string; amount: number };
 const paidKey = (code: string, heat: string, shooter: string, victim: string) => `paid/${code}/${heat}/${shooter}/${victim}`;
-async function readPaid(code: string, heat: string, shooter: string): Promise<Paid[]> {
+// Every confirmed steal this heat, as { shooter, from, name, amount } (shooter comes from the key).
+async function readAllPaid(code: string, heat: string): Promise<(Paid & { shooter: string })[]> {
   const s = store();
-  const { blobs } = await s.list({ prefix: `paid/${code}/${heat}/${shooter}/` });
-  const entries = await Promise.all(blobs.map((blob) => s.get(blob.key, { type: "json" }) as Promise<Paid | null>));
-  return entries.filter((entry): entry is Paid => !!entry);
+  const prefix = `paid/${code}/${heat}/`;
+  const { blobs } = await s.list({ prefix });
+  const entries = await Promise.all(blobs.map(async (blob) => {
+    const entry = (await s.get(blob.key, { type: "json" })) as Paid | null;
+    return entry ? { ...entry, shooter: blob.key.slice(prefix.length).split("/")[0] } : null;
+  }));
+  return entries.filter((entry): entry is Paid & { shooter: string } => !!entry);
 }
+
+// Quick-chat emotes between humans: one current emote per pilot, shown to everyone else for a few seconds.
+const EMOTES = ["GG!", "COMING FOR YOU", "NICE SHOT!", "OOPS", "CATCH ME!"];
+const emoteKey = (code: string, pilot: string) => `emote/${code}/${pilot}`;
 
 // "Beat my run" challenges: a recorded run plus the exact course layout, shared by link.
 const challengeKey = (id: string) => `challenge/${id}`;
@@ -358,8 +367,17 @@ export default async (request: Request) => {
         if (!zaps) return;
         await store().setJSON(paidKey(code, heatKey(found.room), p.to, pilot.id), { from: pilot.id, name: pilot.name, amount: Math.floor(finite(p.amount, 0, zaps * 1500)) });
       }));
-      const [live, zapped, credits] = await Promise.all([readLive(code), readZaps(code, heatKey(found.room), pilot.id), readPaid(code, heatKey(found.room), pilot.id)]);
-      return json({ live: live.filter((other) => other.id !== pilot.id && found.room.players.some((p) => p.id === other.id)), zapped, credits, phase: found.room.phase, heat: found.room.heat });
+      if (Number.isInteger(body.emote) && EMOTES[body.emote]) await store().setJSON(emoteKey(code, pilot.id), { from: pilot.id, name: pilot.name, text: EMOTES[body.emote], at: Date.now() });
+      const [live, zapped, allPaid, emotes] = await Promise.all([
+        readLive(code), readZaps(code, heatKey(found.room), pilot.id), readAllPaid(code, heatKey(found.room)),
+        Promise.all(found.room.players.filter((p) => p.id !== pilot.id).map((p) => store().get(emoteKey(code, p.id), { type: "json" }).catch(() => null))),
+      ]);
+      const names = new Map(found.room.players.map((p) => [p.id, p.name]));
+      const credits = allPaid.filter((p) => p.shooter === pilot.id);
+      // The room-wide steal feed: who stole how much from whom (cumulative per pair).
+      const steals = allPaid.map((p) => ({ thief: names.get(p.shooter) || "RIVAL", thiefId: p.shooter, victim: p.name, victimId: p.from, amount: p.amount }));
+      const recentEmotes = (emotes as ({ from: string; name: string; text: string; at: number } | null)[]).filter((e) => e && Date.now() - e.at < 6000);
+      return json({ live: live.filter((other) => other.id !== pilot.id && found.room.players.some((p) => p.id === other.id)), zapped, credits, steals, emotes: recentEmotes, phase: found.room.phase, heat: found.room.heat });
     }
 
     if (action === "leave") {
@@ -372,7 +390,7 @@ export default async (request: Request) => {
       if (!room.players.length) {
         await store().delete(code).catch(() => {});
         // Empty room: drop its telemetry, zap and steal records too.
-        for (const prefix of [`live/${code}/`, `zap/${code}/`, `paid/${code}/`]) {
+        for (const prefix of [`live/${code}/`, `zap/${code}/`, `paid/${code}/`, `emote/${code}/`]) {
           const { blobs } = await store().list({ prefix }).catch(() => ({ blobs: [] as { key: string }[] }));
           await Promise.all(blobs.map((b) => store().delete(b.key).catch(() => {})));
         }

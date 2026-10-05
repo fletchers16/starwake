@@ -137,6 +137,11 @@ try {
   check('laptop receives the zap back', laptopHit, laptopHit ? `spun out, ${laptopHit.zapPoints} pts` : 'no zap');
   await laptop.screenshot({ path: `${OUT}/6-laptop-zapped.png` });
 
+  // ---- Quick chat: an emote from the phone pops up on the laptop ----
+  await phone.tap('#emote-bar [data-emote="0"]');
+  const emote = await until(laptop, () => /GG!/.test(document.querySelector('#taunt')?.innerText || '') && document.querySelector('#taunt').innerText.replace(/\n/g, ' '), null, { timeout: 8000 });
+  check('emote from the phone shows on the laptop', emote, emote || 'no bubble');
+
   // ---- Security: a player's public id must not let another device act for them ----
   const spoof = await phone.evaluate(async (code) => {
     const laptopId = Object.values(window.__starwake.state.rivals).find((x) => x.name === 'LAPTOP')?.id;

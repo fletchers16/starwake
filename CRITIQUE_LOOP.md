@@ -87,7 +87,7 @@ Score each 1–10 with evidence. A 10 is demo-ready on a phone with no explanati
 36. `done` (C7) [Execution] Late PvP zaps dropped after done; zapSeen jumps past the 2-hit cap.
 37. `done` (C7) [Execution/Security] Paid steals need a matching zap record and a cap; the C6 log overstated the feed (it shows your own steals only).
 38. `done` (C8) [Creativity/Usefulness] Season-end AI story card with share/challenge buttons.
-39. `in-progress` (C8: REMATCH done; the steal broadcast and emotes remain) [Usefulness/Polish] Social PvP: broadcast all human steals, emote taunts, REMATCH.
+39. `done` (C8–C10) [Usefulness/Polish] Social PvP: broadcast all human steals, emote taunts, REMATCH.
 
 **From grade 9:**
 40. `done` (C9) [Execution] REMATCH must not reuse zap/paid records (add a round to the keys; guard pre-start credits) and needs an e2e check.
@@ -152,3 +152,7 @@ Score each 1–10 with evidence. A 10 is demo-ready on a phone with no explanati
   - **Bugs:** `[hidden]` always wins (REMATCH no longer shows mid-season); phones keep pinned rivals visible; no crown or "you took 1st" at 0–0.
   - **Copy:** the challenge landing names the dare ("★ LYRA-99 DARES YOU: BEAT 145 ON HELIX DEEP"); guests see "WAITING FOR THE HOST"; the season story names your human rival; the client name syncs after a server rename.
   - **Still open:** Io peaks (47).
+- Cycle 10: social PvP.
+  - **Steal feed:** the live response carries the room-wide confirmed-steal list (shooter taken from the paid key), so every player's feed shows steals between other humans too ("SAM +80 from NOVA").
+  - **Emotes:** GG! / NICE SHOT! / COMING FOR YOU, via keys 1–3 or the emote chips shown only in multiplayer races. They appear in rivals' bubbles for 6 s, and empty rooms clean up emote blobs.
+  - **Tests:** e2e has an emote check (27/27).

@@ -171,15 +171,22 @@ try {
   check('REMATCH hidden mid-season', await laptop.evaluate(() => getComputedStyle(document.querySelector('#rematch-button')).display === 'none'));
 
   // ---- Finish the season (heats 2 and 3), then REMATCH with the same crew ----
-  const finishHeat = async () => {
+  const finishHeat = async ({ hostLast = 0 } = {}) => {
     for (const page of [laptop, phone]) await until(page, () => window.__starwake.state.race?.started && !window.__starwake.state.race.done, null, { timeout: 25000 });
-    for (const page of [laptop, phone]) await page.evaluate(() => { const S = window.__starwake; S.state.race.endsAt = Date.now() + (S.state.serverOffset || 0) + 1200; });
+    const end = (page) => page.evaluate(() => { const S = window.__starwake; S.state.race.endsAt = Date.now() + (S.state.serverOffset || 0) + 1200; });
+    if (hostLast) { await end(phone); await wait(hostLast); await end(laptop); } // the guest finishes first, the host keeps racing
+    else for (const page of [laptop, phone]) await end(page);
     return until(laptop, () => document.querySelector('#results-screen.active') && ['results', 'complete'].includes(window.__starwake.state.room?.phase) && window.__starwake.state.room.phase, null, { timeout: 30000 });
   };
   for (const heat of [2, 3]) {
     await until(laptop, () => !document.querySelector('#continue-button').disabled, null, { timeout: 15000 });
     await laptop.click('#continue-button');
-    const phase = await finishHeat();
+    // Heat 2: the host races on for longer than the 25 s host timeout after the guest finishes.
+    const phase = await finishHeat({ hostLast: heat === 2 ? 28000 : 0 });
+    if (heat === 2) {
+      const hostKept = await laptop.evaluate(async () => { const S = window.__starwake; const d = await fetch(`/.netlify/functions/game?code=${S.state.code}`).then((r) => r.json()); return d.room.hostId === S.state.playerId && S.state.host; });
+      check('host keeps the room while racing after the guest finishes', hostKept);
+    }
     if (heat === 3) check('season completes after heat 3', phase === 'complete', String(phase));
   }
   const rematchShown = await until(laptop, () => getComputedStyle(document.querySelector('#rematch-button')).display !== 'none' && !document.querySelector('#rematch-button').disabled);

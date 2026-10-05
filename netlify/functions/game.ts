@@ -234,10 +234,13 @@ function maintain(room: Room, live: Live[], now: number) {
     settleHeat(room);
     changed = true;
   }
+  // A racing pilot doesn't poll the room, but streams telemetry: either counts as being here.
+  // (Missing this handed "host" away mid-heat and froze live seasons after heat 1.)
+  const seen = (p: Pilot) => Math.max(p.lastSeen || 0, live.find((entry) => entry.id === p.id)?.at || 0);
   const host = room.players.find((p) => p.id === room.hostId);
-  const active = room.players.filter((p) => now - (p.lastSeen || 0) < HOST_TIMEOUT_MS);
-  if (host && now - (host.lastSeen || now) > HOST_TIMEOUT_MS && active.length) {
-    room.hostId = active.sort((a, b) => (b.lastSeen || 0) - (a.lastSeen || 0))[0].id;
+  const active = room.players.filter((p) => now - seen(p) < HOST_TIMEOUT_MS);
+  if (host && seen(host) && now - seen(host) > HOST_TIMEOUT_MS && active.length) {
+    room.hostId = active.sort((a, b) => seen(b) - seen(a))[0].id;
     changed = true;
   }
   return changed;
@@ -249,7 +252,8 @@ async function observeRoom(code: string, playerId?: string) {
   if (!found) return null;
   const now = Date.now();
   const pilot = playerId ? found.room.players.find((p) => p.id === playerId) : undefined;
-  const live = found.room.phase === "race" ? await readLive(code) : [];
+  // Telemetry stays relevant through results: it's how a pilot who just raced counts as present.
+  const live = found.room.phase !== "lobby" ? await readLive(code) : [];
   const draft = structuredClone(found.room);
   const stale = pilot && now - (pilot.lastSeen || 0) > SEEN_WRITE_MS;
   if (stale) draft.players.find((p) => p.id === playerId)!.lastSeen = now;
@@ -315,12 +319,21 @@ export default async (request: Request) => {
       const courseId = forged && c.courseId === forged.id ? forged.id : COURSES.includes(c.courseId) ? c.courseId : null;
       if (!courseId) return json({ error: "That course can't be shared." }, 400);
       if (!validCode(c.layoutCode)) return json({ error: "Missing course layout." }, 400);
+      // The challenge's score (its target and ladder entry) is the one the server recorded for
+      // this signed-in pilot, never a number the client sends.
+      const roomCode = String(body.code || "").toUpperCase();
+      if (!validCode(roomCode)) return json({ error: "Finish a heat first, then challenge a friend." }, 400);
+      const source = await readRoom(roomCode);
+      const sender = source?.room.players.find((p) => p.id === String(body.playerId || ""));
+      if (!source || !authorised(sender, body)) return json({ error: "This device isn't signed in as that pilot." }, 403);
+      const recorded = source.room.scores.find((e) => e.playerId === sender!.id && e.heat === Math.max(1, Math.min(3, Number(c.roomHeat) || 1)));
+      if (!recorded) return json({ error: "Finish the heat first, then challenge a friend." }, 409);
       const id = Array.from(crypto.getRandomValues(new Uint8Array(8)), (b) => "abcdefghijkmnpqrstuvwxyz23456789"[b % 32]).join("");
       const challenge = {
         id, courseId, course: forged && courseId === forged.id ? forged : null,
         coursePrompt: typeof c.coursePrompt === "string" ? c.coursePrompt.slice(0, 120) : "",
         courseSeed: Number(c.courseSeed) >>> 0, layoutCode: c.layoutCode, heat: Math.max(1, Math.min(3, Number(c.heat) || 1)),
-        name: cleanName(c.name), ship: cleanShip(c.ship), score: Math.floor(finite(c.score, 0, MAX_HEAT_SCORE)),
+        name: sender!.name, ship: cleanShip(c.ship), score: recorded.score,
         duration: finite(c.duration, 10, 600), run: cleanRun(c.run), parent: validChallengeId(c.parent) ? c.parent : null, createdAt: Date.now(),
         root: id,
       };
@@ -330,7 +343,9 @@ export default async (request: Request) => {
         if (parent) challenge.root = parent.root || parent.id;
       }
       await store().setJSON(challengeKey(id), challenge);
-      await addRung(challenge.root, challenge.name, challenge.score);
+      // A new dare starts its ladder with the sender. A send-it-back reply is already on the
+      // chain's ladder (posted from its challenge room), so it adds nothing here.
+      if (!challenge.parent) await addRung(challenge.root, challenge.name, challenge.score);
       return json({ id });
     }
     if (action === "challenge-get") {

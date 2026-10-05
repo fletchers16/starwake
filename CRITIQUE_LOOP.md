@@ -40,6 +40,7 @@ Score each 1–10 with evidence. A 10 is demo-ready on a phone with no explanati
 | 9 (grade) | 6 | 7 | 6 | 6 | REMATCH reuses the last season's zap/paid records (phantom credits, dropped zaps); REMATCH button visible mid-season; pinned rivals hidden on phones; no second-season bonus; false leader toast at 0–0; vague challenge landing; Io peaks 217–223 |
 | 11 (grade) | 6 | 7 | 7 | 6 | Social loop complete (invite, season, rematch, feed, emotes, named dare); bots drain the challenge ghost's score (wrong verdicts); phone overlaps; PvP heat recap ignores the human rival. Read: top 5–8, not reliably top 3; blocker = phone first impression and challenge trust |
 | 13 (grade) | 6 | 7 | 7 | 6 | Ladder writes unauthenticated (60,000 posted with curl); verdict vs ladder disagree on the challenger's score; briefing opens scrolled to the bottom (focus); the sender never sees replies. Read unchanged (top 5–8); blocker = challenge trust |
+| 15 (grade) | 5 | 7 | 6 | 6 | Live season deadlock: host handed off mid-heat (racing doesn't refresh lastSeen) and clients never re-read hostId; ladder still forgeable via challenge-save; dares card stale and miscounts; tie place mismatch; invite copy has no fallback; mid-season results offer to leave the crew. Read: not top 3 until the deadlock is fixed |
 
 ## Backlog
 (ready / in-progress / done; each item notes the criterion it moves)
@@ -123,6 +124,16 @@ Score each 1–10 with evidence. A 10 is demo-ready on a phone with no explanati
 64. `done` (C13) [Polish] "Grab ? pods" reads like a broken glyph; render the ? as a chip.
 65. `done` (C13) [Polish] Duplicate hangar buttons on challenge results.
 
+**From grade 15:**
+66. `done` (C15) [Execution] **Host hand-off deadlock:** count live telemetry as activity; clients derive `state.host` from `room.hostId` on every poll; add an e2e assert.
+67. `done` (C15) [Execution/Usefulness] Ladder forgeable via challenge-save: take the sender's score from the server record (authenticated), and add no rung on send-back saves.
+68. `done` (C15) [Usefulness] Dares card is built once at load: rebuild when the hub shows; count replies by name.
+69. `done` (C15) [Polish] Tie place mismatch between the title and the recap.
+70. `done` (C15) [Polish] Invite copy failure shows only the code: add a copyable link field.
+71. `done` (C15) [Polish] Mid-season results in a live room offer BEAT MY RUN / INVITE (leaves the crew): hide until the season ends.
+72. `done` (C15) [Polish] "ZAP STEALS" is net: label it "NET ZAPS".
+73. `idea` [Usefulness] Store replier runs so RACE BACK races them.
+
 ## Log
 - Cycle 2: fixed the top grade-1 findings.
   - **Bots:** rubber-banded to the human field (`0.55·pace·field + 0.45·base`, identical on client and server); steals are 6% of the target's score (min 150). In a solo test the bots stayed within about 20% of the player.
@@ -204,3 +215,11 @@ Score each 1–10 with evidence. A 10 is demo-ready on a phone with no explanati
   - **README:** rewritten for the battle racer (rules, live and async multiplayer, the OpenAI features, architecture, dev hooks, e2e, deploy).
   - **SUBMISSION.md:** rewritten (title "Starwake: Zap Your Friends", a paste-ready description, a 5-minute judge walkthrough, a deploy checklist including `warm:ai` and the AI checks).
   - **Cover:** new `submission/cover-battle.png` (1600×900), staged from a live Jovian Shear heat (a laser locking onto ZORP, crown, UFO spectators, rings) with a cartoon title overlay.
+- Cycle 15: fixed the live-season deadlock (the top blocker).
+  - **Deadlock:** host presence now counts live telemetry, which is read through results too, so a racing host is no longer replaced. Clients take `state.host` from `room.hostId` on every poll.
+  - **New e2e scenario:** the guest finishes heat 2 and the host races on for 28 s (past the 25 s timeout). With the old logic it fails, confirmed; it passes now.
+  - **Ladder:** challenge-save is authenticated and uses the server-recorded score for the sender's heat (name included); send-it-back saves add no rung.
+  - **Dares card:** rebuilt each time the hub shows; counts replies by name; says "you still hold the top spot" (DEFEND) or who leads (TRY AGAIN).
+  - **Results:** tie-aware places shared by the title and recap; live rooms hide BEAT MY RUN / INVITE mid-season; "NET ZAPS" label.
+  - **Lobby:** invite copy falls back to a selectable link field.
+  - **Tests:** e2e 28/28.

@@ -57,7 +57,7 @@ Rooms live on Netlify Blobs with strong consistency and conditional writes.
 
 - **Who can act:** each pilot has a private token that authorises every action. The server is authoritative for heat clocks, sim-pilot scores (rubber-banded to the human field) and score caps (by time flown).
 - **Zaps and steals:** zap inboxes and confirmed steals are scoped by room, season round and heat.
-- **Challenges:** stored with ladders. Ladder writes use server-recorded scores only.
+- **Challenges:** stored with ladders. A dare's target and every ladder entry come from scores the server recorded for a signed-in pilot.
 
 ## Development
 
@@ -70,7 +70,7 @@ That serves http://127.0.0.1:5180, running the real Netlify functions with an in
 ```bash
 npm run test:battle
 ```
-A laptop and an emulated iPhone, in isolated browsers, play a full PvP season. They join through an invite link, zap each other (the keyboard on one, the touch FIRE button on the other), check credits, emotes, standings and security, and run a rematch. 27 checks.
+A laptop and an emulated iPhone, in isolated browsers, play a full PvP season. They join through an invite link, zap each other (the keyboard on one, the touch FIRE button on the other), check credits, emotes, standings and security, keep the room when the host finishes last, and run a rematch. 28 checks.
 
 ## Deploy (Netlify)
 

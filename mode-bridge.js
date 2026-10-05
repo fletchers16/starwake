@@ -139,6 +139,7 @@ function applyHubVisibility() {
   if (active?.id === 'home-screen') {
     active.classList.remove('active');
     root.hidden = false;
+    renderDares(); // refresh replies every time the pilot comes back to the hub
     return;
   }
   if (active) root.hidden = true;
@@ -208,23 +209,35 @@ window.addEventListener('starwake:freeflight-exit', () => {
 window.starwakeModeHub = hub;
 
 // Dares you've sent: show who took them on (from each link's ladder), with a one-tap race back.
-(async () => {
-  let dares = [];
-  try { dares = JSON.parse(localStorage.getItem('starwake-sent-dares') || '[]').slice(0, 3); } catch {}
-  if (!dares.length) return;
-  const results = await Promise.all(dares.map((d) => fetch('/.netlify/functions/game', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'challenge-get', id: d.id }) }).then((r) => (r.ok ? r.json() : null)).catch(() => null)));
-  const safe = (t) => String(t ?? '').replace(/[<>&"]/g, '');
-  const rows = dares.map((d, i) => {
-    const ladder = results[i]?.ladder || [];
-    if (!results[i]) return '';
-    // The ladder includes your own run, so replies are everyone else.
-    const tried = Math.max(0, ladder.length - 1), best = ladder[0];
-    const status = tried ? `${tried} tried · best ${Number(best.score).toLocaleString()} by ${safe(best.name)}` : 'No one has tried yet';
-    return `<a class="sw-dare-row" href="?challenge=${d.id}"><b>${safe(d.course)}</b><span>${status}</span><em>${tried ? 'RACE BACK ↗' : 'OPEN ↗'}</em></a>`;
-  }).filter(Boolean);
-  if (!rows.length) return;
-  const card = document.createElement('div');
-  card.className = 'sw-dares';
-  card.innerHTML = `<small>★ YOUR DARES</small>${rows.join('')}`;
-  document.querySelector('#mode-hub-root .sw-hub-signal')?.after(card);
-})();
+// Rebuilt whenever the hub is shown, so a dare sent this session appears without a reload.
+let daresBusy = false;
+async function renderDares() {
+  if (daresBusy) return;
+  daresBusy = true;
+  try {
+    let dares = [];
+    try { dares = JSON.parse(localStorage.getItem('starwake-sent-dares') || '[]').slice(0, 3); } catch {}
+    document.querySelector('#mode-hub-root .sw-dares')?.remove();
+    if (!dares.length) return;
+    const results = await Promise.all(dares.map((d) => fetch('/.netlify/functions/game', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'challenge-get', id: d.id }) }).then((r) => (r.ok ? r.json() : null)).catch(() => null)));
+    const safe = (t) => String(t ?? '').replace(/[<>&"]/g, '');
+    const rows = dares.map((d, i) => {
+      if (!results[i]) return '';
+      // The ladder covers the whole send-it-back chain and includes you, so count everyone else.
+      const ladder = results[i].ladder || [], me = d.name || results[i].challenge?.name;
+      const others = ladder.filter((x) => x.name !== me), top = ladder[0];
+      const status = !others.length ? 'No one has tried yet' : top?.name === me ? `${others.length} tried · you still hold the top spot` : `${others.length} tried · ${safe(top.name)} leads with ${Number(top.score).toLocaleString()}`;
+      const action = !others.length ? 'OPEN ↗' : top?.name === me ? 'DEFEND ↗' : 'TRY AGAIN ↗';
+      return `<a class="sw-dare-row" href="?challenge=${d.id}"><b>${safe(d.course)}</b><span>${status}</span><em>${action}</em></a>`;
+    }).filter(Boolean);
+    document.querySelector('#mode-hub-root .sw-dares')?.remove();
+    if (!rows.length) return;
+    const card = document.createElement('div');
+    card.className = 'sw-dares';
+    card.innerHTML = `<small>★ YOUR DARES</small>${rows.join('')}`;
+    document.querySelector('#mode-hub-root .sw-hub-signal')?.after(card);
+  } finally {
+    daresBusy = false;
+  }
+}
+renderDares();

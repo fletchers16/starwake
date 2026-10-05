@@ -142,13 +142,27 @@ try {
   check('laptop receives the zap back', laptopHit, laptopHit ? `spun out, ${laptopHit.zapPoints} pts` : 'no zap');
   await laptop.screenshot({ path: `${OUT}/6-laptop-zapped.png` });
 
-  // ---- The phone reloads mid-heat: it skips the intro, rejoins the race and keeps its progress ----
-  const before = await phone.evaluate(() => Math.round(window.__starwake.state.race.distance));
-  await wait(900); // let a telemetry update carry the latest distance
+  // ---- The phone reloads mid-heat (well into the lap): same distance, same zap balance, zaps still work ----
+  await phone.evaluate(() => { const r = window.__starwake.state.race; r.distance = Math.max(r.distance, 260); });
+  await wait(1200); // let telemetry carry the new distance
+  const before = await phone.evaluate(() => ({ d: Math.round(window.__starwake.state.race.distance), zap: window.__starwake.state.race.zapPoints }));
   await phone.reload();
-  // Progress is restored a moment after the race view opens (one more round trip for the telemetry).
-  const rejoined = await until(phone, (b) => window.__starwake?.state.race?.started && document.querySelector('#race-screen.active') && window.__starwake.state.race.distance >= b - 5 && Math.round(window.__starwake.state.race.distance), before, { timeout: 20000 });
-  check('phone reloads mid-heat and resumes with its progress', rejoined && rejoined >= before - 5, `distance before ${before}, after resume ${rejoined}`);
+  // The very first frames after the resume must already be at the old distance (no restart at 0).
+  const firstSeen = await until(phone, () => window.__starwake?.state.race?.started && document.querySelector('#race-screen.active') && Math.round(window.__starwake.state.race.distance), null, { timeout: 20000 });
+  check('phone reloads mid-heat and resumes at its distance', firstSeen >= before.d - 5, `distance before ${before.d}, first frame after resume ${firstSeen}`);
+  await wait(2500); // a few sync rounds: any replayed hits or double credits would land now
+  const after = await phone.evaluate(() => window.__starwake.state.race.zapPoints);
+  check('reload replays no hits and no phantom credits', after === 0, `zap balance before ${before.zap}, after resume ${after} (restored into the score, ledger continues)`);
+  await phone.evaluate(async () => {
+    const S = window.__starwake, r = S.state.race, g = Object.values(S.state.rivals).find((x) => x.name === 'LAPTOP');
+    r.stunUntil = -9; r.distance = (g.shown ?? g.d) - 12; r.x = g.x; r.y = g.y; r.item = 'blaster'; r.ammo = 3; r.rolling = 0;
+    await new Promise((res) => setTimeout(res, 150));
+  });
+  const laptopStunBefore = await laptop.evaluate(() => window.__starwake.state.race.stunUntil);
+  const fb = await phone.locator('#fire-button').boundingBox();
+  if (fb) await phone.touchscreen.tap(fb.x + fb.width / 2, fb.y + fb.height / 2);
+  const postReloadHit = await until(laptop, (s0) => window.__starwake.state.race.stunUntil > s0, laptopStunBefore, { timeout: 10000 });
+  check("the reloaded phone's zaps still land", postReloadHit);
 
   // ---- Quick chat: an emote from the phone pops up on the laptop ----
   await phone.tap('#emote-bar [data-emote="0"]');

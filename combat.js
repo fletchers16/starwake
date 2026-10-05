@@ -31,6 +31,8 @@ export const ZAP_STEAL = 40;
 const BOT_HITS_PER_HEAT = 3;
 const FRENZY_SECONDS = 15;
 const ROLL_TIME = 0.55, ROLL_COOLDOWN = 3.5;
+// How long a sim pilot holds its lock on you before firing.
+const AIM_TIME = 0.45;
 // Chance a sim pilot barrel-rolls your shot back at you.
 const BOT_DODGE = 0.12;
 const STUN = 1.2;
@@ -162,7 +164,7 @@ function canvasSprite(THREE, draw, size = 128) {
   return t;
 }
 
-export function createCombat(THREE, { world, getRoute, routeAt, makeShipMesh, ships, nameTag, glow, sfx, toast, onPlayerHit = () => {}, say = () => {}, onSteal = () => {}, myScore = (r) => r.score }) {
+export function createCombat(THREE, { world, getRoute, routeAt, makeShipMesh, ships, nameTag, glow, sfx, toast, onPlayerHit = () => {}, say = () => {}, onSteal = () => {}, onLockOn = () => {}, myScore = (r) => r.score }) {
   const starTex = new THREE.TextureLoader().load('/assets/kenney/particles/star_06.png');
   const reticleTex = canvasSprite(THREE, (g, s) => {
     g.strokeStyle = '#ffffff';
@@ -181,6 +183,8 @@ export function createCombat(THREE, { world, getRoute, routeAt, makeShipMesh, sh
   let zapCounts = {};       // human target id -> cumulative zaps we've landed
   let zapSeen = {};         // shooter id -> zaps on us already applied
   let paid = {};            // shooter id -> points we've actually lost to them (reported back)
+  let reflectedOut = {};    // human target id -> how many of our zaps on them were reflections
+  let reflectedSeen = {};   // shooter id -> reflections from them already shown
   let credited = 0;         // points other humans have confirmed losing to us
   let lastPlayerHitByBot = -9, botHitsOnPlayer = 0;
   let rollTimer = 0;
@@ -264,6 +268,8 @@ export function createCombat(THREE, { world, getRoute, routeAt, makeShipMesh, sh
     paid = {};
     credited = 0;
     creditBy = {};
+    reflectedOut = {};
+    reflectedSeen = {};
     lastPlayerHitByBot = -9;
     botHitsOnPlayer = 0;
     leaderId = null;
@@ -339,7 +345,7 @@ export function createCombat(THREE, { world, getRoute, routeAt, makeShipMesh, sh
 
   // ---------- hits ----------
 
-  function hitPlayer(r, shooterName, color, shooter = null) {
+  function hitPlayer(r, shooterName, color, shooter = null, bouncedBack = false) {
     if (r.time < (r.rollUntil || -9)) {
       // Mid-roll: the shot bounces back at whoever fired it.
       sfx.shield?.();
@@ -356,7 +362,7 @@ export function createCombat(THREE, { world, getRoute, routeAt, makeShipMesh, sh
     r.stunUntil = r.time + STUN;
     r.combo = 0;
     sfx.zapped?.();
-    toast(`ZAPPED BY ${shooterName}`, `−${stolen}${leaderId === 'player' ? ' · BOUNTY' : ''} · SPIN OUT`);
+    toast(bouncedBack ? `BOUNCED BACK BY ${shooterName}` : `ZAPPED BY ${shooterName}`, `−${stolen}${bouncedBack ? ' · THEY ROLLED YOUR SHOT' : leaderId === 'player' ? ' · BOUNTY' : ''} · SPIN OUT`);
     onPlayerHit(color);
     return stolen;
   }
@@ -365,9 +371,11 @@ export function createCombat(THREE, { world, getRoute, routeAt, makeShipMesh, sh
     const t = target.ref;
     if (target.kind === 'bot') {
       if (r.time < t.shieldUntil) { t.shieldUntil = -9; return 0; }
-      if (shooter === 'player' && Math.random() < BOT_DODGE && r.time > (t.rollUntil || -9) + ROLL_COOLDOWN) {
+      if (shooter === 'player' && r.time >= t.stunUntil && botHitsOnPlayer < BOT_HITS_PER_HEAT && Math.random() < BOT_DODGE && r.time > (t.rollUntil || -9) + ROLL_COOLDOWN) {
         // The sim pilot barrel-rolls: your shot bounces back.
         t.rollUntil = r.time + ROLL_TIME;
+        t.dodgedAt = r.time;
+        botHitsOnPlayer++;
         sfx.shield?.();
         if (r.time < r.shieldUntil) { r.shieldUntil = -9; toast(`${t.name} DODGED!`, 'YOUR SHIELD ATE THE BOUNCE'); return 0; }
         const lost = Math.min(steal('player', myScore(r)), Math.max(0, Math.floor(r.score)));
@@ -434,10 +442,12 @@ export function createCombat(THREE, { world, getRoute, routeAt, makeShipMesh, sh
       sfx.zap?.();
       if (target) {
         const stolen = hitOpponent(r, target, 'player');
+        beam(from, worldPos(r, target.d, target.x, target.y), ITEMS.blaster.color);
+        // A dodge already explained itself ("ZORP DODGED!"): no SNIPED toast, not a landed zap.
+        if (target.kind === 'bot' && target.ref.dodgedAt === r.time) { if (--r.ammo <= 0) r.item = null; return; }
         r.zapPoints += stolen;
         r.zapsLanded = (r.zapsLanded || 0) + 1;
         r.stolenPts = (r.stolenPts || 0) + stolen;
-        beam(from, worldPos(r, target.d, target.x, target.y), ITEMS.blaster.color);
         toast(`SNIPED ${target.name}!`, target.kind === 'human' ? 'STEALING…' : stolen ? `+${stolen} STOLEN${target.id === leaderId ? ' · BOUNTY ♛' : ''}` : 'SHIELD BLOCKED IT');
       } else {
         beam(from, worldPos(r, r.distance + 70, r.x, r.y), ITEMS.blaster.color);
@@ -523,6 +533,7 @@ export function createCombat(THREE, { world, getRoute, routeAt, makeShipMesh, sh
         }
       }
       if (b.item === 'shield') { b.shieldUntil = r.time + 8; b.item = null; }
+      if (stunned && b.aimAt) { b.aimAt = 0; onLockOn(b.name, false); }
       b.cooldown -= dt * (frenzy ? 2 : 1);
       if (b.item === 'blaster' && b.cooldown <= 0 && !stunned) botShoot(r, b, rivals);
     }
@@ -558,9 +569,16 @@ export function createCombat(THREE, { world, getRoute, routeAt, makeShipMesh, sh
     // Sim pilots never shoot the challenge ghost: its score is the target you're trying to beat.
     const others = opponents(r, rivals).filter((o) => o.id !== b.id && o.kind !== 'human' && o.kind !== 'ext');
     const target = lockTarget(me, [player, ...others]);
-    if (!target) return;
+    if (!target || (b.aimAt && target.kind !== 'player')) { if (b.aimAt) { b.aimAt = 0; onLockOn(b.name, false); } if (!target) return; }
     // Fairness: you can be zapped by sim pilots at most once every 5 seconds.
     if (target.kind === 'player' && (r.time - lastPlayerHitByBot < 5 || botHitsOnPlayer >= BOT_HITS_PER_HEAT)) return;
+    // Telegraph: a short lock-on warning before a sim pilot fires at you, so a barrel roll can be timed.
+    if (target.kind === 'player') {
+      if (!b.aimAt) { b.aimAt = r.time; onLockOn(b.name, true); sfx.countdown?.(false); return; }
+      if (r.time - b.aimAt < AIM_TIME) return;
+      b.aimAt = 0;
+      onLockOn(b.name, false);
+    }
     b.cooldown = 2.4 + Math.random() * 1.6;
     const from = worldPos(r, b.d, b.x, b.y).add(new THREE.Vector3(0, 0.2, -1.4));
     beam(from, worldPos(r, target.d, target.x, target.y), b.color);
@@ -578,7 +596,7 @@ export function createCombat(THREE, { world, getRoute, routeAt, makeShipMesh, sh
   // ---------- networking (human rivals) ----------
 
   /** Cumulative zap counts per human target, sent with every telemetry update. */
-  const outgoingZaps = () => Object.entries(zapCounts).map(([target, count]) => ({ target, count }));
+  const outgoingZaps = () => Object.entries(zapCounts).map(([target, count]) => ({ target, count, reflected: reflectedOut[target] || 0 }));
 
   /** Apply zaps other humans landed on us: [{ from, name, count }] (cumulative per shooter). */
   function receiveZaps(r, list = []) {
@@ -587,12 +605,15 @@ export function createCombat(THREE, { world, getRoute, routeAt, makeShipMesh, sh
       const fresh = Math.min(2, (Number(z.count) || 0) - (zapSeen[z.from] || 0));
       if (fresh <= 0) continue;
       zapSeen[z.from] = (zapSeen[z.from] || 0) + fresh; // the rest arrive on the next update
+      // Some of these may be our own shots bounced back by their barrel roll.
+      const bounced = Math.max(0, Math.min(fresh, (Number(z.reflected) || 0) - (reflectedSeen[z.from] || 0)));
+      reflectedSeen[z.from] = (reflectedSeen[z.from] || 0) + bounced;
       // Hits landing in the 2 s grace after the clock still count (the shooter is credited for them).
       if (r.started && (!r.done || Date.now() - (r.doneAt || 0) < 2500)) for (let k = 0; k < fresh; k++) {
-        const took = hitPlayer(r, String(z.name || 'RIVAL').toUpperCase(), '#ff7ca7');
+        const took = hitPlayer(r, String(z.name || 'RIVAL').toUpperCase(), '#ff7ca7', null, k < bounced);
         if (took > 0) paid[z.from] = (paid[z.from] || 0) + took;
         // Reflected mid-roll: the zap goes back to the shooter through the normal zap channel.
-        else if (took < 0) zapCounts[z.from] = (zapCounts[z.from] || 0) + 1;
+        else if (took < 0) { zapCounts[z.from] = (zapCounts[z.from] || 0) + 1; reflectedOut[z.from] = (reflectedOut[z.from] || 0) + 1; }
       }
     }
   }
@@ -686,6 +707,14 @@ export function createCombat(THREE, { world, getRoute, routeAt, makeShipMesh, sh
   return {
     makeRacerMesh: (opts) => makeNpcShip(0, opts),
     roll,
+    /** After a reload: continue the heat's zap/steal ledger the server kept, so nothing replays or double-counts. */
+    restoreLedger(ledger = {}) {
+      for (const z of ledger.zapSeen || []) { zapSeen[z.from] = z.count; reflectedSeen[z.from] = z.reflected || 0; }
+      for (const z of ledger.zapCounts || []) { zapCounts[z.target] = z.count; reflectedOut[z.target] = z.reflected || 0; }
+      for (const p of ledger.paid || []) paid[p.to] = p.amount;
+      for (const c of ledger.creditBy || []) creditBy[c.from] = c.amount;
+      credited = Number(ledger.credited) || 0;
+    },
     // Dev/test hook: the live sim-pilot records.
     debugRacers: () => racers,
     /** Put the sim pilots around distance d (used when a reloaded racer resumes mid-heat). */

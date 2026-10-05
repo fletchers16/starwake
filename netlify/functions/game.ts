@@ -455,7 +455,8 @@ export default async (request: Request) => {
         const key = zapKey(code, heatKey(found.room), z.target, pilot.id);
         const prev = Number(((await store().get(key, { type: "json" })) as Zap | null)?.count || 0);
         const count = Math.min(Math.floor(finite(z.count, 0, 999)), prev + 2);
-        if (count > prev) await store().setJSON(key, { from: pilot.id, name: pilot.name, count, at: Date.now() });
+        const reflected = Math.min(count, Math.floor(finite((z as { reflected?: number }).reflected, 0, 999)));
+        if (count > prev) await store().setJSON(key, { from: pilot.id, name: pilot.name, count, reflected, at: Date.now() });
       }));
       const paid = Array.isArray(body.paid) ? body.paid.slice(0, 8) : [];
       // A payment is only valid against zaps that shooter actually landed on us, capped per zap.
@@ -559,6 +560,32 @@ export default async (request: Request) => {
         throw new Error("Unknown game action.");
       }
     });
+    if (action === "resume") {
+      // Hand a reloaded pilot back everything its fresh client needs to continue exactly where it was:
+      // its last telemetry, and the zap/steal ledger for this heat (both directions).
+      const hk = heatKey(room);
+      const s = store();
+      const listJson = async <T,>(prefix: string) => {
+        const { blobs } = await s.list({ prefix });
+        return (await Promise.all(blobs.map(async (b) => ({ key: b.key.slice(prefix.length), value: (await s.get(b.key, { type: "json" })) as T | null })))).filter((e) => e.value);
+      };
+      const me = (await s.get(liveKey(code, playerId), { type: "json" })) as Live | null;
+      const zapsOnMe = await listJson<Zap>(`zap/${code}/${hk}/${playerId}/`);
+      const allZaps = await listJson<Zap>(`zap/${code}/${hk}/`);
+      const myZaps = allZaps.filter((e) => e.key.endsWith(`/${playerId}`)).map((e) => ({ target: e.key.split("/")[0], count: e.value!.count, reflected: (e.value as Zap & { reflected?: number }).reflected || 0 }));
+      const paid = await readAllPaid(code, hk);
+      return json({
+        room: publicRoom(room),
+        resume: {
+          me: me && room.phase === "race" ? { d: me.d, x: me.x, y: me.y, score: me.score } : null,
+          zapSeen: zapsOnMe.map((e) => ({ from: e.key, count: e.value!.count, reflected: (e.value as Zap & { reflected?: number }).reflected || 0 })),
+          zapCounts: myZaps,
+          paid: paid.filter((p) => p.from === playerId).map((p) => ({ to: p.shooter, amount: p.amount })),
+          credited: paid.filter((p) => p.shooter === playerId).reduce((sum, p) => sum + p.amount, 0),
+          creditBy: paid.filter((p) => p.shooter === playerId).map((p) => ({ from: p.from, amount: p.amount })),
+        },
+      });
+    }
     if (action === "emote") {
       const pilot = room.players.find((p) => p.id === playerId)!;
       await store().setJSON(emoteKey(code, pilot.id), { from: pilot.id, name: pilot.name, text: EMOTES[body.emote], at: Date.now() });

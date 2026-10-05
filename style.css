@@ -547,3 +547,9 @@ button:disabled{cursor:not-allowed;filter:saturate(.55);opacity:.58}
 .roll-chip.active{border-color:#fff;color:#fff}
 @media (pointer:coarse){.roll-chip kbd{display:none}.roll-chip span::after{content:' · DOUBLE-TAP';font:600 8px 'DM Mono',monospace}}
 @media(max-width:760px){.roll-chip{font-size:10px;padding:2px 7px}}
+
+/* Lock-on warning: a sim pilot is about to fire at you */
+.lock-warn{position:absolute;z-index:10;left:50%;bottom:30%;transform:translateX(-50%);padding:7px 14px;border-radius:12px;background:rgba(40,6,24,.82);border:2px solid #ff4d8a;color:#ffd6e6;font:700 12px 'DM Mono',monospace;letter-spacing:.1em;white-space:nowrap;animation:lock-pulse .22s ease-in-out infinite alternate;pointer-events:none}
+.lock-warn b{margin-left:8px;color:#fff;font:400 15px var(--display);letter-spacing:.04em}
+@keyframes lock-pulse{from{box-shadow:0 0 0 rgba(255,77,138,0)}to{box-shadow:0 0 22px rgba(255,77,138,.75)}}
+@media(max-width:760px){.lock-warn{font-size:10px;bottom:34%}.lock-warn b{font-size:12px}}

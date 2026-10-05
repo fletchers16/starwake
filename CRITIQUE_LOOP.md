@@ -43,6 +43,7 @@ Score each 1–10 with evidence. A 10 is demo-ready on a phone with no explanati
 | 15 (grade) | 5 | 7 | 6 | 6 | Live season deadlock: host handed off mid-heat (racing doesn't refresh lastSeen) and clients never re-read hostId; ladder still forgeable via challenge-save; dares card stale and miscounts; tie place mismatch; invite copy has no fallback; mid-season results offer to leave the crew. Read: not top 3 until the deadlock is fixed |
 | 17 (grade) | 6 | 7 | 7 | 6 | Deadlock fix holds (close tab, hangar and simultaneous finish all OK); live and async loops work end to end; session fragility: reload = permanently out, VIEW FLIGHT DECK doesn't leave, rematch scores stale telemetry. Read: edging into top 5 |
 | 19 (grade) | 6 | 7 | 7 | 6 | Between-heat reload, late join, rematch and emotes all work; a mid-heat reload restarts at 0; the seat can expire on the intro; silent drops never evicted (+13 s per heat); fake results for late joiners; device ids leak; bfcache. Read: about #4–5 |
+| 21 (grade) | 5 | 7 | 7 | 6 | Mid-heat resume broken in multiplayer (sync posts d=0 before the restore reads); a reload wipes the zap ledger (phantom credits, replayed hits, dropped zaps); dodge toast overwritten; roll untimeable (no warning); late joiner bounced. Silent-drop eviction verified (39–47 s). Read: about #5 |
 
 ## Backlog
 (ready / in-progress / done; each item notes the criterion it moves)
@@ -155,6 +156,14 @@ Score each 1–10 with evidence. A 10 is demo-ready on a phone with no explanati
 87. `done` (C19) [Execution] bfcache: skip the soft leave when persisted; resume on pageshow.
 88. `done` (C19) [Polish] The stored seat keeps the pre-rename name.
 89. `done` (C19) [Usefulness] Dares rows can look identical: add your score and age.
+
+**From grade 21:**
+90. `done` (C21) [Execution] Resume must restore telemetry and the zap ledger from the server before sync starts; add a strict e2e check (reload at d>200, no phantom credit, a post-reload zap lands).
+91. `done` (C21) [Polish] Dodge toast overwritten by "SNIPED…SHIELD BLOCKED"; dodge counted as a landed zap; bots dodge while stunned; reflection bypasses the 3-hit cap.
+92. `done` (C21) [Creativity/Polish] Telegraph sim-pilot fire (0.45 s lock-on warning) so rolls can be timed.
+93. `done` (C21) [Polish] The PvP shooter can't tell it was reflected.
+94. `done` (C21) [Usefulness] Late joiner during a heat: wait and auto-join when the heat ends.
+95. `done` (C21) [Polish] Copy: solo resume says "progress restored"; dropped friends vanish silently; solo-results reload lands in the lobby.
 
 ## Log
 - Cycle 2: fixed the top grade-1 findings.
@@ -275,3 +284,12 @@ Score each 1–10 with evidence. A 10 is demo-ready on a phone with no explanati
   - **NPCs:** dodge-roll your shots 12% of the time; reflections can't be re-dodged (a ping-pong bug found in testing).
   - **UI:** a ↻ ROLL chip shows readiness; the briefing, README and submission copy mention it.
   - **Tests:** e2e has a PvP reflect check (32/32).
+- Cycle 21: real seamless rejoin.
+  - **Resume snapshot:** `resume` now returns the pilot's telemetry and the heat's zap/steal ledger (zaps on me, my zaps with reflections, paid, credits). The client applies them inside startRace before live sync sends anything, which fixes the d=0 race, phantom credits, replayed hits and dropped post-reload zaps.
+  - **Strict e2e:** reload at 281 m resumes at 276 m on the first frame, a zero zap delta, and the phone's post-reload zap lands.
+  - **Telegraphed fire:** sim pilots hold a 0.45 s lock-on ("⚠ BLIX LOCKED ON · Q TO ROLL", plus a beep) before firing at you, so rolls can be timed.
+  - **Dodges:** get their own message, aren't landed zaps, can't happen while stunned, and count toward the 3-hit cap.
+  - **PvP reflections:** the shooter sees "BOUNCED BACK BY X" (zap records carry a reflected count).
+  - **Late joiners:** auto-join when the heat ends (retry for up to 2 min).
+  - **Copy:** "X DROPPED OUT" when a rival leaves mid-race; solo resume only claims "progress restored" when there was telemetry; a solo-results reload goes home.
+  - **Tests:** e2e 34/34.

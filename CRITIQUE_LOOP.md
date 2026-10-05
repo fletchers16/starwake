@@ -334,3 +334,4 @@ Score each 1–10 with evidence. A 10 is demo-ready on a phone with no explanati
   - **Committed locks:** a lock on you holds until it fires; a cancelled lock gives a full roll cooldown before the next one.
   - **Small fixes:** blocked zaps aren't "landed"; the phone coach card sits compact below the item slot and ROLL; "TAP ROLL" copy everywhere on touch; join-banner CANCEL wins over in-flight requests; a reload mid item-roll keeps the pending item.
   - **Tests:** battle 35/35, challenge 11/11.
+- Cycle 26: reflect juice. A perfect barrel-roll reflect now triggers a screen flash, the perfect chime, white and cyan bursts, a quick camera FOV punch and a big "PERFECT REFLECT! · ZORP ate their own laser" banner (verified headlessly through the coach flow). The desktop coach card moved below the taunt bubble. The QR-code invite (109) waits on the user's OK to add a QR encoder dependency.

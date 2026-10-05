@@ -164,7 +164,7 @@ function canvasSprite(THREE, draw, size = 128) {
   return t;
 }
 
-export function createCombat(THREE, { world, getRoute, routeAt, makeShipMesh, ships, nameTag, glow, sfx, toast, onPlayerHit = () => {}, say = () => {}, onSteal = () => {}, onLockOn = () => {}, myScore = (r) => r.score, aimTime = AIM_TIME }) {
+export function createCombat(THREE, { world, getRoute, routeAt, makeShipMesh, ships, nameTag, glow, sfx, toast, onPlayerHit = () => {}, say = () => {}, onSteal = () => {}, onLockOn = () => {}, onReflect = () => {}, myScore = (r) => r.score, aimTime = AIM_TIME }) {
   const starTex = new THREE.TextureLoader().load('/assets/kenney/particles/star_06.png');
   const reticleTex = canvasSprite(THREE, (g, s) => {
     g.strokeStyle = '#ffffff';
@@ -351,6 +351,7 @@ export function createCombat(THREE, { world, getRoute, routeAt, makeShipMesh, sh
       sfx.shield?.();
       r.reflects = (r.reflects || 0) + 1;
       toast('REFLECTED!', `BOUNCED BACK AT ${shooterName}`);
+      onReflect(shooterName);
       if (shooter) { const stolen = hitOpponent(r, shooter, 'reflect'); r.zapPoints += stolen; r.stolenPts = (r.stolenPts || 0) + stolen; flash(worldPos(r, shooter.d ?? shooter.ref?.d, shooter.x ?? shooter.ref?.x, shooter.y ?? shooter.ref?.y), '#ffffff', 3); }
       return -1;
     }

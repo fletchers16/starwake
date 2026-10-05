@@ -567,7 +567,7 @@ button:disabled{cursor:not-allowed;filter:saturate(.55);opacity:.58}
 @media(max-width:760px){.emote-bar{left:10px}.join-wait{flex-wrap:wrap;gap:6px}}
 
 /* First-flight coach card */
-.coach{position:absolute;z-index:11;left:50%;top:150px;transform:translateX(-50%);display:grid;gap:3px;justify-items:center;text-align:center;width:min(92vw,420px);padding:12px 18px 14px;border-radius:18px;background:#fffdf6;color:#1b1430;border:3px solid #1b1430;box-shadow:0 6px 0 #1b1430;animation:coach-in .25s ease-out}
+.coach{position:absolute;z-index:11;left:50%;top:186px;transform:translateX(-50%);display:grid;gap:3px;justify-items:center;text-align:center;width:min(92vw,420px);padding:12px 18px 14px;border-radius:18px;background:#fffdf6;color:#1b1430;border:3px solid #1b1430;box-shadow:0 6px 0 #1b1430;animation:coach-in .25s ease-out}
 .coach small{font:800 9px 'DM Mono',monospace;letter-spacing:.18em;color:#8a5cff}
 .coach b{font:400 24px/1.1 var(--display);letter-spacing:.01em}
 .coach b em,.coach span em{font-style:normal;color:#e0389b}
@@ -576,3 +576,11 @@ button:disabled{cursor:not-allowed;filter:saturate(.55);opacity:.58}
 @keyframes coach-in{from{opacity:0;transform:translate(-50%,-8px)}}
 /* Phones: a compact card below the item slot and ROLL chip, so it never hides the controls it names. */
 @media(max-width:760px){.coach{top:212px;padding:8px 14px 9px;width:min(80vw,320px)}.coach b{font-size:17px}.coach span{display:none}}
+
+/* Perfect reflect banner */
+.reflect-banner{position:absolute;z-index:12;left:50%;top:38%;transform:translate(-50%,-50%) scale(.6);opacity:0;pointer-events:none;display:grid;justify-items:center;gap:2px;text-align:center}
+.reflect-banner b{font:400 54px/1 var(--display);color:#fff;letter-spacing:.02em;text-shadow:3px 3px 0 var(--outline),-3px 3px 0 var(--outline),3px -3px 0 var(--outline),-3px -3px 0 var(--outline),0 7px 0 var(--outline),0 0 30px rgba(126,245,255,.8)}
+.reflect-banner span{font:700 12px 'DM Mono',monospace;letter-spacing:.14em;color:#7ef5ff;text-shadow:0 2px 0 var(--outline)}
+.reflect-banner.show{animation:reflect-pop 1.4s ease-out forwards}
+@keyframes reflect-pop{0%{opacity:0;transform:translate(-50%,-50%) scale(.6)}12%{opacity:1;transform:translate(-50%,-50%) scale(1.12)}22%{transform:translate(-50%,-50%) scale(1)}80%{opacity:1}100%{opacity:0;transform:translate(-50%,-62%) scale(1)}}
+@media(max-width:760px){.reflect-banner b{font-size:34px}}

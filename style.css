@@ -539,3 +539,11 @@ button:disabled{cursor:not-allowed;filter:saturate(.55);opacity:.58}
 .screen-emotes button:active{transform:scale(.96)}
 
 .sw-dare-row b small{font:600 9px 'DM Mono',monospace;letter-spacing:.08em;color:rgba(255,255,255,.5);margin-left:6px}
+
+/* Barrel-roll readiness chip under the item slot */
+.roll-chip{margin-top:6px;display:inline-flex;align-items:center;gap:6px;padding:3px 9px;border-radius:10px;background:rgba(20,14,40,.6);border:2px solid rgba(126,245,255,.55);font:400 12px var(--display);letter-spacing:.04em;color:#7ef5ff;transition:opacity .2s,border-color .2s}
+.roll-chip kbd{font:600 9px 'DM Mono',monospace;padding:0 4px;border-radius:4px;background:rgba(255,255,255,.12);color:#fff}
+.roll-chip.cool{opacity:.35}
+.roll-chip.active{border-color:#fff;color:#fff}
+@media (pointer:coarse){.roll-chip kbd{display:none}.roll-chip span::after{content:' · DOUBLE-TAP';font:600 8px 'DM Mono',monospace}}
+@media(max-width:760px){.roll-chip{font-size:10px;padding:2px 7px}}

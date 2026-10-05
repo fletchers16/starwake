@@ -14,7 +14,7 @@ Everything the Handshake "Create a Multiplayer Game" mission asks for. Deadline:
 
 > **Starwake is a cartoon battle racer you play with friends on any device, live or whenever they're free.**
 >
-> Fly through rainbow **?** pods for items: a Laser Blaster that snipes the racer ahead, a Comet Seeker that hunts down 1st place, a Bubble Shield, a Turbo Snack. Every zap spins your rival out and **steals 8% of their points**. The leader wears a crown worth double, and the final 15 seconds are a **Zap Frenzy** where every steal doubles again. Rescue space cows, chain ring trails, and watch the live steal feed decide the race.
+> Fly through rainbow **?** pods for items: a Laser Blaster that snipes the racer ahead, a Comet Seeker that hunts down 1st place, a Bubble Shield, a Turbo Snack. Every zap spins your rival out and **steals 8% of their points**. The leader wears a crown worth double, and the final 15 seconds are a **Zap Frenzy** where every steal doubles again. Time a **barrel roll** and a laser bounces straight back at whoever fired it. Rescue space cows, chain ring trails, and watch the live steal feed decide the race.
 >
 > **Play together:**
 > - **Live battles:** send an invite link. Friends join from a phone or laptop with no install or account, and race three synchronized heats. Emotes and a REMATCH button keep the crew going.

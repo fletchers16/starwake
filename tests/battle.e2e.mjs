@@ -227,6 +227,19 @@ try {
   await laptop.keyboard.down('f'); await wait(120); await laptop.keyboard.up('f');
   const rematchHit = await until(phone, () => window.__starwake.state.race.stunUntil > 0, null, { timeout: 8000 });
   check('zaps land in the rematch season', rematchHit);
+
+  // ---- Barrel roll: the phone rolls, the laptop's shot bounces back and spins the laptop out ----
+  await wait(1500);
+  await phone.evaluate(() => { const r = window.__starwake.state.race; r.stunUntil = -9; r.rollUntil = r.time + 6; });
+  await laptop.evaluate(async () => {
+    const S = window.__starwake, r = S.state.race, g = Object.values(S.state.rivals).find((x) => x.name === 'PHONE');
+    r.stunUntil = -9; r.distance = (g.shown ?? g.d) - 12; r.x = g.x; r.y = g.y; r.item = 'blaster'; r.ammo = 3; r.rolling = 0;
+    await new Promise((res) => setTimeout(res, 150));
+  });
+  const laptopStun0 = await laptop.evaluate(() => window.__starwake.state.race.stunUntil);
+  await laptop.keyboard.down('f'); await wait(120); await laptop.keyboard.up('f');
+  const bounced = await until(laptop, (s0) => window.__starwake.state.race.stunUntil > s0 && window.__starwake.state.race.stunUntil > 0, laptopStun0, { timeout: 10000 });
+  check('a zap on a rolling rival bounces back at the shooter', bounced);
 } catch (error) {
   check('test ran to completion', false, error.message);
 }

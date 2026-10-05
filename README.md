@@ -13,10 +13,11 @@ Built for the Handshake AI Skills Studio × OpenAI Multiplayer Game Challenge. T
   - **Bubble Shield:** blocks one zap.
   - **Turbo Snack:** an instant boost.
 - **Zaps** spin the target out and **steal 8% of their points** (minimum 40). The leader wears a **crown** worth double. In the final 15 seconds, **Zap Frenzy** doubles every steal again.
+- **Barrel roll** (**Q**, or double-tap on a phone): a zap that lands mid-roll bounces back at whoever fired it. Sim pilots sometimes roll your shots back at you too.
 - **Ring trails** score 100 × your combo (up to ×5), and a perfect trail adds +300. Gold stars refill boost. **Space cows** are worth +250. Glowing-outlined rocks and mines cost hull.
 - **Controls:**
   - Steer with **A/D** or **←/→**, climb with **W/S** or **↑/↓**.
-  - **Space** boosts and **F** fires.
+  - **Space** boosts, **F** fires and **Q** barrel-rolls.
   - **1–3** send emotes in multiplayer.
   - On a phone, drag to steer and use the on-screen buttons.
 
@@ -70,7 +71,7 @@ That serves http://127.0.0.1:5180, running the real Netlify functions with an in
 ```bash
 npm run test:battle
 ```
-A laptop and an emulated iPhone, in isolated browsers, play a full PvP season. They join through an invite link, zap each other (the keyboard on one, the touch FIRE button on the other), check credits, emotes, standings and security, keep the room when the host finishes last, survive phone reloads mid-heat and between heats, send emotes in the lobby and in the race, and run a rematch. 31 checks.
+A laptop and an emulated iPhone, in isolated browsers, play a full PvP season. They join through an invite link, zap each other (the keyboard on one, the touch FIRE button on the other), check credits, emotes, standings and security, keep the room when the host finishes last, survive phone reloads mid-heat and between heats, send emotes in the lobby and in the race, bounce a zap back with a barrel roll, and run a rematch. 32 checks.
 
 ## Deploy (Netlify)
 

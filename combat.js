@@ -10,6 +10,7 @@
  * - Sim pilots are NPC racers flown by cartoon aliens: they weave, grab pods,
  *   shoot back and can be shot. Their point swings are reported to the server
  *   so the final standings match what you saw.
+ * - Barrel roll (Q / double-tap): a zap that lands mid-roll bounces back at the shooter.
  * - Bounty: the leader wears a crown, and zapping them steals double.
  * - Zap Frenzy: in the final 15 seconds every steal doubles again and sim pilots
  *   fire twice as often.
@@ -29,6 +30,9 @@ export const ZAP_STEAL = 40;
 // Sim pilots can zap a human at most this many times per heat.
 const BOT_HITS_PER_HEAT = 3;
 const FRENZY_SECONDS = 15;
+const ROLL_TIME = 0.55, ROLL_COOLDOWN = 3.5;
+// Chance a sim pilot barrel-rolls your shot back at you.
+const BOT_DODGE = 0.12;
 const STUN = 1.2;
 const Z0 = 4.7;
 
@@ -335,7 +339,14 @@ export function createCombat(THREE, { world, getRoute, routeAt, makeShipMesh, sh
 
   // ---------- hits ----------
 
-  function hitPlayer(r, shooterName, color) {
+  function hitPlayer(r, shooterName, color, shooter = null) {
+    if (r.time < (r.rollUntil || -9)) {
+      // Mid-roll: the shot bounces back at whoever fired it.
+      sfx.shield?.();
+      toast('REFLECTED!', `BOUNCED BACK AT ${shooterName}`);
+      if (shooter) { const stolen = hitOpponent(r, shooter, 'reflect'); r.zapPoints += stolen; r.stolenPts = (r.stolenPts || 0) + stolen; flash(worldPos(r, shooter.d ?? shooter.ref?.d, shooter.x ?? shooter.ref?.x, shooter.y ?? shooter.ref?.y), '#ffffff', 3); }
+      return -1;
+    }
     if (r.time < r.shieldUntil) { r.shieldUntil = -9; sfx.pop?.(); toast('SHIELD POPPED', `BLOCKED ${shooterName}`); return 0; }
     const stolen = Math.min(steal('player', myScore(r)), Math.max(0, Math.floor(r.score)));
     r.zapPoints -= stolen;
@@ -354,11 +365,28 @@ export function createCombat(THREE, { world, getRoute, routeAt, makeShipMesh, sh
     const t = target.ref;
     if (target.kind === 'bot') {
       if (r.time < t.shieldUntil) { t.shieldUntil = -9; return 0; }
+      if (shooter === 'player' && Math.random() < BOT_DODGE && r.time > (t.rollUntil || -9) + ROLL_COOLDOWN) {
+        // The sim pilot barrel-rolls: your shot bounces back.
+        t.rollUntil = r.time + ROLL_TIME;
+        sfx.shield?.();
+        if (r.time < r.shieldUntil) { r.shieldUntil = -9; toast(`${t.name} DODGED!`, 'YOUR SHIELD ATE THE BOUNCE'); return 0; }
+        const lost = Math.min(steal('player', myScore(r)), Math.max(0, Math.floor(r.score)));
+        r.zapPoints -= lost;
+        r.score = Math.max(0, r.score - lost);
+        r.lostPts = (r.lostPts || 0) + lost;
+        r.stunUntil = r.time + STUN;
+        t.adj += lost;
+        toast(`${t.name} DODGED!`, `YOUR SHOT BOUNCED BACK · −${lost}`);
+        if (lost) onSteal({ thief: t.name, victim: 'YOU', amount: lost, against: true });
+        return 0;
+      }
       const live = liveBotScore(t, r), stolen = Math.min(steal(t.id, live), live);
       t.adj -= stolen;
       t.stunUntil = r.time + STUN;
-      if (shooter === 'player' && stolen) say(t.name, 'zapped');
-      if (stolen) onSteal({ thief: shooter === 'player' ? 'YOU' : racers.find((b) => b.id === shooter)?.name || 'RIVAL', victim: t.name, amount: stolen, mine: shooter === 'player' });
+      // A reflected shot counts as yours (and can't be dodged back again).
+      const yours = shooter === 'player' || shooter === 'reflect';
+      if (yours && stolen) say(t.name, 'zapped');
+      if (stolen) onSteal({ thief: yours ? 'YOU' : racers.find((b) => b.id === shooter)?.name || 'RIVAL', victim: t.name, amount: stolen, mine: yours });
       return stolen;
     }
     if (target.kind === 'ext') {
@@ -385,6 +413,15 @@ export function createCombat(THREE, { world, getRoute, routeAt, makeShipMesh, sh
     const item = rollItem(placeFraction);
     r.rolling = 0.75; // short slot-machine roll before the item lands
     r.pendingItem = item;
+    return true;
+  }
+
+  /** Barrel roll: a short spin that reflects any zap landing during it. */
+  function roll(r) {
+    if (!r.started || r.done || r.time < (r.rollReadyAt || 0) || r.time < r.stunUntil) return false;
+    r.rollUntil = r.time + ROLL_TIME;
+    r.rollReadyAt = r.time + ROLL_COOLDOWN;
+    sfx.roll?.(4);
     return true;
   }
 
@@ -476,7 +513,7 @@ export function createCombat(THREE, { world, getRoute, routeAt, makeShipMesh, sh
       if (Math.abs(near) < 3.2 && Math.abs(b.x - r.x) < 2.4 && Math.abs(b.y - r.y) < 2) b.tx = r.x + (b.x >= r.x ? 3 : -3);
       b.x += (b.tx - b.x) * Math.min(1, dt * 1.6);
       b.y += (b.ty - b.y) * Math.min(1, dt * 1.6);
-      b.spin = stunned ? (1 - (b.stunUntil - r.time) / STUN) * Math.PI * 4 : 0;
+      b.spin = stunned ? (1 - (b.stunUntil - r.time) / STUN) * Math.PI * 4 : r.time < (b.rollUntil || -9) ? (1 - (b.rollUntil - r.time) / ROLL_TIME) * Math.PI * 2 : 0;
       // Pods: sim pilots grab items as they pass them (positions repeat every lap).
       if (pods.length) {
         const next = Math.floor(b.nextPod / pods.length) * lap + pods[b.nextPod % pods.length];
@@ -530,9 +567,8 @@ export function createCombat(THREE, { world, getRoute, routeAt, makeShipMesh, sh
     if (target.kind === 'player') {
       lastPlayerHitByBot = r.time;
       botHitsOnPlayer++;
-      const took = hitPlayer(r, b.name, b.color);
-      b.adj += took;
-      if (took) say(b.name, 'zap');
+      const took = hitPlayer(r, b.name, b.color, { kind: 'bot', ref: b, id: b.id, name: b.name, d: b.d, x: b.x, y: b.y });
+      if (took > 0) { b.adj += took; say(b.name, 'zap'); }
     } else {
       b.adj += hitOpponent(r, target, b.id);
     }
@@ -552,7 +588,12 @@ export function createCombat(THREE, { world, getRoute, routeAt, makeShipMesh, sh
       if (fresh <= 0) continue;
       zapSeen[z.from] = (zapSeen[z.from] || 0) + fresh; // the rest arrive on the next update
       // Hits landing in the 2 s grace after the clock still count (the shooter is credited for them).
-      if (r.started && (!r.done || Date.now() - (r.doneAt || 0) < 2500)) for (let k = 0; k < fresh; k++) paid[z.from] = (paid[z.from] || 0) + hitPlayer(r, String(z.name || 'RIVAL').toUpperCase(), '#ff7ca7');
+      if (r.started && (!r.done || Date.now() - (r.doneAt || 0) < 2500)) for (let k = 0; k < fresh; k++) {
+        const took = hitPlayer(r, String(z.name || 'RIVAL').toUpperCase(), '#ff7ca7');
+        if (took > 0) paid[z.from] = (paid[z.from] || 0) + took;
+        // Reflected mid-roll: the zap goes back to the shooter through the normal zap channel.
+        else if (took < 0) zapCounts[z.from] = (zapCounts[z.from] || 0) + 1;
+      }
     }
   }
 
@@ -613,7 +654,8 @@ export function createCombat(THREE, { world, getRoute, routeAt, makeShipMesh, sh
     }
     // Player: spin-out, dizzy stars, shield bubble, blaster lock reticle.
     const stunned = r.time < r.stunUntil;
-    r.spin = stunned ? (1 - (r.stunUntil - r.time) / STUN) * Math.PI * 4 : 0;
+    const rolling = r.time < (r.rollUntil || -9);
+    r.spin = stunned ? (1 - (r.stunUntil - r.time) / STUN) * Math.PI * 4 : rolling ? (1 - (r.rollUntil - r.time) / ROLL_TIME) * Math.PI * 2 : 0;
     shipModel.userData.tick?.(now, stunned);
     for (const h of rivals) rivalMeshes.get(h.id)?.userData.tick?.(now, r.time < (h.stunUntil || -9));
     tickStars(playerStars, now, stunned, shipModel.position.x, shipModel.position.y, shipModel.position.z);
@@ -643,6 +685,9 @@ export function createCombat(THREE, { world, getRoute, routeAt, makeShipMesh, sh
 
   return {
     makeRacerMesh: (opts) => makeNpcShip(0, opts),
+    roll,
+    // Dev/test hook: the live sim-pilot records.
+    debugRacers: () => racers,
     /** Put the sim pilots around distance d (used when a reloaded racer resumes mid-heat). */
     placeBots: (d, lap) => racers.forEach((b, i) => {
       b.d = d + (i % 2 ? 6 + i * 3 : -4 - i * 3);

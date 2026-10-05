@@ -61,7 +61,7 @@ Score each 1–10 with evidence. A 10 is demo-ready on a phone with no explanati
 11. `ready` [Execution] **Draw calls** 287 mid-heat on Io (budget 220).
 12. `done` (C4) [Creativity/Usefulness] AI rival personalities (OpenAI): names, taunts on zap, AI-written recap.
 13. `idea` [Usefulness] Challenge ladder plus a daily "Zap Cup" (chain challenge links via `parent`, home-screen rematch nudges).
-14. `idea` [Creativity] Signature items with counterplay: Cow Catapult, a reflecting dodge-roll, team mode.
+14. `in-progress` (C20: barrel-roll reflect done) [Creativity] Signature items with counterplay: Cow Catapult, a reflecting dodge-roll, team mode.
 
 **From grade 3:**
 15. `done` (C3) [Polish] **`--ink` regression:** the cartoon outline variable overrode the light text colour, so titles render dark on dark.
@@ -270,3 +270,8 @@ Score each 1–10 with evidence. A 10 is demo-ready on a phone with no explanati
   - **Reload edge cases:** bfcache restores skip the soft leave and resume on pageshow; the stored seat keeps the server-assigned name.
   - **Dares rows:** show your score and age.
   - **Tests:** e2e 31/31 (new: the phone reloads mid-heat and keeps its progress).
+- Cycle 20: counterplay.
+  - **Barrel roll** (Q / double-tap, 0.55 s, 3.5 s cooldown): a zap landing mid-roll bounces back at the shooter. Against NPCs it hits them directly; in PvP the reflection travels back through the zap channel, so the shooter's client applies it and pays you.
+  - **NPCs:** dodge-roll your shots 12% of the time; reflections can't be re-dodged (a ping-pong bug found in testing).
+  - **UI:** a ↻ ROLL chip shows readiness; the briefing, README and submission copy mention it.
+  - **Tests:** e2e has a PvP reflect check (32/32).

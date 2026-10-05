@@ -31,7 +31,11 @@ let launched = false;
         if (!c || !eyebrow) return;
         const course = c.course?.name || COURSE_CATALOG.find((x) => x.id === c.courseId)?.name || 'THEIR TRACK';
         const safe = (t) => String(t).replace(/[<>&"]/g, '').toUpperCase();
-        eyebrow.innerHTML = `<i></i> ★ ${safe(c.name)} DARES YOU: BEAT ${Number(c.score || 0).toLocaleString()} ON ${safe(course)}`;
+        eyebrow.innerHTML = `<i></i> ★ ${safe(c.name)} DARES YOU`;
+        const headline = document.querySelector('.launch-copy h1');
+        if (headline) headline.innerHTML = `BEAT <em>${Number(c.score || 0).toLocaleString()}</em><br />ON ${safe(course)}.`;
+        const sub = document.querySelector('.launch-copy > p:not(.launch-eyebrow)');
+        if (sub) sub.textContent = `${safe(c.name)} flew this exact track. Their ship replays the run beside you, and you can zap it. One heat.`;
       })
       .catch(() => {});
   }

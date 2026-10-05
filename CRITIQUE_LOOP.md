@@ -38,6 +38,7 @@ Score each 1–10 with evidence. A 10 is demo-ready on a phone with no explanati
 | 5 (grade) | 7 | 7 | 6 | 6 | No errors across solo, season, challenge and PvP; max 183 calls; recap written from partial standings; cast cache poisonable; zap counts unbounded; challenge still a 3-heat season; bot lap times 59.5 s |
 | 7 (grade) | 6 | 7 | 6 | 6 | Draw calls back over budget (alien ships about 26 meshes each, peak 293); HUD, crown and standings use different scores; challenge results contradict themselves; strip text 7–9 px; late PvP zaps dropped; paid steals unchecked |
 | 9 (grade) | 6 | 7 | 6 | 6 | REMATCH reuses the last season's zap/paid records (phantom credits, dropped zaps); REMATCH button visible mid-season; pinned rivals hidden on phones; no second-season bonus; false leader toast at 0–0; vague challenge landing; Io peaks 217–223 |
+| 11 (grade) | 6 | 7 | 7 | 6 | Social loop complete (invite, season, rematch, feed, emotes, named dare); bots drain the challenge ghost's score (wrong verdicts); phone overlaps; PvP heat recap ignores the human rival. Read: top 5–8, not reliably top 3; blocker = phone first impression and challenge trust |
 
 ## Backlog
 (ready / in-progress / done; each item notes the criterion it moves)
@@ -99,6 +100,18 @@ Score each 1–10 with evidence. A 10 is demo-ready on a phone with no explanati
 46. `done` (C9) [Polish] Guest results button text; season fallback ignores human rivals; client name not synced after the server renames a duplicate.
 47. `ready` [Execution] Io draw-call peaks 217–223.
 
+**From grade 11:**
+48. `done` (C11) [Usefulness/Execution] Sim pilots zap the challenge ghost, so the target drops ~60%. Only the player may zap it.
+49. `done` (C11) [Polish] Feed credits YOU for bot hits on the ghost.
+50. `done` (C11) [Polish] Phone emote chips overlap the bubble and the track.
+51. `idea` [Usefulness] Emotes on lobby and results screens.
+52. `done` (C11) [Polish/Usefulness] PvP heat recap should mention the human rival.
+53. `done` (C11) [Polish] The dare should be the challenge landing's headline.
+54. `done` (C11) [Polish] Strip gaps unlabeled: show "175 AHEAD" / "40 BEHIND".
+55. `done` (C11) [Polish] "Sticker unlocked" repeats every PB.
+56. `done` (C11, verified: at full scroll every card clears the pinned CTA; the briefing is centred, 20 px each side, no horizontal overflow; the critic's screenshot included pane padding) [Polish] Phone first impression: hub sticky CTA covers course cards; briefing off-centre (now the top-3 blocker).
+57. `idea` [Usefulness] Challenge ladder: per-link leaderboard of replies.
+
 ## Log
 - Cycle 2: fixed the top grade-1 findings.
   - **Bots:** rubber-banded to the human field (`0.55·pace·field + 0.45·base`, identical on client and server); steals are 6% of the target's score (min 150). In a solo test the bots stayed within about 20% of the player.
@@ -156,3 +169,11 @@ Score each 1–10 with evidence. A 10 is demo-ready on a phone with no explanati
   - **Steal feed:** the live response carries the room-wide confirmed-steal list (shooter taken from the paid key), so every player's feed shows steals between other humans too ("SAM +80 from NOVA").
   - **Emotes:** GG! / NICE SHOT! / COMING FOR YOU, via keys 1–3 or the emote chips shown only in multiplayer races. They appear in rivals' bubbles for 6 s, and empty rooms clean up emote blobs.
   - **Tests:** e2e has an emote check (27/27).
+- Cycle 11: fixed the top-3 blockers from grade 11.
+  - **Challenge ghost:** only you can zap it now (sim pilots used to drain the target about 60%); the feed names the real shooter.
+  - **Phones:** emote chips are one compact row at the bottom-left (short labels), clear of the bubble, pause and FIRE; the hub CTA and briefing were measured and are fine.
+  - **Strip:** gaps read "1 BEHIND" / "175 AHEAD" / "TIED".
+  - **Challenge landing:** the dare is the headline ("BEAT 1,325 ON JOVIAN SHEAR."), with the name in the eyebrow and an explanation line.
+  - **Recap:** the PvP heat recap names the human rival's margin.
+  - **Stickers:** the unlock line shows only when newly earned.
+  - **Tests:** e2e 27/27.

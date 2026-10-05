@@ -366,7 +366,7 @@ export function createCombat(THREE, { world, getRoute, routeAt, makeShipMesh, sh
       const live = Math.max(0, Math.floor(t.score(r.time) + t.adj)), stolen = Math.min(steal(t.id, live), live);
       t.adj -= stolen;
       t.stunUntil = r.time + STUN;
-      if (stolen) onSteal({ thief: 'YOU', victim: t.name, amount: stolen, mine: true });
+      if (stolen) onSteal({ thief: shooter === 'player' ? 'YOU' : racers.find((b) => b.id === shooter)?.name || 'RIVAL', victim: t.name, amount: stolen, mine: shooter === 'player' });
       return stolen;
     }
     // Human rival: the hit is resolved on their screen; we spin their ship locally.
@@ -518,7 +518,8 @@ export function createCombat(THREE, { world, getRoute, routeAt, makeShipMesh, sh
   function botShoot(r, b, rivals) {
     const me = { d: b.d, x: b.x, y: b.y };
     const player = { kind: 'player', id: 'player', name: 'YOU', d: r.distance, x: r.x, y: r.y };
-    const others = opponents(r, rivals).filter((o) => o.id !== b.id && o.kind !== 'human');
+    // Sim pilots never shoot the challenge ghost: its score is the target you're trying to beat.
+    const others = opponents(r, rivals).filter((o) => o.id !== b.id && o.kind !== 'human' && o.kind !== 'ext');
     const target = lockTarget(me, [player, ...others]);
     if (!target) return;
     // Fairness: you can be zapped by sim pilots at most once every 5 seconds.

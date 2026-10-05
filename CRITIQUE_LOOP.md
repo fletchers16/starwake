@@ -132,7 +132,7 @@ Score each 1–10 with evidence. A 10 is demo-ready on a phone with no explanati
 70. `done` (C15) [Polish] Invite copy failure shows only the code: add a copyable link field.
 71. `done` (C15) [Polish] Mid-season results in a live room offer BEAT MY RUN / INVITE (leaves the crew): hide until the season ends.
 72. `done` (C15) [Polish] "ZAP STEALS" is net: label it "NET ZAPS".
-73. `idea` [Usefulness] Store replier runs so RACE BACK races them.
+73. `done` (C16) [Usefulness] Store replier runs so RACE BACK races them.
 
 ## Log
 - Cycle 2: fixed the top grade-1 findings.
@@ -222,4 +222,8 @@ Score each 1–10 with evidence. A 10 is demo-ready on a phone with no explanati
   - **Dares card:** rebuilt each time the hub shows; counts replies by name; says "you still hold the top spot" (DEFEND) or who leads (TRY AGAIN).
   - **Results:** tie-aware places shared by the title and recap; live rooms hide BEAT MY RUN / INVITE mid-season; "NET ZAPS" label.
   - **Lobby:** invite copy falls back to a selectable link field.
+  - **Tests:** e2e 28/28.
+- Cycle 16: the async reply loop is closed.
+  - **Replies:** finishing a dare now saves your run as a reply challenge on that chain, and the ladder rung records it (validated: same chain, same pilot). New dares put the sender's own run on their rung.
+  - **Dares card:** TRY AGAIN links to the leader's reply run, so the sender races whoever beat them (verified: ACE-1's card points at RIVAL-B's run); replies also land in the replier's own dares list.
   - **Tests:** e2e 28/28.

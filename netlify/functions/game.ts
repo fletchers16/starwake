@@ -133,14 +133,15 @@ const emoteKey = (code: string, pilot: string) => `emote/${code}/${pilot}`;
 const challengeKey = (id: string) => `challenge/${id}`;
 // A ladder is the leaderboard for a chain of challenges (an original link and every "send it back"),
 // keyed by the chain's root challenge: each pilot's best score on that track.
-type Rung = { name: string; score: number; at: number };
+// `id` is that pilot's best run on this chain, saved as a reply challenge, so others can race it.
+type Rung = { name: string; score: number; at: number; id?: string };
 const ladderKey = (root: string) => `ladder/${root}`;
-async function addRung(root: string, name: string, score: number) {
+async function addRung(root: string, name: string, score: number, id?: string) {
   const s = store();
   const rungs = ((await s.get(ladderKey(root), { type: "json" })) as Rung[] | null) || [];
   const mine = rungs.find((r) => r.name === name);
-  if (mine) { if (score > mine.score) { mine.score = score; mine.at = Date.now(); } }
-  else rungs.push({ name, score, at: Date.now() });
+  if (mine) { if (score > mine.score) { mine.score = score; mine.at = Date.now(); if (id) mine.id = id; } }
+  else rungs.push({ name, score, at: Date.now(), ...(id ? { id } : {}) });
   rungs.sort((a, b) => b.score - a.score);
   await s.setJSON(ladderKey(root), rungs.slice(0, 50));
   return rungs.slice(0, 10);
@@ -345,7 +346,7 @@ export default async (request: Request) => {
       await store().setJSON(challengeKey(id), challenge);
       // A new dare starts its ladder with the sender. A send-it-back reply is already on the
       // chain's ladder (posted from its challenge room), so it adds nothing here.
-      if (!challenge.parent) await addRung(challenge.root, challenge.name, challenge.score);
+      if (!challenge.parent) await addRung(challenge.root, challenge.name, challenge.score, id);
       return json({ id });
     }
     if (action === "challenge-get") {
@@ -372,7 +373,13 @@ export default async (request: Request) => {
         draft.ladderPosted.push(pilot!.id);
         entry = { name: pilot!.name, score: recorded.score };
       });
-      const ladder = entry ? await addRung(challenge.root || challenge.id, (entry as { name: string }).name, (entry as { score: number }).score) : (((await store().get(ladderKey(challenge.root || challenge.id), { type: "json" })) as Rung[] | null) || []).slice(0, 10);
+      // An optional reply run (saved by this pilot from this race) becomes their raceable rung.
+      let replyId: string | undefined;
+      if (validChallengeId(body.replyId)) {
+        const reply = (await store().get(challengeKey(body.replyId), { type: "json" })) as { root?: string; name?: string } | null;
+        if (reply && reply.root === (challenge.root || challenge.id) && reply.name === (entry as { name: string } | null)?.name) replyId = body.replyId;
+      }
+      const ladder = entry ? await addRung(challenge.root || challenge.id, (entry as { name: string }).name, (entry as { score: number }).score, replyId) : (((await store().get(ladderKey(challenge.root || challenge.id), { type: "json" })) as Rung[] | null) || []).slice(0, 10);
       return json({ ladder });
     }
 

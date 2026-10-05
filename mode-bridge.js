@@ -228,7 +228,9 @@ async function renderDares() {
       const others = ladder.filter((x) => x.name !== me), top = ladder[0];
       const status = !others.length ? 'No one has tried yet' : top?.name === me ? `${others.length} tried · you still hold the top spot` : `${others.length} tried · ${safe(top.name)} leads with ${Number(top.score).toLocaleString()}`;
       const action = !others.length ? 'OPEN ↗' : top?.name === me ? 'DEFEND ↗' : 'TRY AGAIN ↗';
-      return `<a class="sw-dare-row" href="?challenge=${d.id}"><b>${safe(d.course)}</b><span>${status}</span><em>${action}</em></a>`;
+      // TRY AGAIN races the leader's own run when they left one; otherwise your dare link.
+      const target = top && top.name !== me && /^[a-z0-9]{8}$/.test(top.id || '') ? top.id : d.id;
+      return `<a class="sw-dare-row" href="?challenge=${target}"><b>${safe(d.course)}</b><span>${status}</span><em>${action}</em></a>`;
     }).filter(Boolean);
     document.querySelector('#mode-hub-root .sw-dares')?.remove();
     if (!rows.length) return;

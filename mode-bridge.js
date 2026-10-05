@@ -28,10 +28,15 @@ let launched = false;
       if (!room) return;
       const course = room.course?.name || COURSE_CATALOG.find((x) => x.id === room.courseId)?.name || 'THEIR TRACK';
       const safe = (t) => String(t).replace(/[<>&"]/g, '').toUpperCase();
-      if (headline && from) headline.innerHTML = `JOIN <em>${from}</em><br />ON ${safe(course)}.`;
+      const hostName = from || safe(room.players?.find((p) => p.id === room.hostId)?.name || '');
+      if (headline && hostName) { headline.classList.add('dare'); headline.innerHTML = `JOIN <em>${hostName}</em><br />ON ${safe(course)}.`; }
+      if (eyebrow && !from && hostName) eyebrow.innerHTML = `<i></i> ⚔ ${hostName} CHALLENGES YOU TO A LIVE BATTLE`;
       const sub = document.querySelector('.launch-copy > p:not(.launch-eyebrow)');
       const n = room.players?.length || 0;
-      if (sub) sub.textContent = room.phase === 'lobby' ? `${n} pilot${n === 1 ? ' is' : 's are'} in the lobby. Grab pods, zap rivals, steal their points. No install, no account.` : 'This battle has already started. Ask your friend for a fresh invite after the heat.';
+      if (sub) sub.textContent = room.phase === 'lobby' ? `${n} pilot${n === 1 ? ' is' : 's are'} in the lobby. Grab pods, zap rivals, steal their points. No install, no account.`
+        : room.phase === 'results' ? `They're between heats. Join now and you'll fly from the next heat.`
+        : room.phase === 'race' ? `A heat is in progress. You can join as soon as it ends (about a minute).`
+        : `This season just ended. Ask your friend for a rematch invite.`;
     }).catch(() => {});
   } else if (/^[a-z0-9]{8}$/.test(challenge)) {
     if (label) label.textContent = 'ACCEPT CHALLENGE';
@@ -47,7 +52,10 @@ let launched = false;
         if (!c || !eyebrow) return;
         const course = c.course?.name || COURSE_CATALOG.find((x) => x.id === c.courseId)?.name || 'THEIR TRACK';
         const safe = (t) => String(t).replace(/[<>&"]/g, '').toUpperCase();
-        eyebrow.innerHTML = `<i></i> ★ ${safe(c.name)} DARES YOU`;
+        let mine = [];
+        try { mine = JSON.parse(localStorage.getItem('starwake-sent-dares') || '[]'); } catch {}
+        const answered = mine.find((d) => d.id === c.parent || d.id === c.root);
+        eyebrow.innerHTML = answered ? `<i></i> ★ PAYBACK · ${safe(c.name)} BEAT YOUR ${Number(answered.score || 0).toLocaleString()}` : `<i></i> ★ ${safe(c.name)} DARES YOU`;
         const headline = document.querySelector('.launch-copy h1');
         if (headline) { headline.classList.add('dare'); headline.innerHTML = `BEAT <em>${Number(c.score || 0).toLocaleString()}</em><br />ON ${safe(course)}.`; }
         const sub = document.querySelector('.launch-copy > p:not(.launch-eyebrow)');
@@ -152,6 +160,9 @@ window.addEventListener('starwake:launch-complete', () => {
   const params = new URLSearchParams(location.search);
   const invited = String(params.get('room') || '').toUpperCase();
   const challengeId = String(params.get('challenge') || '');
+  if (!/^[A-Z0-9]{5}$/.test(invited) && !/^[a-z0-9]{8}$/.test(challengeId)) {
+    window.setTimeout(() => window.starwakeResumeSeat?.(), 50);
+  }
   if (/^[a-z0-9]{8}$/.test(challengeId)) {
     params.delete('challenge');
     history.replaceState(null, '', `${location.pathname}${params.size ? `?${params}` : ''}${location.hash}`);
@@ -216,20 +227,29 @@ async function renderDares() {
   daresBusy = true;
   try {
     let dares = [];
-    try { dares = JSON.parse(localStorage.getItem('starwake-sent-dares') || '[]').slice(0, 3); } catch {}
+    try { dares = JSON.parse(localStorage.getItem('starwake-sent-dares') || '[]').slice(0, 5); } catch {}
     document.querySelector('#mode-hub-root .sw-dares')?.remove();
     if (!dares.length) return;
     const results = await Promise.all(dares.map((d) => fetch('/.netlify/functions/game', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'challenge-get', id: d.id }) }).then((r) => (r.ok ? r.json() : null)).catch(() => null)));
     const safe = (t) => String(t ?? '').replace(/[<>&"]/g, '');
+    const seenRoots = new Set();
     const rows = dares.map((d, i) => {
       if (!results[i]) return '';
+      // One row per chain (your dare and its send-backs share a ladder).
+      const root = results[i].challenge?.root || d.id;
+      if (seenRoots.has(root) || seenRoots.size >= 3) return '';
+      seenRoots.add(root);
       // The ladder covers the whole send-it-back chain and includes you, so count everyone else.
       const ladder = results[i].ladder || [], me = d.name || results[i].challenge?.name;
-      const others = ladder.filter((x) => x.name !== me), top = ladder[0];
-      const status = !others.length ? 'No one has tried yet' : top?.name === me ? `${others.length} tried · you still hold the top spot` : `${others.length} tried · ${safe(top.name)} leads with ${Number(top.score).toLocaleString()}`;
-      const action = !others.length ? 'OPEN ↗' : top?.name === me ? 'DEFEND ↗' : 'TRY AGAIN ↗';
+      let device = '';
+      try { device = localStorage.getItem('starwake-device') || ''; } catch {}
+      const isMe = (x) => (x.device && device ? x.device === device : x.name === me);
+      const others = ladder.filter((x) => !isMe(x)), top = ladder[0];
+      const rivals = others.slice(0, 2).map((x) => safe(x.name)).join(', ');
+      const status = !others.length ? 'No one has tried yet' : top && isMe(top) ? `You lead · ${rivals}${others.length > 2 ? ` +${others.length - 2}` : ''} tried` : `${safe(top.name)} leads with ${Number(top.score).toLocaleString()} · ${others.length} tried`;
+      const action = !others.length ? 'OPEN ↗' : top && isMe(top) ? 'DEFEND ↗' : 'TRY AGAIN ↗';
       // TRY AGAIN races the leader's own run when they left one; otherwise your dare link.
-      const target = top && top.name !== me && /^[a-z0-9]{8}$/.test(top.id || '') ? top.id : d.id;
+      const target = top && !isMe(top) && /^[a-z0-9]{8}$/.test(top.id || '') ? top.id : d.id;
       return `<a class="sw-dare-row" href="?challenge=${target}"><b>${safe(d.course)}</b><span>${status}</span><em>${action}</em></a>`;
     }).filter(Boolean);
     document.querySelector('#mode-hub-root .sw-dares')?.remove();

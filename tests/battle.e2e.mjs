@@ -170,6 +170,15 @@ try {
   await phone.screenshot({ path: `${OUT}/8-phone-results.png` });
   check('REMATCH hidden mid-season', await laptop.evaluate(() => getComputedStyle(document.querySelector('#rematch-button')).display === 'none'));
 
+  // ---- The phone reloads between heats: it keeps its seat and rejoins the season ----
+  const phoneId = await phone.evaluate(() => window.__starwake.state.playerId);
+  await phone.reload();
+  await phone.waitForSelector('#launch-skip', { timeout: 20000 });
+  await phone.tap('#launch-skip');
+  const resumed = await until(phone, (id) => window.__starwake.state.code && window.__starwake.state.playerId === id, phoneId, { timeout: 15000 });
+  const stillSeated = await laptop.evaluate((id) => fetch(`/.netlify/functions/game?code=${window.__starwake.state.code}`).then((r) => r.json()).then((d) => d.room.players.some((p) => p.id === id)), phoneId);
+  check('phone keeps its seat after a reload', resumed && stillSeated);
+
   // ---- Finish the season (heats 2 and 3), then REMATCH with the same crew ----
   const finishHeat = async ({ hostLast = 0 } = {}) => {
     for (const page of [laptop, phone]) await until(page, () => window.__starwake.state.race?.started && !window.__starwake.state.race.done, null, { timeout: 25000 });

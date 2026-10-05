@@ -12,6 +12,8 @@ type Pilot = {
   lastSeen?: number;
   // Private session secret: only this pilot's device knows it. The public `id` is shown to everyone.
   token?: string;
+  // Set by a soft leave (reload / closed tab); the seat is released if not resumed in time.
+  leftAt?: number;
 };
 
 type Room = {
@@ -52,6 +54,8 @@ const COUNTDOWN_MS = 4000;
 const FINISH_GRACE_MS = 12000;
 // A host silent this long hands the room to the most recently active pilot.
 const HOST_TIMEOUT_MS = 25000;
+// How long a reloading pilot's seat is held after a soft leave.
+const REJOIN_GRACE_MS = 30000;
 const SEEN_WRITE_MS = 8000;
 const MAX_HEAT_SCORE = 60000;
 
@@ -134,14 +138,16 @@ const challengeKey = (id: string) => `challenge/${id}`;
 // A ladder is the leaderboard for a chain of challenges (an original link and every "send it back"),
 // keyed by the chain's root challenge: each pilot's best score on that track.
 // `id` is that pilot's best run on this chain, saved as a reply challenge, so others can race it.
-type Rung = { name: string; score: number; at: number; id?: string };
+// `device` is a random per-device pilot id, so rungs follow the pilot rather than the callsign.
+type Rung = { name: string; score: number; at: number; id?: string; device?: string };
+const cleanDevice = (d: unknown) => (typeof d === "string" && /^[a-z0-9]{12,32}$/.test(d) ? d : undefined);
 const ladderKey = (root: string) => `ladder/${root}`;
-async function addRung(root: string, name: string, score: number, id?: string) {
+async function addRung(root: string, name: string, score: number, id?: string, device?: string) {
   const s = store();
   const rungs = ((await s.get(ladderKey(root), { type: "json" })) as Rung[] | null) || [];
-  const mine = rungs.find((r) => r.name === name);
-  if (mine) { if (score > mine.score) { mine.score = score; mine.at = Date.now(); if (id) mine.id = id; } }
-  else rungs.push({ name, score, at: Date.now(), ...(id ? { id } : {}) });
+  const mine = rungs.find((r) => (device && r.device ? r.device === device : r.name === name));
+  if (mine) { mine.name = name; if (score > mine.score) { mine.score = score; mine.at = Date.now(); if (id) mine.id = id; } }
+  else rungs.push({ name, score, at: Date.now(), ...(id ? { id } : {}), ...(device ? { device } : {}) });
   rungs.sort((a, b) => b.score - a.score);
   await s.setJSON(ladderKey(root), rungs.slice(0, 50));
   return rungs.slice(0, 10);
@@ -221,6 +227,10 @@ function removePilot(room: Room, playerId: string) {
  */
 function maintain(room: Room, live: Live[], now: number) {
   let changed = false;
+  for (const pilot of room.players.filter((p) => p.leftAt && now - p.leftAt > REJOIN_GRACE_MS)) {
+    removePilot(room, pilot.id);
+    changed = true;
+  }
   if (room.phase === "race" && room.endsAt && now > room.endsAt + FINISH_GRACE_MS) {
     for (const pilot of room.players.filter((p) => !p.finished)) {
       const last = live.find((entry) => entry.id === pilot.id);
@@ -346,7 +356,7 @@ export default async (request: Request) => {
       await store().setJSON(challengeKey(id), challenge);
       // A new dare starts its ladder with the sender. A send-it-back reply is already on the
       // chain's ladder (posted from its challenge room), so it adds nothing here.
-      if (!challenge.parent) await addRung(challenge.root, challenge.name, challenge.score, id);
+      if (!challenge.parent) await addRung(challenge.root, challenge.name, challenge.score, id, cleanDevice(body.device));
       return json({ id });
     }
     if (action === "challenge-get") {
@@ -379,7 +389,7 @@ export default async (request: Request) => {
         const reply = (await store().get(challengeKey(body.replyId), { type: "json" })) as { root?: string; name?: string } | null;
         if (reply && reply.root === (challenge.root || challenge.id) && reply.name === (entry as { name: string } | null)?.name) replyId = body.replyId;
       }
-      const ladder = entry ? await addRung(challenge.root || challenge.id, (entry as { name: string }).name, (entry as { score: number }).score, replyId) : (((await store().get(ladderKey(challenge.root || challenge.id), { type: "json" })) as Rung[] | null) || []).slice(0, 10);
+      const ladder = entry ? await addRung(challenge.root || challenge.id, (entry as { name: string }).name, (entry as { score: number }).score, replyId, cleanDevice(body.device)) : (((await store().get(ladderKey(challenge.root || challenge.id), { type: "json" })) as Rung[] | null) || []).slice(0, 10);
       return json({ ladder });
     }
 
@@ -390,7 +400,9 @@ export default async (request: Request) => {
       const id = crypto.randomUUID();
       const token = crypto.randomUUID();
       const { room } = await mutateRoom(code, (draft) => {
-        if (draft.phase !== "lobby") throw new Error("This race has already started. Ask the host to open a new room.");
+        // New pilots can join in the lobby or between heats (they fly from the next heat).
+        if (draft.phase === "race") throw new Error("A heat is in progress. Try again in a moment: the room accepts pilots between heats.");
+        if (draft.phase === "complete") throw new Error("This season is over. Ask the host for a rematch or a new room.");
         if (draft.players.length >= 8) throw new Error("This lobby is full.");
         // Humans take priority over sim pilots: drop a bot to make room.
         if (totalOccupancy(draft) >= 8) draft.bots = Math.max(0, draft.bots - 1);
@@ -453,8 +465,11 @@ export default async (request: Request) => {
       const { room } = await mutateRoom(code, (draft) => {
         const pilot = draft.players.find((p) => p.id === playerId);
         if (pilot && !authorised(pilot, body)) throw new Error("This device isn't signed in as that pilot.");
-        removePilot(draft, playerId);
+        // A page reload or closed tab sends a soft leave: the seat is held so the pilot can resume.
+        if (body.soft && pilot) pilot.leftAt = Date.now();
+        else removePilot(draft, playerId);
       });
+      if (body.soft) return json({ ok: true });
       await store().delete(liveKey(code, playerId)).catch(() => {});
       if (!room.players.length) {
         await store().delete(code).catch(() => {});
@@ -472,6 +487,7 @@ export default async (request: Request) => {
       if (!pilot) throw new Error("Your pilot is no longer in this lobby.");
       if (!authorised(pilot, body)) throw new Error("This device isn't signed in as that pilot.");
       pilot.lastSeen = Date.now();
+      delete pilot.leftAt; // any signed-in action means they're back
       if (action === "bots") {
         if (draft.hostId !== playerId || draft.phase !== "lobby") throw new Error("Only the lobby host can change sim pilots.");
         draft.bots = Math.max(0, Math.min(8 - draft.players.length, Number(body.count) || 0));
@@ -505,6 +521,9 @@ export default async (request: Request) => {
         draft.extendedMs = (draft.extendedMs || 0) + ms;
         draft.startsAt = (draft.startsAt || 0) + ms;
         draft.endsAt = (draft.endsAt || 0) + ms;
+      } else if (action === "resume") {
+        // A reloaded tab reclaims its seat with its token.
+        delete pilot.leftAt;
       } else if (action === "rematch") {
         // Same crew, fresh season: the host restarts heat 1 for everyone once a season is complete.
         if (draft.hostId !== playerId || draft.phase !== "complete") throw new Error("The host can call a rematch once the season is over.");
@@ -521,8 +540,8 @@ export default async (request: Request) => {
         throw new Error("Unknown game action.");
       }
     });
-    if (action === "start" || action === "next") {
-      // Clear last heat's telemetry so ghosts restart at the line.
+    if (action === "start" || action === "next" || action === "rematch") {
+      // Clear last heat's telemetry so ghosts restart at the line (and a pilot who left can't be scored from it).
       const { blobs } = await store().list({ prefix: `live/${code}/` });
       await Promise.all(blobs.map((blob) => store().delete(blob.key).catch(() => {})));
     }

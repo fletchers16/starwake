@@ -41,6 +41,7 @@ Score each 1–10 with evidence. A 10 is demo-ready on a phone with no explanati
 | 11 (grade) | 6 | 7 | 7 | 6 | Social loop complete (invite, season, rematch, feed, emotes, named dare); bots drain the challenge ghost's score (wrong verdicts); phone overlaps; PvP heat recap ignores the human rival. Read: top 5–8, not reliably top 3; blocker = phone first impression and challenge trust |
 | 13 (grade) | 6 | 7 | 7 | 6 | Ladder writes unauthenticated (60,000 posted with curl); verdict vs ladder disagree on the challenger's score; briefing opens scrolled to the bottom (focus); the sender never sees replies. Read unchanged (top 5–8); blocker = challenge trust |
 | 15 (grade) | 5 | 7 | 6 | 6 | Live season deadlock: host handed off mid-heat (racing doesn't refresh lastSeen) and clients never re-read hostId; ladder still forgeable via challenge-save; dares card stale and miscounts; tie place mismatch; invite copy has no fallback; mid-season results offer to leave the crew. Read: not top 3 until the deadlock is fixed |
+| 17 (grade) | 6 | 7 | 7 | 6 | Deadlock fix holds (close tab, hangar and simultaneous finish all OK); live and async loops work end to end; session fragility: reload = permanently out, VIEW FLIGHT DECK doesn't leave, rematch scores stale telemetry. Read: edging into top 5 |
 
 ## Backlog
 (ready / in-progress / done; each item notes the criterion it moves)
@@ -133,6 +134,16 @@ Score each 1–10 with evidence. A 10 is demo-ready on a phone with no explanati
 71. `done` (C15) [Polish] Mid-season results in a live room offer BEAT MY RUN / INVITE (leaves the crew): hide until the season ends.
 72. `done` (C15) [Polish] "ZAP STEALS" is net: label it "NET ZAPS".
 73. `done` (C16) [Usefulness] Store replier runs so RACE BACK races them.
+
+**From grade 17:**
+74. `done` (C17) [Execution] Rematch must clear live telemetry; VIEW FLIGHT DECK must leave the room.
+75. `done` (C17) [Usefulness/Execution] Seat resume after reload (grace instead of instant leave), and joining between heats.
+76. `done` (C17) [Polish] Dares card repeats a chain: group by root and show the rival.
+77. `done` (C17) [Execution] Ladder rungs keyed by display name: key by a device pilot id.
+78. `done` (C17) [Polish] Payback headline when the dare answers yours.
+79. `done` (C17) [Polish] Season-bonus toast covers the results title.
+80. `done` (C17) [Usefulness] Invite without &from: name the host from room data.
+81. `done` (C17) [Execution] Dev: the local fallback hides server errors; fall back only on network failure.
 
 ## Log
 - Cycle 2: fixed the top grade-1 findings.
@@ -227,3 +238,14 @@ Score each 1–10 with evidence. A 10 is demo-ready on a phone with no explanati
   - **Replies:** finishing a dare now saves your run as a reply challenge on that chain, and the ladder rung records it (validated: same chain, same pilot). New dares put the sender's own run on their rung.
   - **Dares card:** TRY AGAIN links to the leader's reply run, so the sender races whoever beat them (verified: ACE-1's card points at RIVAL-B's run); replies also land in the replier's own dares list.
   - **Tests:** e2e 28/28.
+- Cycle 17: session resilience.
+  - **Reloads:** a reload or closed tab sends a soft leave, so the seat is held for 30 s. The tab stores its seat (sessionStorage) and resumes it with its token, landing back in the race or in the room for the next heat.
+  - **Joining:** new pilots can join between heats.
+  - **Rematch and exit:** rematch clears old telemetry, so stale DNF scores are gone; VIEW FLIGHT DECK really leaves the room.
+  - **Heat reports:** retried after a server "only just started" refusal (the new reload test exposed that it gave up).
+  - **Ladders:** keyed by a per-device pilot id (renames follow you; same callsigns no longer merge).
+  - **Dares card:** one row per chain, naming rivals; payback eyebrow ("PAYBACK · RIVAL-B BEAT YOUR 740") when a dare answers yours.
+  - **Invites:** without &from, the landing names the host from the room, with phase-accurate copy.
+  - **Results:** the season bonus moved into the results subtitle (no toast over the title).
+  - **Dev:** the local API fallback now runs only on network failure, so server errors surface.
+  - **Tests:** e2e 29/29 (new: the phone reloads between heats and keeps its seat).

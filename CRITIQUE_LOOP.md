@@ -172,7 +172,7 @@ Score each 1–10 with evidence. A 10 is demo-ready on a phone with no explanati
 98. `done` (C23) [Usefulness/Polish] Late joiners: a pinned waiting banner, and lobby copy that names the heat they'll join.
 99. `done` (C23) [Polish] Declutter the race HUD (compact emote row everywhere); the GO banner can stick.
 100. `done` (C23) [Polish] Stale tab title "Pilot the impossible".
-101. `idea` [Polish/Usefulness] A 20-second interactive first flight (forced pod, zap and roll prompt).
+101. `done` (C24) [Polish/Usefulness] A 20-second interactive first flight (forced pod, zap and roll prompt).
 
 ## Log
 - Cycle 2: fixed the top grade-1 findings.
@@ -314,3 +314,7 @@ Score each 1–10 with evidence. A 10 is demo-ready on a phone with no explanati
   - **HUD:** a compact horizontal emote row everywhere; the GO banner clears against the race clock.
   - **Tab title:** "Starwake: Zap Your Friends".
   - **Tests:** e2e 35/35 + 11/11.
+- Cycle 24: first flight.
+  - **Coach (`coach.js`):** a brand-new player's first solo race is coached live in three steps. Fly through a ? pod; zap the racer it places just ahead (it can't dodge during the lesson); roll when a sim pilot telegraphs a shot (`coachArm` lines one up and clears the fairness window for that one shot). It ends with "Perfect reflect!", is skippable and runs once.
+  - **Tests:** new `tests/coach.e2e.mjs` (7/7); `npm test` runs all three suites (battle 35/35, challenge 11/11, coach 7/7).
+  - **Note:** the challenge suite flaked once right after the new module landed (a dev-server reload); stable on rerun.

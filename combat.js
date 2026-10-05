@@ -349,6 +349,7 @@ export function createCombat(THREE, { world, getRoute, routeAt, makeShipMesh, sh
     if (r.time < (r.rollUntil || -9)) {
       // Mid-roll: the shot bounces back at whoever fired it.
       sfx.shield?.();
+      r.reflects = (r.reflects || 0) + 1;
       toast('REFLECTED!', `BOUNCED BACK AT ${shooterName}`);
       if (shooter) { const stolen = hitOpponent(r, shooter, 'reflect'); r.zapPoints += stolen; r.stolenPts = (r.stolenPts || 0) + stolen; flash(worldPos(r, shooter.d ?? shooter.ref?.d, shooter.x ?? shooter.ref?.x, shooter.y ?? shooter.ref?.y), '#ffffff', 3); }
       return -1;
@@ -371,7 +372,7 @@ export function createCombat(THREE, { world, getRoute, routeAt, makeShipMesh, sh
     const t = target.ref;
     if (target.kind === 'bot') {
       if (r.time < t.shieldUntil) { t.shieldUntil = -9; return 0; }
-      if (shooter === 'player' && r.time >= t.stunUntil && botHitsOnPlayer < BOT_HITS_PER_HEAT && Math.random() < BOT_DODGE && r.time > (t.rollUntil || -9) + ROLL_COOLDOWN) {
+      if (shooter === 'player' && r.time >= t.stunUntil && r.time > (t.noDodgeUntil || -9) && botHitsOnPlayer < BOT_HITS_PER_HEAT && Math.random() < BOT_DODGE && r.time > (t.rollUntil || -9) + ROLL_COOLDOWN) {
         // The sim pilot barrel-rolls: your shot bounces back.
         t.rollUntil = r.time + ROLL_TIME;
         t.dodgedAt = r.time;
@@ -719,6 +720,15 @@ export function createCombat(THREE, { world, getRoute, routeAt, makeShipMesh, sh
     },
     // Dev/test hook: the live sim-pilot records.
     debugRacers: () => racers,
+    /** First-flight coach: one sim pilot (not stunned) lines up behind you and takes a telegraphed shot. */
+    coachArm(r) {
+      const b = racers.find((x) => r.time >= x.stunUntil) || racers[0];
+      if (!b) return false;
+      Object.assign(b, { item: 'blaster', ammo: 1, cooldown: 0, aimAt: 0, d: r.distance - 12, x: r.x, y: r.y, tx: r.x, ty: r.y, nextWeave: r.time + 3 });
+      lastPlayerHitByBot = -9; // the fairness window shouldn't block the lesson
+      botHitsOnPlayer = Math.min(botHitsOnPlayer, BOT_HITS_PER_HEAT - 1);
+      return true;
+    },
     /** Put the sim pilots around distance d (used when a reloaded racer resumes mid-heat). */
     placeBots: (d, lap) => racers.forEach((b, i) => {
       b.d = d + (i % 2 ? 6 + i * 3 : -4 - i * 3);

@@ -9,7 +9,8 @@
     "test:battle": "node tests/battle.e2e.mjs",
     "warm:ai": "node scripts/warm-ai.mjs",
     "test:challenge": "node tests/challenge.e2e.mjs",
-    "test": "node tests/battle.e2e.mjs && node tests/challenge.e2e.mjs"
+    "test": "node tests/battle.e2e.mjs && node tests/challenge.e2e.mjs && node tests/coach.e2e.mjs",
+    "test:coach": "node tests/coach.e2e.mjs"
   },
   "dependencies": {
     "@netlify/blobs": "^10.0.7",

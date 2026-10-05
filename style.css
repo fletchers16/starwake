@@ -565,3 +565,13 @@ button:disabled{cursor:not-allowed;filter:saturate(.55);opacity:.58}
 .join-wait span{font:500 12px system-ui,sans-serif;color:rgba(255,255,255,.8)}
 .join-wait button{padding:5px 10px;border-radius:9px;border:1px solid rgba(255,255,255,.3);background:transparent;color:#fff;font:700 10px 'DM Mono',monospace;letter-spacing:.1em}
 @media(max-width:760px){.emote-bar{left:10px}.join-wait{flex-wrap:wrap;gap:6px}}
+
+/* First-flight coach card */
+.coach{position:absolute;z-index:11;left:50%;top:150px;transform:translateX(-50%);display:grid;gap:3px;justify-items:center;text-align:center;width:min(92vw,420px);padding:12px 18px 14px;border-radius:18px;background:#fffdf6;color:#1b1430;border:3px solid #1b1430;box-shadow:0 6px 0 #1b1430;animation:coach-in .25s ease-out}
+.coach small{font:800 9px 'DM Mono',monospace;letter-spacing:.18em;color:#8a5cff}
+.coach b{font:400 24px/1.1 var(--display);letter-spacing:.01em}
+.coach b em,.coach span em{font-style:normal;color:#e0389b}
+.coach span{font:600 13px/1.35 system-ui,sans-serif;color:#3a3150}
+.coach .coach-skip{position:absolute;right:8px;top:6px;padding:2px 6px;border:0;background:transparent;font:700 9px 'DM Mono',monospace;letter-spacing:.12em;color:#8a809c;cursor:pointer}
+@keyframes coach-in{from{opacity:0;transform:translate(-50%,-8px)}}
+@media(max-width:760px){.coach{top:118px}.coach b{font-size:19px}.coach span{font-size:12px}}

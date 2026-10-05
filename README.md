@@ -21,6 +21,8 @@ Built for the Handshake AI Skills Studio × OpenAI Multiplayer Game Challenge. T
   - **1–3** send emotes in multiplayer.
   - On a phone, drag to steer and use the on-screen buttons.
 
+**First flight:** a brand-new player's first solo race is coached live, one move at a time: fly through a ? pod, zap the racer it puts ahead of you, then barrel-roll the shot when a sim pilot locks on. It's skippable and runs once.
+
 ## Playing together
 
 - **Live battles:** **⚔ BATTLE → OPEN A BATTLE ROOM**, then share the invite link. Friends join from any phone or laptop with no install or account.
@@ -76,7 +78,7 @@ A laptop and an emulated iPhone, in isolated browsers, play a full PvP season. T
 ```bash
 npm run test:challenge
 ```
-The async dare flow on two isolated devices: a laptop sends a "beat my run" link, a phone opens it (the landing names the target), races the ghost, and gets a verdict that matches the ladder. Then the sender's hub card shows the reply, and TRY AGAIN races the phone's run. 11 checks. `npm test` runs both suites.
+The async dare flow on two isolated devices: a laptop sends a "beat my run" link, a phone opens it (the landing names the target), races the ghost, and gets a verdict that matches the ladder. Then the sender's hub card shows the reply, and TRY AGAIN races the phone's run. 11 checks. `npm run test:coach` checks the first-flight coach end to end (7 checks). `npm test` runs all three suites.
 
 ## Deploy (Netlify)
 

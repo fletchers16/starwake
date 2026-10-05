@@ -45,6 +45,7 @@ Score each 1–10 with evidence. A 10 is demo-ready on a phone with no explanati
 | 19 (grade) | 6 | 7 | 7 | 6 | Between-heat reload, late join, rematch and emotes all work; a mid-heat reload restarts at 0; the seat can expire on the intro; silent drops never evicted (+13 s per heat); fake results for late joiners; device ids leak; bfcache. Read: about #4–5 |
 | 21 (grade) | 5 | 7 | 7 | 6 | Mid-heat resume broken in multiplayer (sync posts d=0 before the restore reads); a reload wipes the zap ledger (phantom credits, replayed hits, dropped zaps); dodge toast overwritten; roll untimeable (no warning); late joiner bounced. Silent-drop eviction verified (39–47 s). Read: about #5 |
 | 23 (grade) | 6 | 7 | 7 | 6 | Resume holds adversarially (guest and host mid-heat, late join auto-seated); both suites green; a reload repairs hull and drops the item (an exploit worth up to 140); hull double-counted on resume; phone roll timing; late-joiner waiting state; HUD clutter; stale tab title. Read: about #4, credible top 3 |
+| 25 (grade) | 6 | 7 | 7 | 6 | Coach roll lesson fails (the armed bot spends its only shot on another NPC), so the coach suite is flaky; phone coach card covers the item slot and ROLL; roll copy contradicts; locks cancel then re-lock inside the roll cooldown; blocked zaps counted as landed; join CANCEL racy. Read: about #4 |
 
 ## Backlog
 (ready / in-progress / done; each item notes the criterion it moves)
@@ -173,6 +174,16 @@ Score each 1–10 with evidence. A 10 is demo-ready on a phone with no explanati
 99. `done` (C23) [Polish] Declutter the race HUD (compact emote row everywhere); the GO banner can stick.
 100. `done` (C23) [Polish] Stale tab title "Pilot the impossible".
 101. `done` (C24) [Polish/Usefulness] A 20-second interactive first flight (forced pod, zap and roll prompt).
+
+**From grade 25:**
+102. `done` (C25) [Execution/Polish] Coach bot must target only the player (and retry); fixes the flaky coach suite.
+103. `done` (C25) [Polish] Phone coach card covers the item slot and ROLL: dock it lower and compact.
+104. `done` (C25) [Polish] Roll copy: "TAP ROLL" everywhere on touch.
+105. `done` (C25) [Usefulness/Polish] A lock on you commits until it fires; a cancelled lock gets a 3.5 s grace.
+106. `done` (C25) [Execution] Shield-blocked zaps counted as landed.
+107. `done` (C25) [Execution] Join-banner CANCEL can be undone by an in-flight request.
+108. `done` (C25) [Execution] Reload during the item roll loses the item (send pendingItem).
+109. `idea` [Usefulness] QR code on the lobby invite (needs a QR encoder: a dependency or a hand-written one).
 
 ## Log
 - Cycle 2: fixed the top grade-1 findings.
@@ -318,3 +329,8 @@ Score each 1–10 with evidence. A 10 is demo-ready on a phone with no explanati
   - **Coach (`coach.js`):** a brand-new player's first solo race is coached live in three steps. Fly through a ? pod; zap the racer it places just ahead (it can't dodge during the lesson); roll when a sim pilot telegraphs a shot (`coachArm` lines one up and clears the fairness window for that one shot). It ends with "Perfect reflect!", is skippable and runs once.
   - **Tests:** new `tests/coach.e2e.mjs` (7/7); `npm test` runs all three suites (battle 35/35, challenge 11/11, coach 7/7).
   - **Note:** the challenge suite flaked once right after the new module landed (a dev-server reload); stable on rerun.
+- Cycle 25: a reliable roll lesson and lock fairness.
+  - **Coach target:** the coach's sim pilot only targets you (3 ammo), and if you're hit before rolling the coach says "Too slow! Once more" and re-arms one telegraphed shot. The coach suite is 7/7 on four consecutive runs (it was 5–7/7).
+  - **Committed locks:** a lock on you holds until it fires; a cancelled lock gives a full roll cooldown before the next one.
+  - **Small fixes:** blocked zaps aren't "landed"; the phone coach card sits compact below the item slot and ROLL; "TAP ROLL" copy everywhere on touch; join-banner CANCEL wins over in-flight requests; a reload mid item-roll keeps the pending item.
+  - **Tests:** battle 35/35, challenge 11/11.

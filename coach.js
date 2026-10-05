@@ -10,7 +10,7 @@ export const coachDone = () => { try { return localStorage.getItem(DONE_KEY) ===
 const markDone = () => { try { localStorage.setItem(DONE_KEY, '1'); } catch {} };
 
 export function createCoach({ el, combat, touch }) {
-  let step = 0, stepAt = 0, armedAt = 0, active = false;
+  let step = 0, stepAt = 0, armedAt = 0, active = false, retried = false, stunSeen = -9;
   const say = (title, body, extra = '') => {
     el.innerHTML = `<small>FIRST FLIGHT · ${Math.min(step + 1, 3)}/3</small><b>${title}</b><span>${body}</span>${extra}<button type="button" class="coach-skip">SKIP</button>`;
     el.querySelector('.coach-skip').onclick = finish;
@@ -37,7 +37,7 @@ export function createCoach({ el, combat, touch }) {
       if (!r.item || r.item === 'shield' || r.item === 'turbo') { r.item = 'blaster'; r.ammo = 3; r.rolling = 0; r.pendingItem = null; }
       say(`${touch ? 'Tap <em>FIRE</em>' : 'Press <em>F</em>'} to zap`, 'Your blaster locks onto the racer ahead. A zap steals 8% of their points.');
     } else if (step === 1 && (r.zapsLanded || 0) > 0) {
-      step = 2; stepAt = r.time; armedAt = 0;
+      step = 2; stepAt = r.time; armedAt = 0; retried = false; stunSeen = r.stunUntil;
       say('Incoming fire!', `When you see <em>LOCKED ON</em>, ${touch ? 'tap <em>ROLL</em>' : 'press <em>Q</em>'} to barrel-roll. The shot bounces back.`);
     } else if (step === 2) {
       // Arm a sim pilot behind you once, so a telegraphed shot really comes.
@@ -45,7 +45,12 @@ export function createCoach({ el, combat, touch }) {
         if (combat.coachArm(r)) armedAt = r.time;
       }
       if ((r.reflects || 0) > 0) { step = 3; say('Perfect reflect!', 'You know every move. Now win the heat.'); setTimeout(finish, 2600); }
-      else if (armedAt && r.time - armedAt > 4) { step = 3; say('You got the idea', `Roll the moment you see LOCKED ON. Now win the heat.`); setTimeout(finish, 2600); }
+      else if (armedAt && r.stunUntil > stunSeen && !retried) {
+        // Hit before rolling: one more telegraphed shot.
+        retried = true; stunSeen = r.stunUntil; armedAt = 0; stepAt = r.time + 0.8;
+        say('Too slow! Once more', `Watch for <em>LOCKED ON</em>, then ${touch ? 'tap <em>ROLL</em>' : 'press <em>Q</em>'}.`);
+      }
+      else if (armedAt && r.time - armedAt > 6) { step = 3; say('You got the idea', `Roll the moment you see LOCKED ON. Now win the heat.`); setTimeout(finish, 2600); }
     } else if (step === 1 && r.time - stepAt > 12) {
       say(`${touch ? 'Tap <em>FIRE</em>' : 'Press <em>F</em>'} to zap`, 'Point your nose at the racer with the reticle on it, then fire.');
       stepAt = r.time;

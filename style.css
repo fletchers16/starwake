@@ -574,4 +574,5 @@ button:disabled{cursor:not-allowed;filter:saturate(.55);opacity:.58}
 .coach span{font:600 13px/1.35 system-ui,sans-serif;color:#3a3150}
 .coach .coach-skip{position:absolute;right:8px;top:6px;padding:2px 6px;border:0;background:transparent;font:700 9px 'DM Mono',monospace;letter-spacing:.12em;color:#8a809c;cursor:pointer}
 @keyframes coach-in{from{opacity:0;transform:translate(-50%,-8px)}}
-@media(max-width:760px){.coach{top:118px}.coach b{font-size:19px}.coach span{font-size:12px}}
+/* Phones: a compact card below the item slot and ROLL chip, so it never hides the controls it names. */
+@media(max-width:760px){.coach{top:212px;padding:8px 14px 9px;width:min(80vw,320px)}.coach b{font-size:17px}.coach span{display:none}}

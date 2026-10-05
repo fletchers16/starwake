@@ -447,7 +447,7 @@ export function createCombat(THREE, { world, getRoute, routeAt, makeShipMesh, sh
         // A dodge already explained itself ("ZORP DODGED!"): no SNIPED toast, not a landed zap.
         if (target.kind === 'bot' && target.ref.dodgedAt === r.time) { if (--r.ammo <= 0) r.item = null; return; }
         r.zapPoints += stolen;
-        r.zapsLanded = (r.zapsLanded || 0) + 1;
+        if (stolen > 0 || target.kind === 'human') r.zapsLanded = (r.zapsLanded || 0) + 1;
         r.stolenPts = (r.stolenPts || 0) + stolen;
         toast(`SNIPED ${target.name}!`, target.kind === 'human' ? 'STEALING…' : stolen ? `+${stolen} STOLEN${target.id === leaderId ? ' · BOUNTY ♛' : ''}` : 'SHIELD BLOCKED IT');
       } else {
@@ -569,8 +569,17 @@ export function createCombat(THREE, { world, getRoute, routeAt, makeShipMesh, sh
     const player = { kind: 'player', id: 'player', name: 'YOU', d: r.distance, x: r.x, y: r.y };
     // Sim pilots never shoot the challenge ghost: its score is the target you're trying to beat.
     const others = opponents(r, rivals).filter((o) => o.id !== b.id && o.kind !== 'human' && o.kind !== 'ext');
-    const target = lockTarget(me, [player, ...others]);
-    if (!target || (b.aimAt && target.kind !== 'player')) { if (b.aimAt) { b.aimAt = 0; onLockOn(b.name, false); } if (!target) return; }
+    // A lock on you is a commitment: it fires at you (if you're still roughly ahead) rather than
+    // switching targets. The coach's sim pilot only ever shoots you.
+    const loose = (o) => o.d - me.d > 2 && o.d - me.d < 95 && Math.abs(o.x - me.x) < 6 && Math.abs(o.y - me.y) < 5;
+    let target;
+    if (b.aimAt) target = loose(player) ? player : null; // committed lock on you
+    else if (b.coachTarget) target = lockTarget(me, [player]); // the coach's sim pilot: only you
+    else target = lockTarget(me, [player, ...others]);
+    if (!target && b.aimAt) { b.aimAt = 0; b.relockAt = r.time + ROLL_COOLDOWN; onLockOn(b.name, false); return; }
+    if (!target) return;
+    // After a lock is called off, give the player a full roll cooldown before the next one.
+    if (target.kind === 'player' && !b.aimAt && r.time < (b.relockAt || 0)) return;
     // Fairness: you can be zapped by sim pilots at most once every 5 seconds.
     if (target.kind === 'player' && (r.time - lastPlayerHitByBot < 5 || botHitsOnPlayer >= BOT_HITS_PER_HEAT)) return;
     // Telegraph: a short lock-on warning before a sim pilot fires at you, so a barrel roll can be timed.
@@ -578,6 +587,7 @@ export function createCombat(THREE, { world, getRoute, routeAt, makeShipMesh, sh
       if (!b.aimAt) { b.aimAt = r.time; onLockOn(b.name, true); sfx.countdown?.(false); return; }
       if (r.time - b.aimAt < aimTime) return;
       b.aimAt = 0;
+      b.coachTarget = false;
       onLockOn(b.name, false);
     }
     b.cooldown = 2.4 + Math.random() * 1.6;
@@ -724,7 +734,7 @@ export function createCombat(THREE, { world, getRoute, routeAt, makeShipMesh, sh
     coachArm(r) {
       const b = racers.find((x) => r.time >= x.stunUntil) || racers[0];
       if (!b) return false;
-      Object.assign(b, { item: 'blaster', ammo: 1, cooldown: 0, aimAt: 0, d: r.distance - 12, x: r.x, y: r.y, tx: r.x, ty: r.y, nextWeave: r.time + 3 });
+      Object.assign(b, { item: 'blaster', ammo: 3, cooldown: 0, aimAt: 0, relockAt: 0, coachTarget: true, d: r.distance - 12, x: r.x, y: r.y, tx: r.x, ty: r.y, nextWeave: r.time + 3 });
       lastPlayerHitByBot = -9; // the fairness window shouldn't block the lesson
       botHitsOnPlayer = Math.min(botHitsOnPlayer, BOT_HITS_PER_HEAT - 1);
       return true;

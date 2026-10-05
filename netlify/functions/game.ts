@@ -56,6 +56,8 @@ const FINISH_GRACE_MS = 12000;
 const HOST_TIMEOUT_MS = 25000;
 // How long a reloading pilot's seat is held after a soft leave.
 const REJOIN_GRACE_MS = 30000;
+// A pilot silent this long on both room polls and race telemetry is treated as gone.
+const SILENT_DROP_MS = 45000;
 const SEEN_WRITE_MS = 8000;
 const MAX_HEAT_SCORE = 60000;
 
@@ -146,6 +148,9 @@ const challengeKey = (id: string) => `challenge/${id}`;
 // `id` is that pilot's best run on this chain, saved as a reply challenge, so others can race it.
 // `device` is a random per-device pilot id, so rungs follow the pilot rather than the callsign.
 type Rung = { name: string; score: number; at: number; id?: string; device?: string };
+const deviceHash = (d: string) => [...d].reduce((h, c) => Math.imul(h ^ c.charCodeAt(0), 16777619) >>> 0, 2166136261).toString(36);
+// Ladders go out with a hash of each device id (enough to say "that's you"), never the id itself.
+const publicLadder = (rungs: Rung[]) => rungs.map(({ device, ...r }) => ({ ...r, ...(device ? { dh: deviceHash(device) } : {}) }));
 const cleanDevice = (d: unknown) => (typeof d === "string" && /^[a-z0-9]{12,32}$/.test(d) ? d : undefined);
 const ladderKey = (root: string) => `ladder/${root}`;
 async function addRung(root: string, name: string, score: number, id?: string, device?: string) {
@@ -156,7 +161,7 @@ async function addRung(root: string, name: string, score: number, id?: string, d
   else rungs.push({ name, score, at: Date.now(), ...(id ? { id } : {}), ...(device ? { device } : {}) });
   rungs.sort((a, b) => b.score - a.score);
   await s.setJSON(ladderKey(root), rungs.slice(0, 50));
-  return rungs.slice(0, 10);
+  return publicLadder(rungs.slice(0, 10));
 }
 const validChallengeId = (id: unknown): id is string => typeof id === "string" && /^[a-z0-9]{8}$/.test(id);
 function cleanRun(run: unknown) {
@@ -233,7 +238,12 @@ function removePilot(room: Room, playerId: string) {
  */
 function maintain(room: Room, live: Live[], now: number) {
   let changed = false;
-  for (const pilot of room.players.filter((p) => p.leftAt && now - p.leftAt > REJOIN_GRACE_MS)) {
+  // A racing pilot doesn't poll the room, but streams telemetry: either counts as being here.
+  const seenAt = (p: Pilot) => Math.max(p.lastSeen || 0, live.find((entry) => entry.id === p.id)?.at || 0);
+  // Released: soft-left pilots who didn't resume, and pilots silent on every channel (a killed app,
+  // a locked phone) who would otherwise DNF every heat and hold each heat open for the grace period.
+  // Multiplayer only: a solo racer streams no telemetry, so silence there is normal.
+  for (const pilot of room.players.filter((p) => (p.leftAt && now - p.leftAt > REJOIN_GRACE_MS) || (room.players.length > 1 && room.phase !== "lobby" && seenAt(p) && now - seenAt(p) > SILENT_DROP_MS))) {
     removePilot(room, pilot.id);
     changed = true;
   }
@@ -369,7 +379,7 @@ export default async (request: Request) => {
       if (!validChallengeId(body.id)) return json({ error: "That challenge link is broken." }, 400);
       const challenge = (await store().get(challengeKey(body.id), { type: "json" })) as { root?: string; id: string } | null;
       if (!challenge) return json({ error: "That challenge has expired." }, 404);
-      const ladder = (((await store().get(ladderKey(challenge.root || challenge.id), { type: "json" })) as Rung[] | null) || []).slice(0, 10);
+      const ladder = publicLadder((((await store().get(ladderKey(challenge.root || challenge.id), { type: "json" })) as Rung[] | null) || []).slice(0, 10));
       return json({ challenge, ladder });
     }
     if (action === "challenge-result") {
@@ -395,7 +405,7 @@ export default async (request: Request) => {
         const reply = (await store().get(challengeKey(body.replyId), { type: "json" })) as { root?: string; name?: string } | null;
         if (reply && reply.root === (challenge.root || challenge.id) && reply.name === (entry as { name: string } | null)?.name) replyId = body.replyId;
       }
-      const ladder = entry ? await addRung(challenge.root || challenge.id, (entry as { name: string }).name, (entry as { score: number }).score, replyId, cleanDevice(body.device)) : (((await store().get(ladderKey(challenge.root || challenge.id), { type: "json" })) as Rung[] | null) || []).slice(0, 10);
+      const ladder = entry ? await addRung(challenge.root || challenge.id, (entry as { name: string }).name, (entry as { score: number }).score, replyId, cleanDevice(body.device)) : publicLadder((((await store().get(ladderKey(challenge.root || challenge.id), { type: "json" })) as Rung[] | null) || []).slice(0, 10));
       return json({ ladder });
     }
 

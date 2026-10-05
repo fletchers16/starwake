@@ -142,6 +142,14 @@ try {
   check('laptop receives the zap back', laptopHit, laptopHit ? `spun out, ${laptopHit.zapPoints} pts` : 'no zap');
   await laptop.screenshot({ path: `${OUT}/6-laptop-zapped.png` });
 
+  // ---- The phone reloads mid-heat: it skips the intro, rejoins the race and keeps its progress ----
+  const before = await phone.evaluate(() => Math.round(window.__starwake.state.race.distance));
+  await wait(900); // let a telemetry update carry the latest distance
+  await phone.reload();
+  // Progress is restored a moment after the race view opens (one more round trip for the telemetry).
+  const rejoined = await until(phone, (b) => window.__starwake?.state.race?.started && document.querySelector('#race-screen.active') && window.__starwake.state.race.distance >= b - 5 && Math.round(window.__starwake.state.race.distance), before, { timeout: 20000 });
+  check('phone reloads mid-heat and resumes with its progress', rejoined && rejoined >= before - 5, `distance before ${before}, after resume ${rejoined}`);
+
   // ---- Quick chat: an emote from the phone pops up on the laptop ----
   await phone.tap('#emote-bar [data-emote="0"]');
   const emote = await until(laptop, () => /GG!/.test(document.querySelector('#taunt')?.innerText || '') && document.querySelector('#taunt').innerText.replace(/\n/g, ' '), null, { timeout: 8000 });
@@ -177,9 +185,7 @@ try {
 
   // ---- The phone reloads between heats: it keeps its seat and rejoins the season ----
   const phoneId = await phone.evaluate(() => window.__starwake.state.playerId);
-  await phone.reload();
-  await phone.waitForSelector('#launch-skip', { timeout: 20000 });
-  await phone.tap('#launch-skip');
+  await phone.reload(); // a held seat skips the intro by itself
   const resumed = await until(phone, (id) => window.__starwake.state.code && window.__starwake.state.playerId === id, phoneId, { timeout: 15000 });
   const stillSeated = await laptop.evaluate((id) => fetch(`/.netlify/functions/game?code=${window.__starwake.state.code}`).then((r) => r.json()).then((d) => d.room.players.some((p) => p.id === id)), phoneId);
   check('phone keeps its seat after a reload', resumed && stillSeated);

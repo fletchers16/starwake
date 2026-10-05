@@ -537,3 +537,5 @@ button:disabled{cursor:not-allowed;filter:saturate(.55);opacity:.58}
 .screen-emotes button{padding:7px 12px;border-radius:12px;border:2px solid rgba(255,255,255,.2);background:rgba(20,14,40,.7);color:#fff;font:400 14px var(--display);letter-spacing:.03em;cursor:pointer}
 .screen-emotes button:hover{border-color:#ff8be8}
 .screen-emotes button:active{transform:scale(.96)}
+
+.sw-dare-row b small{font:600 9px 'DM Mono',monospace;letter-spacing:.08em;color:rgba(255,255,255,.5);margin-left:6px}

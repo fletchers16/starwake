@@ -42,6 +42,7 @@ Score each 1–10 with evidence. A 10 is demo-ready on a phone with no explanati
 | 13 (grade) | 6 | 7 | 7 | 6 | Ladder writes unauthenticated (60,000 posted with curl); verdict vs ladder disagree on the challenger's score; briefing opens scrolled to the bottom (focus); the sender never sees replies. Read unchanged (top 5–8); blocker = challenge trust |
 | 15 (grade) | 5 | 7 | 6 | 6 | Live season deadlock: host handed off mid-heat (racing doesn't refresh lastSeen) and clients never re-read hostId; ladder still forgeable via challenge-save; dares card stale and miscounts; tie place mismatch; invite copy has no fallback; mid-season results offer to leave the crew. Read: not top 3 until the deadlock is fixed |
 | 17 (grade) | 6 | 7 | 7 | 6 | Deadlock fix holds (close tab, hangar and simultaneous finish all OK); live and async loops work end to end; session fragility: reload = permanently out, VIEW FLIGHT DECK doesn't leave, rematch scores stale telemetry. Read: edging into top 5 |
+| 19 (grade) | 6 | 7 | 7 | 6 | Between-heat reload, late join, rematch and emotes all work; a mid-heat reload restarts at 0; the seat can expire on the intro; silent drops never evicted (+13 s per heat); fake results for late joiners; device ids leak; bfcache. Read: about #4–5 |
 
 ## Backlog
 (ready / in-progress / done; each item notes the criterion it moves)
@@ -144,6 +145,16 @@ Score each 1–10 with evidence. A 10 is demo-ready on a phone with no explanati
 79. `done` (C17) [Polish] Season-bonus toast covers the results title.
 80. `done` (C17) [Usefulness] Invite without &from: name the host from room data.
 81. `done` (C17) [Execution] Dev: the local fallback hides server errors; fall back only on network failure.
+
+**From grade 19:**
+82. `done` (C19) [Execution] A resumed racer restarts at 0: seed distance and score from its own telemetry.
+83. `done` (C19) [Execution] Resume immediately at load (skip the intro when a seat exists); toast when the seat expired.
+84. `done` (C19) [Execution] Evict pilots silent on both lastSeen and telemetry for more than 45 s.
+85. `done` (C19) [Polish] Late joiners and reloaded pilots see a fake 0-score results screen.
+86. `done` (C19) [Execution] Ladder device ids leak (rung hijack): return a hash only.
+87. `done` (C19) [Execution] bfcache: skip the soft leave when persisted; resume on pageshow.
+88. `done` (C19) [Polish] The stored seat keeps the pre-rename name.
+89. `done` (C19) [Usefulness] Dares rows can look identical: add your score and age.
 
 ## Log
 - Cycle 2: fixed the top grade-1 findings.
@@ -250,3 +261,12 @@ Score each 1–10 with evidence. A 10 is demo-ready on a phone with no explanati
   - **Dev:** the local API fallback now runs only on network failure, so server errors surface.
   - **Tests:** e2e 29/29 (new: the phone reloads between heats and keeps its seat).
 - Cycle 18: quick chat beyond races. A new authenticated `emote` action, and room polls carry friends' recent emotes. The lobby and results screens get an emote row (GG! / NICE SHOT! / CATCH ME! / OOPS) in multiplayer rooms, with friends' emotes as toasts. e2e has a lobby emote check (30/30).
+- Cycle 19: seamless rejoin.
+  - **Mid-heat reload:** the racer resumes at its own last telemetry (distance and points); NPCs are placed around it and passed obstacles recycle.
+  - **Intro skip:** a held seat skips the intro and resumes immediately; an expired seat says so.
+  - **Silent drops:** pilots silent on both polls and telemetry for 45 s are released (multiplayer only, since solo racers stream nothing).
+  - **Late joiners:** no fake 0-score results; late joiners and reloaded pilots wait in the room.
+  - **Ladders:** device ids leave the server only as hashes.
+  - **Reload edge cases:** bfcache restores skip the soft leave and resume on pageshow; the stored seat keeps the server-assigned name.
+  - **Dares rows:** show your score and age.
+  - **Tests:** e2e 31/31 (new: the phone reloads mid-heat and keeps its progress).

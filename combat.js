@@ -643,6 +643,11 @@ export function createCombat(THREE, { world, getRoute, routeAt, makeShipMesh, sh
 
   return {
     makeRacerMesh: (opts) => makeNpcShip(0, opts),
+    /** Put the sim pilots around distance d (used when a reloaded racer resumes mid-heat). */
+    placeBots: (d, lap) => racers.forEach((b, i) => {
+      b.d = d + (i % 2 ? 6 + i * 3 : -4 - i * 3);
+      b.nextPod = Math.floor(b.d / lap) * pods.length + pods.filter((p) => p < ((b.d % lap) + lap) % lap).length;
+    }),
     start, dispose, addExternal, pickup, fire, update, render, currentLock,
     outgoingZaps, receiveZaps, outgoingPaid, receiveCredits,
     /** Live scores of sim pilots for standings. */

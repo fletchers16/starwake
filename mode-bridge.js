@@ -9,6 +9,12 @@ root.id = 'mode-hub-root';
 app.append(root);
 
 let launched = false;
+// A tab that reloads mid-battle skips the intro so its held seat is reclaimed right away.
+try {
+  const hasSeat = !!JSON.parse(sessionStorage.getItem('starwake-seat') || 'null')?.code;
+  const plain = !new URLSearchParams(location.search).get('room') && !new URLSearchParams(location.search).get('challenge');
+  if (hasSeat && plain) window.setTimeout(() => document.querySelector('#launch-skip')?.click(), 60);
+} catch {}
 // Invite links: tell the pilot which room they're about to join.
 {
   const params = new URLSearchParams(location.search);
@@ -243,14 +249,17 @@ async function renderDares() {
       const ladder = results[i].ladder || [], me = d.name || results[i].challenge?.name;
       let device = '';
       try { device = localStorage.getItem('starwake-device') || ''; } catch {}
-      const isMe = (x) => (x.device && device ? x.device === device : x.name === me);
+      const hash = (t) => [...String(t)].reduce((h, c) => Math.imul(h ^ c.charCodeAt(0), 16777619) >>> 0, 2166136261).toString(36);
+      const isMe = (x) => (x.dh && device ? x.dh === hash(device) : x.name === me);
       const others = ladder.filter((x) => !isMe(x)), top = ladder[0];
       const rivals = others.slice(0, 2).map((x) => safe(x.name)).join(', ');
       const status = !others.length ? 'No one has tried yet' : top && isMe(top) ? `You lead · ${rivals}${others.length > 2 ? ` +${others.length - 2}` : ''} tried` : `${safe(top.name)} leads with ${Number(top.score).toLocaleString()} · ${others.length} tried`;
       const action = !others.length ? 'OPEN ↗' : top && isMe(top) ? 'DEFEND ↗' : 'TRY AGAIN ↗';
       // TRY AGAIN races the leader's own run when they left one; otherwise your dare link.
       const target = top && !isMe(top) && /^[a-z0-9]{8}$/.test(top.id || '') ? top.id : d.id;
-      return `<a class="sw-dare-row" href="?challenge=${target}"><b>${safe(d.course)}</b><span>${status}</span><em>${action}</em></a>`;
+      const age = Math.max(0, Math.round((Date.now() - (d.at || Date.now())) / 3600000));
+      const when = age < 1 ? 'just now' : age < 24 ? `${age}h ago` : `${Math.round(age / 24)}d ago`;
+      return `<a class="sw-dare-row" href="?challenge=${target}"><b>${safe(d.course)} <small>your ${Number(d.score || 0).toLocaleString()} · ${when}</small></b><span>${status}</span><em>${action}</em></a>`;
     }).filter(Boolean);
     document.querySelector('#mode-hub-root .sw-dares')?.remove();
     if (!rows.length) return;

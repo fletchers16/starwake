@@ -532,3 +532,8 @@ button:disabled{cursor:not-allowed;filter:saturate(.55);opacity:.58}
 .sw-dare-row b{font:400 15px var(--display);letter-spacing:.02em}
 .sw-dare-row span{grid-column:1;font:500 11px system-ui,sans-serif;color:rgba(255,255,255,.65)}
 .sw-dare-row em{grid-row:1/3;grid-column:2;align-self:center;font:700 10px 'DM Mono',monospace;letter-spacing:.12em;color:#ffd84d;font-style:normal}
+
+.screen-emotes{display:flex;flex-wrap:wrap;gap:6px;margin:12px 0 4px}
+.screen-emotes button{padding:7px 12px;border-radius:12px;border:2px solid rgba(255,255,255,.2);background:rgba(20,14,40,.7);color:#fff;font:400 14px var(--display);letter-spacing:.03em;cursor:pointer}
+.screen-emotes button:hover{border-color:#ff8be8}
+.screen-emotes button:active{transform:scale(.96)}

@@ -85,6 +85,11 @@ try {
   check('phone joins through the invite link', joined);
   const crew = await until(laptop, () => { const rows = [...document.querySelectorAll('#crew-list .crew-row:not(.bot)')]; return rows.length >= 2 && rows.map((r) => r.textContent).join(' | '); });
   check('laptop lobby shows both humans', crew, crew || '');
+  // Lobby quick chat: the phone says hi before the race; the laptop sees it.
+  await until(phone, () => !document.querySelector('#lobby-emotes').hidden);
+  await phone.tap('#lobby-emotes [data-emote="4"]');
+  const lobbyEmote = await until(laptop, () => /CATCH ME!/.test(document.querySelector('#toast')?.innerText || document.body.innerText) && 'seen', null, { timeout: 8000 });
+  check('lobby emote from the phone reaches the laptop', lobbyEmote);
 
   // ---- Race (sim pilots removed so auto-aim can only lock onto the other human) ----
   for (let i = 0; i < 8 && (await laptop.textContent('#bot-count')) !== '0'; i++) { await laptop.click('#bots-minus'); await wait(400); }

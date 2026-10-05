@@ -132,6 +132,12 @@ async function readAllPaid(code: string, heat: string): Promise<(Paid & { shoote
 // Quick-chat emotes between humans: one current emote per pilot, shown to everyone else for a few seconds.
 const EMOTES = ["GG!", "COMING FOR YOU", "NICE SHOT!", "OOPS", "CATCH ME!"];
 const emoteKey = (code: string, pilot: string) => `emote/${code}/${pilot}`;
+type Emote = { from: string; name: string; text: string; at: number };
+async function recentEmotes(code: string, room: Room): Promise<Emote[]> {
+  if (room.players.length < 2) return [];
+  const all = await Promise.all(room.players.map((p) => store().get(emoteKey(code, p.id), { type: "json" }).catch(() => null) as Promise<Emote | null>));
+  return all.filter((e): e is Emote => !!e && Date.now() - e.at < 6000);
+}
 
 // "Beat my run" challenges: a recorded run plus the exact course layout, shared by link.
 const challengeKey = (id: string) => `challenge/${id}`;
@@ -274,9 +280,9 @@ async function observeRoom(code: string, playerId?: string) {
       if (me) me.lastSeen = now;
       maintain(r, live, now);
     });
-    return { room, live };
+    return { room, live, emotes: await recentEmotes(code, room) };
   }
-  return { room: found.room, live };
+  return { room: found.room, live, emotes: await recentEmotes(code, found.room) };
 }
 
 export default async (request: Request) => {
@@ -521,6 +527,9 @@ export default async (request: Request) => {
         draft.extendedMs = (draft.extendedMs || 0) + ms;
         draft.startsAt = (draft.startsAt || 0) + ms;
         draft.endsAt = (draft.endsAt || 0) + ms;
+      } else if (action === "emote") {
+        // Quick chat outside races (lobby / results); written after the room update below.
+        if (!Number.isInteger(body.emote) || !EMOTES[body.emote]) throw new Error("Unknown emote.");
       } else if (action === "resume") {
         // A reloaded tab reclaims its seat with its token.
         delete pilot.leftAt;
@@ -540,6 +549,10 @@ export default async (request: Request) => {
         throw new Error("Unknown game action.");
       }
     });
+    if (action === "emote") {
+      const pilot = room.players.find((p) => p.id === playerId)!;
+      await store().setJSON(emoteKey(code, pilot.id), { from: pilot.id, name: pilot.name, text: EMOTES[body.emote], at: Date.now() });
+    }
     if (action === "start" || action === "next" || action === "rematch") {
       // Clear last heat's telemetry so ghosts restart at the line (and a pilot who left can't be scored from it).
       const { blobs } = await store().list({ prefix: `live/${code}/` });

@@ -107,7 +107,7 @@ Score each 1–10 with evidence. A 10 is demo-ready on a phone with no explanati
 48. `done` (C11) [Usefulness/Execution] Sim pilots zap the challenge ghost, so the target drops ~60%. Only the player may zap it.
 49. `done` (C11) [Polish] Feed credits YOU for bot hits on the ghost.
 50. `done` (C11) [Polish] Phone emote chips overlap the bubble and the track.
-51. `idea` [Usefulness] Emotes on lobby and results screens.
+51. `done` (C18) [Usefulness] Emotes on lobby and results screens.
 52. `done` (C11) [Polish/Usefulness] PvP heat recap should mention the human rival.
 53. `done` (C11) [Polish] The dare should be the challenge landing's headline.
 54. `done` (C11) [Polish] Strip gaps unlabeled: show "175 AHEAD" / "40 BEHIND".
@@ -249,3 +249,4 @@ Score each 1–10 with evidence. A 10 is demo-ready on a phone with no explanati
   - **Results:** the season bonus moved into the results subtitle (no toast over the title).
   - **Dev:** the local API fallback now runs only on network failure, so server errors surface.
   - **Tests:** e2e 29/29 (new: the phone reloads between heats and keeps its seat).
+- Cycle 18: quick chat beyond races. A new authenticated `emote` action, and room polls carry friends' recent emotes. The lobby and results screens get an emote row (GG! / NICE SHOT! / CATCH ME! / OOPS) in multiplayer rooms, with friends' emotes as toasts. e2e has a lobby emote check (30/30).

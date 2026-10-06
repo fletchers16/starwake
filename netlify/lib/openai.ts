@@ -50,6 +50,11 @@ export async function underDailyLimit(request: Request, bucket: string, perDay: 
   const key = `${bucket}/${day}/${ip}`;
   const count = Number((await store.get(key, { type: "json" }).catch(() => 0)) || 0);
   if (count >= perDay) return false;
-  await store.setJSON(key, count + 1).catch(() => {});
+  // Site-wide ceiling across every IP, so the daily spend has a hard top (AI_DAILY_CAP, default 800 calls).
+  // Past it, the game quietly uses its canned lines and template recaps until tomorrow (UTC).
+  const siteKey = `site/${day}`;
+  const site = Number((await store.get(siteKey, { type: "json" }).catch(() => 0)) || 0);
+  if (site >= Number(process.env.AI_DAILY_CAP || 800)) return false;
+  await Promise.all([store.setJSON(key, count + 1), store.setJSON(siteKey, site + 1)]).catch(() => {});
   return true;
 }

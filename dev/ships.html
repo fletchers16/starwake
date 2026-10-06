@@ -1,0 +1,32 @@
+<!doctype html><meta charset="utf-8"><title>Ship lineup (dev)</title>
+<style>body{margin:0;background:#1a1530}canvas{display:block}</style>
+<script type="module">
+import * as THREE from 'three';
+import { buildCartoonShip } from '/ships3d.js';
+import { toonifyShip, makeItemPod } from '/combat.js';
+import { ALIENS } from '/aliens.js';
+import { makeHazardObstacle } from '/obstacles.js';
+const W = 1600, H = 900, r = new THREE.WebGLRenderer({ antialias: true }); r.setSize(W, H); r.outputColorSpace = THREE.SRGBColorSpace; document.body.appendChild(r.domElement);
+const scene = new THREE.Scene(); scene.background = new THREE.Color('#2b2350');
+scene.add(new THREE.HemisphereLight('#dff6ff', '#3a2b55', 1.6)); const key = new THREE.DirectionalLight('#ffffff', 2.4); key.position.set(-4, 6, 5); scene.add(key);
+const cam = new THREE.PerspectiveCamera(30, W / H, 0.1, 100); cam.position.set(0.8, 6, 18); cam.lookAt(0, 0, 0);
+const defs = [['kite', '#71f5dc'], ['bastion', '#f4a477'], ['needle', '#9cafff'], ['manta', '#d490ff']];
+const view = new URLSearchParams(location.search).get('view') || 'three';
+defs.forEach(([id, color], i) => {
+  for (const row of [0, 1]) {
+    const s = buildCartoonShip(THREE, { id, color }); toonifyShip(THREE, s, { color, alien: ALIENS[i] });
+    s.position.set(-8 + i * 4, row ? -2.4 : 1.6, 0);
+    s.rotation.y = row ? 0 : -2.4; s.rotation.x = row ? -0.05 : 0.15;
+    scene.add(s);
+  }
+});
+const crate = makeItemPod(THREE); crate.position.set(8.4, 2.2, 0); scene.add(crate);
+const course = { kind: 'space', accent: '#7ef5e2' };
+const rock = makeHazardObstacle(THREE, { distance: 3, x: 0, y: 0, radius: 0.9 }, course, {}); rock.position.set(8.4, -0.3, 0); scene.add(rock);
+const rock2 = makeHazardObstacle(THREE, { distance: 4, x: 0, y: 0, radius: 0.8 }, course, {}); rock2.position.set(7.4, -2.9, 0); scene.add(rock2);
+const mine = makeHazardObstacle(THREE, { distance: 5, x: 0, y: 0, radius: 0.72, mine: true }, course, {}); mine.position.set(9.6, -2.9, 0); scene.add(mine);
+const anim = [crate, rock, rock2, mine];
+if (view === 'crate') { cam.position.set(8.4, 2.6, 5.5); cam.lookAt(8.4, 1.2, 0); cam.fov = 40; cam.updateProjectionMatrix(); scene.background = new THREE.Color('#141026'); }
+let t = 0; (function loop() { t += 16; anim.forEach(o => o.userData.animate?.(t)); r.render(scene, cam); requestAnimationFrame(loop); })();
+window.ready = true;
+</script>

@@ -23,6 +23,7 @@
 import { ALIENS, makeAlienPilot, toon, inkOutline } from './aliens.js';
 import { makeCrown } from './critters.js';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
+import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
 
 // A zap steals STEAL_RATE of the target's points (minimum ZAP_STEAL).
 export const STEAL_RATE = 0.08;
@@ -56,45 +57,72 @@ function rollItem(placeFraction, rand = Math.random) {
   return 'blaster';
 }
 
-/** Rainbow "?" pod texture, shared by every pod. */
+/** Space-crate face: orange cargo plating, hazard-striped rims, rivets and a big "?" sticker. Shared by every crate. */
 let podTexture = null;
 function makePodTexture(THREE) {
   if (podTexture) return podTexture;
-  const c = document.createElement('canvas');
-  c.width = c.height = 128;
+  const S = 256, c = document.createElement('canvas');
+  c.width = c.height = S;
   const g = c.getContext('2d');
-  const grad = g.createLinearGradient(0, 0, 128, 128);
-  ['#ff6ad5', '#c774e8', '#94d0ff', '#8ff7a7', '#ffe66d'].forEach((col, i) => grad.addColorStop(i / 4, col));
-  g.fillStyle = grad;
-  g.fillRect(0, 0, 128, 128);
-  g.lineWidth = 10;
-  g.strokeStyle = '#1b1430';
-  g.strokeRect(5, 5, 118, 118);
-  g.font = '900 92px system-ui, sans-serif';
-  g.textAlign = 'center';
-  g.textBaseline = 'middle';
-  g.lineWidth = 12;
-  g.strokeText('?', 64, 70);
-  g.fillStyle = '#ffffff';
-  g.fillText('?', 64, 70);
+  const plate = g.createLinearGradient(0, 0, 0, S);
+  plate.addColorStop(0, '#ffc04a'); plate.addColorStop(1, '#ff8a1f');
+  g.fillStyle = plate; g.fillRect(0, 0, S, S);
+  // Hazard-striped rim.
+  g.save();
+  g.beginPath(); g.rect(0, 0, S, S); g.rect(34, 34, S - 68, S - 68); g.clip('evenodd');
+  g.fillStyle = '#ffd84d'; g.fillRect(0, 0, S, S);
+  g.fillStyle = '#1b1430';
+  for (let k = -S; k < S * 2; k += 36) { g.beginPath(); g.moveTo(k, 0); g.lineTo(k + 18, 0); g.lineTo(k + 18 - S, S); g.lineTo(k - S, S); g.fill(); }
+  g.restore();
+  g.lineWidth = 8; g.strokeStyle = '#1b1430'; g.strokeRect(34, 34, S - 68, S - 68);
+  // Panel seams and rivets.
+  g.strokeStyle = 'rgba(120,40,0,.45)'; g.lineWidth = 5;
+  g.beginPath(); g.moveTo(48, 48); g.lineTo(S - 48, S - 48); g.moveTo(S - 48, 48); g.lineTo(48, S - 48); g.stroke();
+  for (const [x, y] of [[52, 52], [S - 52, 52], [52, S - 52], [S - 52, S - 52]]) {
+    g.beginPath(); g.arc(x, y, 9, 0, Math.PI * 2); g.fillStyle = '#fff1c9'; g.fill(); g.lineWidth = 4; g.strokeStyle = '#1b1430'; g.stroke();
+  }
+  // The sticker.
+  g.beginPath(); g.arc(S / 2, S / 2, 66, 0, Math.PI * 2);
+  const sticker = g.createRadialGradient(S / 2 - 18, S / 2 - 22, 8, S / 2, S / 2, 66);
+  sticker.addColorStop(0, '#b993ff'); sticker.addColorStop(1, '#6a3cff');
+  g.fillStyle = sticker; g.fill();
+  g.lineWidth = 10; g.strokeStyle = '#ffffff'; g.stroke();
+  g.lineWidth = 5; g.strokeStyle = '#1b1430';
+  g.beginPath(); g.arc(S / 2, S / 2, 72, 0, Math.PI * 2); g.stroke();
+  g.font = '900 104px system-ui, sans-serif';
+  g.textAlign = 'center'; g.textBaseline = 'middle';
+  g.lineJoin = 'round'; g.lineWidth = 16; g.strokeStyle = '#1b1430'; g.strokeText('?', S / 2, S / 2 + 6);
+  g.fillStyle = '#ffffff'; g.fillText('?', S / 2, S / 2 + 6);
   podTexture = new THREE.CanvasTexture(c);
   podTexture.colorSpace = THREE.SRGBColorSpace;
+  podTexture.anisotropy = 4;
   podTexture.userData.shared = true;
   return podTexture;
 }
 
-let podGeometry = null;
-/** Item pod: a bobbing, spinning rainbow "?" box. */
+let podGeometry = null, podInkGeometry = null, podMaterial = null, podInkMaterial = null;
+/** Item crate: a bobbing, wobbling space crate with steel corner caps and a bold ink outline (2 draw calls). */
 export function makeItemPod(THREE) {
   const group = new THREE.Group();
-  // The texture carries its own thick ink border, so no outline mesh (saves a draw call per pod).
-  const box = new THREE.Mesh(podGeometry ||= new THREE.BoxGeometry(1.25, 1.25, 1.25), new THREE.MeshBasicMaterial({ map: makePodTexture(THREE) }));
+  if (!podGeometry) {
+    podGeometry = new RoundedBoxGeometry(1.3, 1.3, 1.3, 3, 0.14);
+    // Ink shell and corner caps share one flat dark back-face mesh: uniform colour, so the silhouette is the same.
+    const parts = [new RoundedBoxGeometry(1.42, 1.42, 1.42, 2, 0.18)];
+    for (const x of [-1, 1]) for (const y of [-1, 1]) for (const z of [-1, 1]) parts.push(new THREE.BoxGeometry(0.3, 0.3, 0.3).translate(x * 0.62, y * 0.62, z * 0.62));
+    podInkGeometry = mergeGeometries(parts.map((p) => { const out = p.index ? p.toNonIndexed() : p; for (const k of Object.keys(out.attributes)) if (k !== 'position' && k !== 'normal') out.deleteAttribute(k); return out; }));
+    // Unlit, so the crate pops on every world (cel shading turned it muddy in the darker ones).
+    podMaterial = new THREE.MeshBasicMaterial({ map: makePodTexture(THREE) });
+    podInkMaterial = new THREE.MeshBasicMaterial({ color: '#1b1430', side: THREE.BackSide });
+    podMaterial.userData.shared = podInkMaterial.userData.shared = true;
+  }
+  const box = new THREE.Mesh(podGeometry, podMaterial);
+  box.add(new THREE.Mesh(podInkGeometry, podInkMaterial));
   group.add(box);
   const phase = Math.random() * 6.28;
   group.userData.animate = (now) => {
-    box.rotation.set(now * 0.0015 + phase, now * 0.002 + phase, 0);
-    box.position.y = Math.sin(now * 0.004 + phase) * 0.2;
-    box.scale.setScalar(1 + Math.sin(now * 0.008 + phase) * 0.06);
+    box.rotation.set(Math.sin(now * 0.0021 + phase) * 0.35, now * 0.0012 + phase, Math.sin(now * 0.0017 + phase) * 0.2);
+    box.position.y = Math.sin(now * 0.004 + phase) * 0.22;
+    box.scale.setScalar(1 + Math.max(0, Math.sin(now * 0.008 + phase)) * 0.07);
   };
   return group;
 }
@@ -107,6 +135,40 @@ export function makeItemPod(THREE) {
 export function toonifyShip(THREE, ship, { color, alien = ALIENS[0], trimColor = '#2a2244', mergeGlow = false }) {
   if (ship.userData.toon) return { pilot: ship.userData.pilot };
   ship.userData.toon = true;
+  // Cartoon models (ships3d.js) are already toon-shaded and inked: just paint the hull and seat the pilot.
+  if (ship.userData.cartoon) {
+    ship.userData.mats.main.color.set(color).offsetHSL(0, 0.1, -0.04);
+    if (mergeGlow) {
+      // NPC flames never animate: merge them into one mesh per ship.
+      const flames = ship.children.filter((o) => o.userData.flame);
+      if (flames.length > 1) {
+        ship.updateMatrixWorld(true);
+        const toRoot = new THREE.Matrix4().copy(ship.matrixWorld).invert();
+        const outer = [], inner = [];
+        for (const f of flames) {
+          outer.push(f.geometry.clone().applyMatrix4(new THREE.Matrix4().multiplyMatrices(toRoot, f.matrixWorld)));
+          inner.push(f.children[0].geometry.clone().applyMatrix4(new THREE.Matrix4().multiplyMatrices(toRoot, f.children[0].matrixWorld)));
+          ship.remove(f); f.geometry.dispose(); f.children[0].geometry.dispose();
+        }
+        ship.add(new THREE.Mesh(mergeGeometries(outer), flames[0].material), new THREE.Mesh(mergeGeometries(inner), flames[0].children[0].material));
+      }
+    }
+    const pilot = makeAlienPilot(THREE, alien);
+    pilot.position.set(...ship.userData.seat);
+    pilot.scale.setScalar(1.15);
+    ship.add(pilot);
+    const bowl = new THREE.Mesh(new THREE.SphereGeometry(0.5, 20, 14), new THREE.MeshBasicMaterial({ color: '#dffcff', transparent: true, opacity: 0.18, depthWrite: false }));
+    bowl.position.set(ship.userData.seat[0], ship.userData.seat[1] - 0.02, ship.userData.seat[2]);
+    ship.add(bowl);
+    const shine = new THREE.Mesh(new THREE.SphereGeometry(0.1, 8, 6), new THREE.MeshBasicMaterial({ color: '#ffffff', transparent: true, opacity: 0.7, depthWrite: false }));
+    shine.position.set(bowl.position.x - 0.22, bowl.position.y + 0.26, bowl.position.z - 0.2);
+    shine.scale.set(1, 0.6, 0.6);
+    ship.add(shine);
+    ship.userData.pilot = pilot;
+    ship.userData.bowl = bowl;
+    ship.userData.tick = (now, dizzy) => pilot.userData.tick(now, dizzy);
+    return { pilot };
+  }
   const body = toon(THREE, color), trim = toon(THREE, trimColor);
   // Merge the hull into three meshes (body tone, trim tone, ink outline) so a ship costs a few draw
   // calls instead of ~26. Glowing parts (engines, lights, boost flames) stay separate and animated.

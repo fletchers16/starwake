@@ -1,7 +1,8 @@
 import { addRim } from './rim.js';
-import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import { roughen, gradient } from './shapes.js';
+import { toon } from './aliens.js';
+import { mergeVertices } from 'three/addons/utils/BufferGeometryUtils.js';
 /**
  * Hazard meshes with one consistent visual language: anything that hurts is
  * drawn in the course's hazard colour with a glowing core, and nothing is
@@ -21,34 +22,46 @@ let HZ = DANGER;
 
 const glowMat = (THREE, color, opacity = 1) => new THREE.MeshBasicMaterial({ color, transparent: opacity < 1, opacity, depthWrite: opacity >= 1 });
 
-/** Mine: bright core inside an open wireframe cage and a turning warning ring. Used on the centre line. */
+/** Mine: a cartoon sea-mine. Inked black ball, stubby spikes with glowing tips, a blinking bulb and a danger halo. */
+let mineParts = null;
+function minePieces(THREE) {
+  if (mineParts) return mineParts;
+  const dirs = [[1,0,0],[-1,0,0],[0,1,0],[0,-1,0],[0,0,1],[0,0,-1],[.7,.7,0],[-.7,.7,0],[.7,-.7,0],[-.7,-.7,0],[0,.7,.7],[0,-.7,-.7]];
+  const place = (g, dir, dist) => g.applyMatrix4(new THREE.Matrix4().compose(dir.clone().multiplyScalar(dist), new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 1, 0), dir), new THREE.Vector3(1, 1, 1)));
+  const spikes = [], tips = [];
+  for (const d of dirs) {
+    const dir = new THREE.Vector3(...d).normalize();
+    spikes.push(place(new THREE.CylinderGeometry(0.07, 0.13, 0.32, 8).toNonIndexed(), dir, 0.55));
+    tips.push(place(new THREE.SphereGeometry(0.1, 8, 6).toNonIndexed(), dir, 0.74));
+  }
+  const ball = new THREE.SphereGeometry(0.5, 20, 14).toNonIndexed();
+  const strip = (g) => { for (const k of Object.keys(g.attributes)) if (k !== 'position' && k !== 'normal') g.deleteAttribute(k); return g; };
+  const body = mergeGeometries([ball, ...spikes].map(strip));
+  const ink = mergeGeometries([new THREE.SphereGeometry(0.56, 16, 12).toNonIndexed(), ...dirs.map((d) => place(new THREE.CylinderGeometry(0.11, 0.17, 0.36, 8).toNonIndexed(), new THREE.Vector3(...d).normalize(), 0.55))].map(strip));
+  mineParts = { body, ink, tips: mergeGeometries(tips.map(strip)) };
+  return mineParts;
+}
 export function makeMine(THREE, item, course) {
   const group = new THREE.Group();
-  const r = Math.max(0.6, Number(item.radius) || 0.72);
-  const core = new THREE.Mesh(new THREE.IcosahedronGeometry(r * 0.42, 1), glowMat(THREE, HZ));
-  group.add(core);
-  const halo = new THREE.Mesh(new THREE.SphereGeometry(r * 0.62, 16, 12), new THREE.MeshBasicMaterial({ color: HZ, transparent: true, opacity: 0.18, depthWrite: false, blending: THREE.AdditiveBlending }));
-  group.add(halo);
-  // Solid spikes (a sea-mine silhouette) instead of a wireframe cage.
+  const r = Math.max(0.6, Number(item.radius) || 0.72), parts = minePieces(THREE);
   const cage = new THREE.Group();
-  const spikeMat = addRim(new THREE.MeshStandardMaterial({ color: '#241a1e', emissive: HZ, emissiveIntensity: 0.25, metalness: 0.8, roughness: 0.35, flatShading: true }), { strength: 0.9, color: HZ });
-  const dirs = [[1,0,0],[-1,0,0],[0,1,0],[0,-1,0],[0,0,1],[0,0,-1],[0.7,0.7,0],[-0.7,-0.7,0]];
-  const spikes = dirs.map(([x, y, z]) => {
-    const dir = new THREE.Vector3(x, y, z).normalize();
-    const m = new THREE.Matrix4().compose(dir.clone().multiplyScalar(r * 0.62), new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 1, 0), dir), new THREE.Vector3(1, 1, 1));
-    return new THREE.ConeGeometry(r * 0.12, r * 0.55, 5).toNonIndexed().applyMatrix4(m);
-  });
-  cage.add(new THREE.Mesh(mergeGeometries(spikes), spikeMat));
+  cage.add(new THREE.Mesh(parts.body, toon(THREE, '#3a2c44')));
+  cage.add(new THREE.Mesh(parts.ink, new THREE.MeshBasicMaterial({ color: '#140f24', side: THREE.BackSide })));
+  const tips = new THREE.Mesh(parts.tips, glowMat(THREE, HZ));
+  cage.add(tips);
+  cage.scale.setScalar(r * 1.05);
   group.add(cage);
-  const ring = new THREE.Mesh(new THREE.TorusGeometry(r * 1.08, 0.04, 6, 48), glowMat(THREE, HZ, 0.7));
+  const halo = new THREE.Mesh(new THREE.SphereGeometry(r * 0.95, 16, 12), new THREE.MeshBasicMaterial({ color: HZ, transparent: true, opacity: 0.16, depthWrite: false, blending: THREE.AdditiveBlending }));
+  group.add(halo);
+  const ring = new THREE.Mesh(new THREE.TorusGeometry(r * 1.15, 0.05, 6, 48), glowMat(THREE, HZ, 0.75));
   group.add(ring);
   const seed = (item.distance || 0) * 0.37;
   group.userData.animate = (now) => {
-    cage.rotation.set(now * 0.0007 + seed, now * 0.0011 + seed, 0);
+    cage.rotation.set(now * 0.0006 + seed, now * 0.0009 + seed, 0);
     ring.rotation.z = -now * 0.0012 + seed;
-    const pulse = 0.85 + 0.15 * Math.sin(now * 0.008 + seed);
-    core.scale.setScalar(pulse);
-    halo.scale.setScalar(1.6 - pulse * 0.5);
+    const blink = Math.sin(now * 0.012 + seed) > 0.2;
+    tips.material.color.set(blink ? HZ : '#5a1020');
+    halo.scale.setScalar(blink ? 1.08 : 0.94);
   };
   return group;
 }
@@ -98,26 +111,8 @@ function halo(THREE) {
   return haloTexture;
 }
 
-// A small pool of roughened rock shapes per family (plus the Kenney meteor once
-// loaded), so every rock looks different without building a new geometry per rock.
+// A small pool of roughened rock shapes per family, so every rock looks different without building a new geometry per rock.
 const rockPool = new Map();
-let meteorGeometry = null;
-new GLTFLoader().loadAsync('/assets/kenney/models/meteor.glb').then((gltf) => {
-  const parts = [];
-  gltf.scene.updateMatrixWorld(true);
-  gltf.scene.traverse((o) => {
-    if (!o.isMesh) return;
-    const g = o.geometry.clone().applyMatrix4(o.matrixWorld);
-    for (const key of Object.keys(g.attributes)) if (key !== 'position' && key !== 'normal') g.deleteAttribute(key);
-    parts.push(g.index ? g.toNonIndexed() : g);
-  });
-  if (!parts.length) return;
-  const merged = mergeGeometries(parts);
-  merged.computeBoundingSphere();
-  const { center, radius } = merged.boundingSphere;
-  merged.translate(-center.x, -center.y, -center.z).scale(1 / radius, 1 / radius, 1 / radius);
-  meteorGeometry = merged;
-}).catch(() => {});
 
 function rockShape(THREE, family, seed, look) {
   const key = `${family}:${seed % 5}`;
@@ -129,36 +124,75 @@ function rockShape(THREE, family, seed, look) {
   return rockPool.get(key);
 }
 
-/** Asteroid-field rock: crafted low-poly rock (or Kenney meteor) with a danger rim light and a pulsing hazard-coloured outline. */
+/** Grumpy face for a rock: eye whites, plus pupils and angry brows merged (2 draw calls, shared). */
+let faceParts = null;
+function face(THREE) {
+  if (!faceParts) {
+    const strip = (g) => { g = g.index ? g.toNonIndexed() : g; for (const k of Object.keys(g.attributes)) if (k !== 'position' && k !== 'normal') g.deleteAttribute(k); return g; };
+    const whites = [], dark = [];
+    for (const side of [-1, 1]) {
+      whites.push(new THREE.SphereGeometry(0.2, 14, 10).scale(1, 1.15, 0.6).translate(side * 0.24, 0, 0));
+      dark.push(new THREE.SphereGeometry(0.24, 14, 10).scale(1, 1.15, 0.55).translate(side * 0.24, 0, -0.03)); // eye rim (drawn behind)
+      dark.push(new THREE.SphereGeometry(0.085, 10, 8).translate(side * 0.21, -0.03, 0.11));
+      dark.push(new THREE.BoxGeometry(0.34, 0.09, 0.08).rotateZ(side * -0.45).translate(side * 0.25, 0.27, 0.06));
+    }
+    faceParts = { whites: mergeGeometries(whites.map(strip)), dark: mergeGeometries(dark.map(strip)), whiteMat: new THREE.MeshBasicMaterial({ color: '#ffffff' }), darkMat: new THREE.MeshBasicMaterial({ color: '#140f24' }) };
+  }
+  const g = new THREE.Group();
+  g.add(new THREE.Mesh(faceParts.whites, faceParts.whiteMat), new THREE.Mesh(faceParts.dark, faceParts.darkMat));
+  return g;
+}
+
+/** Smooth-normal copy of a rock shape, so cel shading falls in clean bands instead of facets. */
+const smoothPool = new Map();
+function smooth(THREE, g) {
+  if (smoothPool.has(g)) return smoothPool.get(g);
+  const base = new THREE.BufferGeometry();
+  base.setAttribute('position', g.getAttribute('position').clone());
+  if (g.getAttribute('color')) base.setAttribute('color', g.getAttribute('color').clone());
+  const m = mergeVertices(base, 0.02);
+  m.computeVertexNormals();
+  smoothPool.set(g, m);
+  return m;
+}
+
+/** Asteroid-field rock: a cel-shaded lump with a black ink line, a pulsing danger rim, and (on many) a grumpy face. */
 export function makeRock(THREE, item, course, look) {
   const group = new THREE.Group();
   const r = Number(item.radius) || 0.85;
   const seed = Math.abs(Math.floor((item.distance || 0) * 7.3 + (item.x || 0) * 31 + (item.y || 0) * 17));
-  const useMeteor = meteorGeometry && seed % 3 === 0 && look?.geometry !== 'octa';
-  let geometry = useMeteor ? meteorGeometry : rockShape(THREE, look?.geometry, seed, look);
-  const material = new THREE.MeshStandardMaterial({
-    color: useMeteor ? (look?.color || '#5a5060') : '#ffffff', vertexColors: !useMeteor,
-    emissive: look?.emissive || '#000000', emissiveIntensity: (look?.emissiveIntensity || 0) * 0.5,
-    metalness: look?.metalness ?? 0.2, roughness: look?.roughness ?? 0.8, flatShading: true,
-    transparent: !!look?.opacity, opacity: look?.opacity || 1,
-  });
-  addRim(material, { strength: 1.1, power: 2.0, color: HZ });
+  const geometry = smooth(THREE, rockShape(THREE, look?.geometry, seed, look));
+  const base = new THREE.Color(look?.color || '#8a7a92').lerp(new THREE.Color('#ffe9d6'), 0.42);
+  const material = toon(THREE, base, { vertexColors: true, transparent: !!look?.opacity, opacity: look?.opacity || 1 });
+  const spinner = new THREE.Group();
   const body = new THREE.Mesh(geometry, material);
   const stretch = look?.stretch || [1, 0.9, 1];
   const jitter = 0.85 + ((seed % 100) / 100) * 0.35;
   body.scale.set(stretch[0] * r * jitter, stretch[1] * r * (0.9 + ((seed >> 3) % 20) / 100), stretch[2] * r * jitter);
-  group.add(body);
-  // Inverted-hull outline: a slightly larger back-face shell in the hazard colour, so the silhouette
-  // reads against any background (dark rock on bright lava, or rock on black space).
+  spinner.add(body);
+  const ink = new THREE.Mesh(geometry, new THREE.MeshBasicMaterial({ color: '#140f24', side: THREE.BackSide }));
+  ink.scale.copy(body.scale).multiplyScalar(1.07);
+  spinner.add(ink);
+  // Danger rim just outside the ink, so "red hurts" still reads on every world.
   const outline = new THREE.Mesh(geometry, new THREE.MeshBasicMaterial({ color: HZ, side: THREE.BackSide, transparent: true, opacity: 0.85, depthWrite: false, fog: false }));
-  outline.scale.copy(body.scale).multiplyScalar(1.065);
-  group.add(outline);
+  outline.scale.copy(body.scale).multiplyScalar(1.14);
+  spinner.add(outline);
+  group.add(spinner);
+  // Two in three rocks glare at you as you fly in (the face stays upright; only the rock tumbles).
+  let mug = null;
+  if (seed % 3 !== 1) {
+    mug = face(THREE);
+    mug.position.set(0, r * 0.08, Math.min(body.scale.x, body.scale.z) * 0.9);
+    mug.scale.setScalar(r * 1.05);
+    group.add(mug);
+  }
   const phase = (seed % 628) / 100, spin = 0.0003 + (seed % 7) * 0.0001;
-  group.rotation.set(phase, phase * 1.7, 0);
+  spinner.rotation.set(phase, phase * 1.7, 0);
   group.userData.animate = (now) => {
-    group.rotation.y = phase * 1.7 + now * spin * 1.6;
-    group.rotation.x = phase + now * spin;
-    outline.material.opacity = 0.6 + 0.35 * Math.max(0, Math.sin(now * 0.006 + phase));
+    // Faced rocks only wobble (so the face stays on its rock); the rest tumble.
+    if (mug) { spinner.rotation.set(Math.sin(now * 0.0012 + phase) * 0.18, Math.sin(now * 0.0009 + phase) * 0.25, 0); mug.rotation.z = Math.sin(now * 0.0012 + phase) * 0.15; }
+    else { spinner.rotation.y = phase * 1.7 + now * spin * 1.6; spinner.rotation.x = phase + now * spin; }
+    outline.material.opacity = 0.55 + 0.4 * Math.max(0, Math.sin(now * 0.006 + phase));
   };
   return group;
 }

@@ -673,3 +673,48 @@ body.coaching #app.racing .race-toast,body.coaching .race-toast{top:66%}
 @media(max-width:760px){#race-screen .lock-warn{font-size:13px;padding:5px 10px 4px}#race-screen .lock-warn b{font-size:12px}}
 #result-rows .pending,#ai-recap .pending{font-style:normal;color:#c9bdf2;animation:pending-blink 1.1s ease-in-out infinite}
 @keyframes pending-blink{50%{opacity:.45}}
+
+/* ===== Phone race HUD: compact cartoon layout (the desktop sizes filled 40% of a phone screen) ===== */
+#race-screen .hud2-boost button{border:3px solid #140f24;background:rgba(36,26,64,.9);color:#fff;font:400 15px/1 var(--display);letter-spacing:.05em;box-shadow:0 5px 0 #140f24;backdrop-filter:none}
+#race-screen .hud2-boost button small{font:400 10px/1 var(--display);letter-spacing:.06em;opacity:.8}
+#race-screen .hud2-boost button.active{background:#7ef5e2;color:#140f24}
+#race-screen .fire-button{background:#ff7bd5!important;color:#140f24!important}
+#race-screen .fire-button.empty{background:rgba(36,26,64,.9)!important;color:#c9bdf2!important;opacity:.7}
+#race-screen .fire-button.active{background:#ffd23f!important}
+@media(max-width:760px){
+  #race-screen .hud2{padding:10px 10px 0;gap:6px}
+  #race-screen .hud2-left{gap:6px}
+  #race-screen .hud2-score{font-size:26px;-webkit-text-stroke-width:5px;text-shadow:0 3px 0 #140f24}
+  #race-screen .hud2-combo{font-size:13px;padding:2px 6px 1px;border-width:2px}
+  #race-screen .hud2-bars{width:96px;padding:4px 6px 5px;gap:3px;border-width:2px;border-radius:10px;box-shadow:0 3px 0 #140f24}
+  #race-screen .hud2-bar small{font-size:9px;margin-bottom:2px}
+  #race-screen .hud2 .meter i{height:6px;border-width:1.5px}
+  #race-screen .item-slot{padding:5px 8px 5px 5px!important;gap:6px!important;border-width:2px!important;border-radius:12px!important;box-shadow:0 3px 0 #140f24!important;max-width:150px}
+  #race-screen .item-slot i,#race-screen .item-slot img,#race-screen .item-slot .item-icon{width:28px!important;height:28px!important;font-size:16px!important}
+  #race-screen .item-slot b{font-size:12px!important}
+  #race-screen .item-slot small{display:none!important}
+  #race-screen .roll-chip{font-size:11px!important;padding:4px 9px 3px!important;border-width:2px!important}
+  #race-screen .hud2-center{gap:4px}
+  #race-screen .hud2-title{font-size:10px;padding:4px 8px 3px;border-width:2px;box-shadow:0 3px 0 #140f24}
+  #race-screen .hud2-progress{height:6px;border-width:2px}
+  #race-screen .hud2-center small{display:none}
+  #race-screen .hud2-place{font-size:34px;-webkit-text-stroke-width:5px;text-shadow:0 3px 0 #140f24}
+  #race-screen .hud2-place sup{font-size:14px;top:3px}
+  #race-screen .hud2-time strong{font-size:15px;padding:3px 9px 2px;border-width:2px;box-shadow:0 3px 0 #140f24}
+  #race-screen .hud2-time small{display:none}
+  #race-screen .hud2 .standings-ticker{display:none}
+  #race-screen .steal-feed{width:132px;margin-top:4px}
+  #race-screen .steal-feed div{font-size:9px;padding:3px 6px 2px;border-width:2px;box-shadow:0 2px 0 #140f24}
+  #race-screen .race-toast,#race-screen.coaching .race-toast{top:60%}
+  #race-screen .race-toast span{font-size:19px;-webkit-text-stroke-width:5px}
+  #race-screen .race-toast b{font-size:1.15em}
+  #race-screen .landmark-caption{top:26%}
+  #race-screen .landmark-caption small{font-size:8px}
+  #race-screen .landmark-caption b{font-size:15px}
+  #race-screen .hud2-boost button{width:74px;height:74px;font-size:13px}
+  #race-screen .fire-button{width:64px!important;height:64px!important}
+}
+/* Netlify's hosted badge sits bottom-right on the live site: lift the touch buttons above it. */
+body:has(#nl-badge-frame) #race-screen .hud2-boost{bottom:74px}
+@media(max-width:760px){#race-screen .hud2-title{white-space:nowrap;flex-direction:row;gap:5px}#race-screen .hud2-title #race-phase{display:none}#race-screen .item-slot{max-width:none!important;width:auto!important}}
+@media(max-width:760px){#race-screen .item-slot{width:fit-content!important;max-width:170px!important}#race-screen .item-slot b{white-space:nowrap}}

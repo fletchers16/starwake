@@ -1,4 +1,5 @@
 import { mountModeHub } from './mode-hub.js';
+import './cartoon-skin.css';
 import { COURSE_CATALOG } from './course-catalog.js';
 
 const app = document.querySelector('#app');

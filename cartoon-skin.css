@@ -1,0 +1,70 @@
+/* ===== Cartoon skin for the menus (hub, lobby, results, garage) =====
+   The race HUD went cartoon first; this brings every other screen into the same look:
+   deep purple space, chunky panels with ink outlines and offset shadows, bubble-letter labels,
+   and yellow / cyan / pink buttons. Visual only: layout rules live in style.css and mode-hub.css. */
+:root{--cz-ink:#140f24;--cz-panel:rgba(38,27,70,.9);--cz-panel-2:rgba(28,20,54,.92);--cz-yellow:#ffd23f;--cz-cyan:#7ef5e2;--cz-pink:#ff7bd5;--cz-lilac:#c9bdf2;--cz-orange:#ff9a52}
+body,#app{background:radial-gradient(ellipse at 70% -10%,#3a2370 0,transparent 55%),radial-gradient(ellipse at 10% 110%,#1d3a6e 0,transparent 50%),#140c2c}
+#mode-hub-root .sw-hub{background:radial-gradient(ellipse at 70% -10%,rgba(58,35,112,.92) 0,transparent 55%),rgba(20,12,44,.94)}
+#mode-hub-root .sw-hub-grid{opacity:.25}
+
+/* Type: bubble letters for labels; body copy stays Space Grotesk. */
+.topbar .wordmark,#mode-hub-root .sw-hub-brand{font:400 20px var(--display);letter-spacing:.05em}
+.eyebrow,#mode-hub-root .sw-hub-kicker,#mode-hub-root .sw-hub-section-head small,#mode-hub-root .sw-map-copy small,#mode-hub-root .sw-destination-copy small,#mode-hub-root .sw-designer-heading small,#mode-hub-root .sw-designer-heading span,#mode-hub-root .sw-callsign span,#mode-hub-root .sw-callsign small,#mode-hub-root .sw-hub-season,#mode-hub-root .sw-forge-foot,#mode-hub-root .sw-pvp-join label,.lobby-heading small,.bot-control strong,.result-score small,.result-reward,.lobby-footnote,.back-button,.crew-row small,.text-button,.top-meta,.rank-preview small,.rank-preview strong{font-family:var(--display)!important;font-weight:400!important;letter-spacing:.06em!important}
+.eyebrow,#mode-hub-root .sw-hub-kicker{color:var(--cz-cyan);font-size:13px}
+.eyebrow-line{background:var(--cz-cyan);height:3px;border-radius:3px}
+.panel-screen h2,#mode-hub-root .sw-hub-section-head h2,#mode-hub-root .sw-destination h2,#mode-hub-root .sw-designer h2{font-family:var(--display);font-weight:400;letter-spacing:.01em;color:#fff;text-shadow:0 4px 0 var(--cz-ink)}
+.panel-subtitle{color:var(--cz-lilac)}
+.back-button{color:var(--cz-lilac);font-size:13px}
+
+/* Panels */
+#mode-hub-root .sw-hub-map,#mode-hub-root .sw-hub-destination,#mode-hub-root .sw-ship-pick,#mode-hub-root .sw-callsign,#mode-hub-root .sw-pvp-join,#mode-hub-root .sw-dares,#mode-hub-root .sw-hub-mode,.lobby-card,.result-card,.ship-card,.ship-option,.stat-block,.challenge-box,.invite-qr{background:var(--cz-panel)!important;border:3px solid var(--cz-ink)!important;border-radius:18px!important;box-shadow:0 5px 0 var(--cz-ink)!important}
+#mode-hub-root .sw-hub-map{overflow:hidden;transition:transform .15s,box-shadow .15s}
+#mode-hub-root .sw-hub-map:hover{transform:translateY(-3px)}
+#mode-hub-root .sw-hub-map.is-selected{border-color:var(--cz-yellow)!important;box-shadow:0 5px 0 var(--cz-ink),0 0 0 3px var(--cz-ink)!important}
+#mode-hub-root .sw-map-check{background:var(--cz-yellow)!important;color:var(--cz-ink)!important;border:2px solid var(--cz-ink)!important;border-radius:8px!important}
+#mode-hub-root .sw-map-copy b{font-family:var(--display);font-weight:400;letter-spacing:.04em;font-size:19px}
+#mode-hub-root .sw-map-num{font-family:var(--display);color:var(--cz-yellow)}
+#mode-hub-root .sw-map-art{background:linear-gradient(180deg,rgba(255,255,255,.06),transparent)}
+.lobby-heading,.crew-row{border-color:rgba(201,189,242,.14)!important}
+.lobby-heading strong{font-family:var(--display);font-weight:400;font-size:34px;letter-spacing:.14em;color:var(--cz-yellow)}
+.crew-row{font:400 16px var(--display);letter-spacing:.03em}
+.crew-avatar{border:2px solid var(--cz-ink);font-family:var(--display)}
+.stepper{border:3px solid var(--cz-ink);border-radius:12px;background:var(--cz-panel-2)}
+.stepper button{color:var(--cz-yellow);font-family:var(--display)}
+.stepper span{font-family:var(--display);font-size:15px}
+
+/* Buttons */
+.primary-button,#mode-hub-root .sw-hub-launch{background:var(--cz-yellow)!important;color:var(--cz-ink)!important;border:3px solid var(--cz-ink)!important;border-radius:16px!important;box-shadow:0 6px 0 var(--cz-ink)!important;font:400 18px/1 var(--display)!important;letter-spacing:.05em!important}
+.primary-button:hover,#mode-hub-root .sw-hub-launch:hover{transform:translateY(-2px)}
+#mode-hub-root .sw-hub-launch small{font:400 12px var(--display)!important;color:rgba(20,15,36,.7)!important;letter-spacing:.06em!important}
+#mode-hub-root .sw-hub-launch b{font:400 22px var(--display)!important;letter-spacing:.04em!important;color:var(--cz-ink)!important}
+#mode-hub-root .sw-hub-launch:after{display:none}
+.secondary-button,#mode-hub-root .sw-destination-copy button,#mode-hub-root .sw-forge-foot button,#mode-hub-root .sw-pvp-join button,#mode-hub-root .sw-hub-garage,.copy-button,#mode-hub-root .sw-ship-action{background:var(--cz-cyan)!important;color:var(--cz-ink)!important;border:3px solid var(--cz-ink)!important;border-radius:14px!important;box-shadow:0 4px 0 var(--cz-ink)!important;font:400 14px var(--display)!important;letter-spacing:.05em!important}
+.rematch-button{background:var(--cz-pink)!important}
+.text-button{color:var(--cz-lilac);font-size:13px}
+#mode-hub-root .sw-hub-mode{padding:4px!important}
+#mode-hub-root .sw-hub-mode button{border-radius:12px!important;font:400 15px var(--display)!important;letter-spacing:.05em!important;color:var(--cz-lilac)!important;border:0!important}
+#mode-hub-root .sw-hub-mode button small{font:400 10px var(--display)!important;letter-spacing:.06em!important;opacity:.8}
+#mode-hub-root .sw-hub-mode button[aria-pressed=true]{background:var(--cz-cyan)!important;color:var(--cz-ink)!important;box-shadow:inset 0 -3px 0 rgba(20,15,36,.25)!important}
+#mode-hub-root .sw-forge-form button{background:var(--cz-pink)!important;color:var(--cz-ink)!important;border:3px solid var(--cz-ink)!important;border-radius:12px!important}
+
+/* Inputs */
+#mode-hub-root textarea,#mode-hub-root input,.join-row,.pilot-name,#world-prompt{background:rgba(14,9,32,.75)!important;border:3px solid var(--cz-ink)!important;border-radius:12px!important;color:#fff!important;font-family:var(--display)!important;letter-spacing:.05em}
+#mode-hub-root .sw-callsign input{border:0!important;background:transparent!important;font-size:20px!important;color:var(--cz-yellow)!important}
+
+/* Results */
+#results-title{font-size:clamp(44px,6vw,70px)}
+.result-score strong{font:400 64px/1 var(--display)!important;color:var(--cz-yellow)!important;-webkit-text-stroke:8px var(--cz-ink);paint-order:stroke fill;text-shadow:0 5px 0 var(--cz-ink);letter-spacing:.01em!important}
+.result-breakdown{font-family:var(--display);letter-spacing:.04em}
+.result-row,.result-row strong,#result-breakdown *{font-family:var(--display)!important;font-weight:400!important;letter-spacing:.04em!important}
+#result-rows > div{font:400 16px var(--display);letter-spacing:.03em;border-radius:10px}
+#result-rows > div.me{background:var(--cz-yellow);color:var(--cz-ink)}
+#result-rows > div.me *{color:var(--cz-ink)!important}
+.ai-recap{background:var(--cz-panel)!important;border:3px solid var(--cz-ink)!important;border-radius:18px!important;box-shadow:0 5px 0 var(--cz-ink)!important}
+.ai-recap small{font-family:var(--display)!important;letter-spacing:.06em!important;color:var(--cz-cyan)!important}
+.rank-bar i{height:10px!important;border:2px solid var(--cz-ink);border-radius:999px;background:rgba(14,9,32,.75)!important}
+.rank-bar em{background:linear-gradient(90deg,var(--cz-yellow),var(--cz-orange))!important;border-radius:999px}
+.screen-emotes button{border:3px solid var(--cz-ink)!important;border-radius:999px!important;background:var(--cz-panel)!important;color:#fff!important;font:400 14px var(--display)!important;box-shadow:0 3px 0 var(--cz-ink)!important}
+#mode-hub-root .sw-hub-map:not(.is-selected) .sw-map-check{background:rgba(14,9,32,.6)!important;color:transparent!important;border-color:rgba(201,189,242,.35)!important}
+#result-rows b,#result-rows i{font-family:var(--display)!important;font-weight:400!important;letter-spacing:.04em}
+#mode-hub-root .sw-hub-mode button[aria-pressed=true] small{color:rgba(20,15,36,.7)!important;opacity:1}

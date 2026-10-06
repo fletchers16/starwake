@@ -1,0 +1,16 @@
+import { chromium } from 'playwright-core';
+const SP = process.argv[2], tag = process.argv[3] || 'before';
+const b = await chromium.launch(); const c = await b.newContext({ viewport: { width: 1440, height: 900 } });
+await c.addInitScript(() => { localStorage.setItem('starwake-playtest', '1'); localStorage.setItem('starwake-coached', '1'); });
+const p = await c.newPage(); p.on('pageerror', e => console.log('ERR', e.message));
+await p.goto('http://127.0.0.1:5180'); await p.waitForTimeout(800); await p.click('#launch-skip'); await p.waitForSelector('.sw-hub-launch', { state: 'visible' }); await p.waitForTimeout(1200);
+await p.screenshot({ path: `${SP}/${tag}-hub.jpg`, quality: 70, type: 'jpeg' });
+await p.click('[data-mode=pvp]'); await p.click('.sw-hub-launch');
+await p.waitForFunction(() => document.querySelector('#lobby-screen.active') && window.__starwake.state.code); await p.waitForTimeout(800);
+await p.screenshot({ path: `${SP}/${tag}-lobby.jpg`, quality: 70, type: 'jpeg' });
+await p.click('#start-button'); await p.waitForTimeout(800); await p.keyboard.press('Enter');
+await p.waitForFunction(() => window.__starwake.state.race?.started, null, { timeout: 20000 });
+await p.waitForFunction(() => document.querySelector('#results-screen.active'), null, { timeout: 90000 });
+await p.waitForTimeout(2500);
+await p.screenshot({ path: `${SP}/${tag}-results.jpg`, quality: 70, type: 'jpeg', fullPage: false });
+await b.close();

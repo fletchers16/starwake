@@ -584,3 +584,18 @@ button:disabled{cursor:not-allowed;filter:saturate(.55);opacity:.58}
 .reflect-banner.show{animation:reflect-pop 1.4s ease-out forwards}
 @keyframes reflect-pop{0%{opacity:0;transform:translate(-50%,-50%) scale(.6)}12%{opacity:1;transform:translate(-50%,-50%) scale(1.12)}22%{transform:translate(-50%,-50%) scale(1)}80%{opacity:1}100%{opacity:0;transform:translate(-50%,-62%) scale(1)}}
 @media(max-width:760px){.reflect-banner b{font-size:34px}}
+
+/* Lobby invite QR */
+.invite-qr{display:flex;align-items:center;gap:14px;margin:12px 0 4px;padding:10px 12px;border-radius:16px;background:rgba(255,255,255,.04);border:2px dashed rgba(126,245,255,.35)}
+.invite-qr-code{flex:none;width:112px;height:112px;padding:6px;border-radius:12px;background:#fff;border:3px solid #1b1430}
+.invite-qr-code svg{display:block;width:100%;height:100%}
+.invite-qr b{display:block;font:400 18px var(--display);letter-spacing:.03em;color:#7ef5ff}
+.invite-qr span{font:500 12px/1.4 system-ui,sans-serif;color:rgba(255,255,255,.72)}
+/* On a phone you'd share the link instead, so keep the QR small. */
+@media (pointer:coarse){.invite-qr-code{width:84px;height:84px}}
+
+/* One centre lane while coaching: race toasts drop below the coach card, the reflect banner takes over briefly. */
+body.coaching #app.racing .race-toast,body.coaching .race-toast{top:66%}
+.coach.yield{opacity:0;transition:opacity .15s}
+/* Phones: keep a short reason line under each coach step. */
+@media(max-width:760px){.coach span{display:block;font-size:11px;line-height:1.3;max-height:2.6em;overflow:hidden}}

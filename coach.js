@@ -16,11 +16,12 @@ export function createCoach({ el, combat, touch }) {
     el.querySelector('.coach-skip').onclick = finish;
     el.hidden = false;
   };
-  function finish() { active = false; el.hidden = true; markDone(); }
+  function finish() { active = false; el.hidden = true; document.body.classList.remove('coaching'); combat.coachStandDown?.(); markDone(); }
 
   function begin(r) {
     if (coachDone()) return;
     active = true;
+    document.body.classList.add('coaching');
     step = 0;
     stepAt = r.time;
     say('Fly through a <em>?</em> pod', 'Rainbow boxes give you an item. Steer into one.');

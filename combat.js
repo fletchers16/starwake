@@ -577,12 +577,16 @@ export function createCombat(THREE, { world, getRoute, routeAt, makeShipMesh, sh
     if (b.aimAt) target = loose(player) ? player : null; // committed lock on you
     else if (b.coachTarget) target = lockTarget(me, [player]); // the coach's sim pilot: only you
     else target = lockTarget(me, [player, ...others]);
-    if (!target && b.aimAt) { b.aimAt = 0; b.relockAt = r.time + ROLL_COOLDOWN; onLockOn(b.name, false); return; }
+    if (!target && b.aimAt) { b.aimAt = 0; b.relockAt = r.time + ROLL_COOLDOWN; b.coachTarget = false; onLockOn(b.name, false); return; }
     if (!target) return;
     // After a lock is called off, give the player a full roll cooldown before the next one.
     if (target.kind === 'player' && !b.aimAt && r.time < (b.relockAt || 0)) return;
     // Fairness: you can be zapped by sim pilots at most once every 5 seconds.
-    if (target.kind === 'player' && (r.time - lastPlayerHitByBot < 5 || botHitsOnPlayer >= BOT_HITS_PER_HEAT)) return;
+    if (target.kind === 'player' && (r.time - lastPlayerHitByBot < 5 || botHitsOnPlayer >= BOT_HITS_PER_HEAT)) {
+      // Held back by fairness: call any lock off cleanly (no hanging warning, no untelegraphed shot later).
+      if (b.aimAt) { b.aimAt = 0; b.relockAt = r.time + ROLL_COOLDOWN; onLockOn(b.name, false); }
+      return;
+    }
     // Telegraph: a short lock-on warning before a sim pilot fires at you, so a barrel roll can be timed.
     if (target.kind === 'player') {
       if (!b.aimAt) { b.aimAt = r.time; onLockOn(b.name, true); sfx.countdown?.(false); return; }
@@ -731,11 +735,13 @@ export function createCombat(THREE, { world, getRoute, routeAt, makeShipMesh, sh
     },
     // Dev/test hook: the live sim-pilot records.
     debugRacers: () => racers,
+    /** The lesson is over: the coach's sim pilot goes back to normal targeting. */
+    coachStandDown: () => racers.forEach((b) => { b.coachTarget = false; }),
     /** First-flight coach: one sim pilot (not stunned) lines up behind you and takes a telegraphed shot. */
     coachArm(r) {
       const b = racers.find((x) => r.time >= x.stunUntil) || racers[0];
       if (!b) return false;
-      Object.assign(b, { item: 'blaster', ammo: 3, cooldown: 0, aimAt: 0, relockAt: 0, coachTarget: true, d: r.distance - 12, x: r.x, y: r.y, tx: r.x, ty: r.y, nextWeave: r.time + 3 });
+      Object.assign(b, { item: 'blaster', ammo: 1, cooldown: 0, aimAt: 0, relockAt: 0, coachTarget: true, d: r.distance - 12, x: r.x, y: r.y, tx: r.x, ty: r.y, nextWeave: r.time + 3 });
       lastPlayerHitByBot = -9; // the fairness window shouldn't block the lesson
       botHitsOnPlayer = Math.min(botHitsOnPlayer, BOT_HITS_PER_HEAT - 1);
       return true;

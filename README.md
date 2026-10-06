@@ -25,7 +25,7 @@ Built for the Handshake AI Skills Studio × OpenAI Multiplayer Game Challenge. T
 
 ## Playing together
 
-- **Live battles:** **⚔ BATTLE → OPEN A BATTLE ROOM**, then share the invite link. Friends join from any phone or laptop with no install or account.
+- **Live battles:** **⚔ BATTLE → OPEN A BATTLE ROOM**, then share the invite link or let friends scan the lobby's QR code. Friends join from any phone or laptop with no install or account.
   - The server keeps every screen in sync: live positions, zaps, victim-confirmed point steals, the room-wide steal feed and emotes.
   - After heat 3, the host can **REMATCH** with the same crew.
   - Sim pilots fill empty seats.

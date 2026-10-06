@@ -46,6 +46,7 @@ Score each 1–10 with evidence. A 10 is demo-ready on a phone with no explanati
 | 21 (grade) | 5 | 7 | 7 | 6 | Mid-heat resume broken in multiplayer (sync posts d=0 before the restore reads); a reload wipes the zap ledger (phantom credits, replayed hits, dropped zaps); dodge toast overwritten; roll untimeable (no warning); late joiner bounced. Silent-drop eviction verified (39–47 s). Read: about #5 |
 | 23 (grade) | 6 | 7 | 7 | 6 | Resume holds adversarially (guest and host mid-heat, late join auto-seated); both suites green; a reload repairs hull and drops the item (an exploit worth up to 140); hull double-counted on resume; phone roll timing; late-joiner waiting state; HUD clutter; stale tab title. Read: about #4, credible top 3 |
 | 25 (grade) | 6 | 7 | 7 | 6 | Coach roll lesson fails (the armed bot spends its only shot on another NPC), so the coach suite is flaky; phone coach card covers the item slot and ROLL; roll copy contradicts; locks cancel then re-lock inside the roll cooldown; blocked zaps counted as landed; join CANCEL racy. Read: about #4 |
+| 27 (grade) | 7 | 7 | 7 | 6 | All green (coach 7/7 ×3, battle 35/35, challenge 11/11); roll lesson reliable, reflect banner has punch; centre-screen text collides with the coach card; a committed lock can stick behind the fairness gate; a reload mid-roll gives 3 ammo; the coach bot over-punishes; phone coach hides its body text; still no live URL. Read: about #4, close to top 3 |
 
 ## Backlog
 (ready / in-progress / done; each item notes the criterion it moves)
@@ -183,7 +184,15 @@ Score each 1–10 with evidence. A 10 is demo-ready on a phone with no explanati
 106. `done` (C25) [Execution] Shield-blocked zaps counted as landed.
 107. `done` (C25) [Execution] Join-banner CANCEL can be undone by an in-flight request.
 108. `done` (C25) [Execution] Reload during the item roll loses the item (send pendingItem).
-109. `idea` [Usefulness] QR code on the lobby invite (needs a QR encoder: a dependency or a hand-written one).
+109. `done` (C27, user approved qrcode-generator) [Usefulness] QR code on the lobby invite (needs a QR encoder: a dependency or a hand-written one).
+
+**From grade 27:**
+110. `done` (C27) [Polish] Centre message lane: coach card vs race toasts vs reflect banner collide.
+111. `done` (C27) [Execution] A committed lock stuck behind the fairness gate (the warning hangs, then fires untelegraphed).
+112. `done` (C27) [Execution] Reload during the item roll restores 3 ammo of any item.
+113. `done` (C27) [Usefulness] The coach bot over-punishes (3 ammo; coachTarget not cleared on cancel or finish).
+114. `done` (C27) [Usefulness] The phone coach hides why the moves matter (body text hidden).
+115. `blocked (user)` [Usefulness/Execution] Deploy with OPENAI_API_KEY, run warm:ai, and do a real two-device session on the live URL.
 
 ## Log
 - Cycle 2: fixed the top grade-1 findings.
@@ -335,3 +344,9 @@ Score each 1–10 with evidence. A 10 is demo-ready on a phone with no explanati
   - **Small fixes:** blocked zaps aren't "landed"; the phone coach card sits compact below the item slot and ROLL; "TAP ROLL" copy everywhere on touch; join-banner CANCEL wins over in-flight requests; a reload mid item-roll keeps the pending item.
   - **Tests:** battle 35/35, challenge 11/11.
 - Cycle 26: reflect juice. A perfect barrel-roll reflect now triggers a screen flash, the perfect chime, white and cyan bursts, a quick camera FOV punch and a big "PERFECT REFLECT! · ZORP ate their own laser" banner (verified headlessly through the coach flow). The desktop coach card moved below the taunt bubble. The QR-code invite (109) waits on the user's OK to add a QR encoder dependency.
+- Cycle 27: QR invites and a calmer teaching screen.
+  - **QR invite** (user-approved `qrcode-generator`, MIT): a "SCAN TO JOIN" QR of the invite link on the lobby card, so a laptop judge can scan a phone straight in.
+  - **Centre lane:** while coaching, race toasts drop below the coach card, and the card yields to the PERFECT REFLECT banner.
+  - **Locks:** a lock held back by the fairness gate is called off cleanly (no hanging warning, no untelegraphed shot).
+  - **Small fixes:** a reload mid item-roll restores the item's real ammo; the coach's sim pilot carries one shot and stands down when the lesson ends or a lock is cancelled; phone coach steps keep a short reason line.
+  - **Tests:** coach 7/7 ×2, challenge 11/11, battle 35/35.

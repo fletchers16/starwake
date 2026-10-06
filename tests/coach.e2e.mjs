@@ -46,8 +46,18 @@ try {
   const lock = await until(() => !document.querySelector('#lock-warn').hidden && document.querySelector('#lock-warn').innerText, 6000);
   check('a sim pilot telegraphs its shot', lock, lock || 'no warning');
   await page.keyboard.press('q');
-  const outcome = await until(() => /win the heat|got the idea/.test(document.querySelector('#coach b')?.innerText || '') && { title: document.querySelector('#coach b').innerText, reflects: window.__starwake.state.race.reflects || 0 }, 6000);
-  check('rolling on the warning reflects the shot', outcome?.reflects > 0 && /win the heat/.test(outcome.title), JSON.stringify(outcome));
+  // A late roll gets the coach's "Too slow! Once more": like a player, wait for the next lock and roll again.
+  let outcome = null;
+  for (let attempt = 0; attempt < 2 && !outcome; attempt++) {
+    outcome = await until(() => /win the heat|got the idea|Too slow/.test(document.querySelector('#coach b')?.innerText || '') && { title: document.querySelector('#coach b').innerText, reflects: window.__starwake.state.race.reflects || 0 }, 7000);
+    if (outcome && /Too slow/.test(outcome.title)) {
+      outcome = null;
+      await until(() => !document.querySelector('#lock-warn').hidden, 8000);
+      await page.keyboard.press('q');
+    }
+  }
+  const dump = outcome ? '' : await page.evaluate(() => { const S = window.__starwake, r = S.state.race, b = S.combat.debugRacers().map((x) => ({ n: x.name, gap: +(x.d - r.distance).toFixed(1), dx: +(x.x - r.x).toFixed(1), ammo: x.ammo, item: x.item, aim: x.aimAt, coach: !!x.coachTarget, cool: +(x.cooldown || 0).toFixed(1), stun: x.stunUntil > r.time })); return JSON.stringify({ t: +r.time.toFixed(1), coach: document.querySelector('#coach b')?.innerText, lock: document.querySelector('#lock-warn').hidden ? '' : document.querySelector('#lock-warn').innerText, reflects: r.reflects || 0, stun: r.stunUntil > r.time, bots: b }); });
+  check('rolling on the warning reflects the shot', outcome?.reflects > 0 && /win the heat/.test(outcome.title), outcome ? JSON.stringify(outcome) : dump);
   await wait(3000);
   check('coach closes and remembers it ran', (await coach()) === '(hidden)' && (await page.evaluate(() => localStorage.getItem('starwake-coached'))) === '1');
 } catch (error) { check('test ran to completion', false, error.message); }

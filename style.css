@@ -671,3 +671,5 @@ body.coaching #app.racing .race-toast,body.coaching .race-toast{top:66%}
 #race-screen .lock-warn{font:400 17px/1 var(--display);letter-spacing:.04em;color:#fff;background:#ff4d6a;border:3px solid #140f24;border-radius:999px;padding:7px 14px 6px;box-shadow:0 4px 0 #140f24;text-shadow:none}
 #race-screen .lock-warn b{background:#fff;color:#140f24;border-radius:999px;padding:2px 8px;font-size:15px}
 @media(max-width:760px){#race-screen .lock-warn{font-size:13px;padding:5px 10px 4px}#race-screen .lock-warn b{font-size:12px}}
+#result-rows .pending,#ai-recap .pending{font-style:normal;color:#c9bdf2;animation:pending-blink 1.1s ease-in-out infinite}
+@keyframes pending-blink{50%{opacity:.45}}

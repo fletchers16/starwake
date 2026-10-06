@@ -144,3 +144,12 @@ body,#app{background:radial-gradient(ellipse at 70% -10%,#3a2370 0,transparent 5
 .team-result span{font:400 15px var(--display);letter-spacing:.04em}
 .team-result i.red{font-style:normal;color:#ff8a96}.team-result i.blue{font-style:normal;color:#8fb4ff}
 @media(max-width:760px){#race-screen .team-bar{font-size:10px}#race-screen .draft-chip{font-size:10px;padding:3px 7px 2px}}
+/* Join-wait banner: watch the running heat while you wait */
+.join-wait{font-family:var(--display)!important;background:var(--cz-panel)!important;border:3px solid var(--cz-ink)!important;border-radius:16px!important;box-shadow:0 5px 0 var(--cz-ink)!important}
+.join-watch{display:grid;gap:3px;margin:8px 0 6px;padding:8px 10px;border:2px solid var(--cz-ink);border-radius:12px;background:rgba(14,9,32,.7);min-width:220px}
+.join-watch small{font:400 11px var(--display);letter-spacing:.06em;color:#ff5d7a}
+.join-watch i{display:grid;grid-template-columns:18px 1fr auto;gap:6px;font-style:normal;font:400 13px var(--display);letter-spacing:.03em;color:#fff}
+.join-watch i b{color:var(--cz-cyan);font-weight:400}
+.join-watch i em{font-style:normal;color:var(--cz-yellow)}
+.join-watch i.aliens{display:block;color:var(--cz-lilac);font-size:11px}
+.join-watch>em{font-style:normal;font-size:12px;color:var(--cz-lilac)}

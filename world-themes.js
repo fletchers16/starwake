@@ -5,6 +5,9 @@ import { lavaCrustTexture, earthSurfaceTexture, earthCloudTexture, gasGiantTextu
 import { rimColor, rimObject } from './rim.js';
 import { createFogRamp } from './fog-ramp.js';
 import { buildLandmarks } from './landmarks.js';
+import { partKit } from './ships3d.js';
+import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
+import { toon } from './aliens.js';
 /**
  * Per-world environments: sky, fog, ground, and scrolling set pieces that make
  * each course look like its name.
@@ -142,11 +145,13 @@ function makeTrackside(THREE, geometry, material, { count, spacing, behind = 2 }
       p.set(centre.x + o.x, centre.y + o.y, Z0 - (along - distance) + (o.z || 0));
       // Keep the flight corridor clear: on tight bends scenery can swing in front of the lens.
       const ahead = along - distance;
-      if (ahead > -12 && ahead < 45 && Math.abs(p.x - cameraX) < 7 && Math.abs(p.y - cameraY) < 7) { mesh.setMatrixAt(i, m.makeScale(0, 0, 0)); continue; }
+      // Index by slot (not loop position), so a per-instance colour stays with the same piece as it scrolls.
+      const idx = ((slot % count) + count) % count;
+      if (ahead > -12 && ahead < 45 && Math.abs(p.x - cameraX) < 7 && Math.abs(p.y - cameraY) < 7) { mesh.setMatrixAt(idx, m.makeScale(0, 0, 0)); continue; }
       e.set(o.rx || 0, o.ry || 0, o.rz || 0);
       q.setFromEuler(e);
       s.set(o.sx ?? o.s ?? 1, o.sy ?? o.s ?? 1, o.sz ?? o.s ?? 1);
-      mesh.setMatrixAt(i, m.compose(p, q, s));
+      mesh.setMatrixAt(idx, m.compose(p, q, s));
     }
     mesh.instanceMatrix.needsUpdate = true;
   };
@@ -227,35 +232,95 @@ const THEMES = {
     nebula: { strength: 0.35, a: '#2a62d8', b: '#18c9b2' },
     fogRamp: ['#1b6f8a', '#16305a'],
     sky: ['#040a18', '#0d2244', '#02050b'], fog: ['#0a1a33', 34, 165], stars: 1,
+    // Neon Rift, cartoon edition: candy-coloured station towers with glowing windows and blinking bulbs,
+    // funny alien billboards, and a candy-striped transit pipe, all cel-shaded with ink outlines.
     build(THREE, ctx) {
-      const steel = new THREE.MeshStandardMaterial({ color: '#ffffff', vertexColors: true, metalness: 0.7, roughness: 0.4, emissive: '#0e1c30', flatShading: true });
-      const beamGeo = gradient(new THREE.BoxGeometry(0.9, 20, 0.9), '#1c2840', '#6f8bb4', 0.8);
-      const neon = new THREE.MeshBasicMaterial({ color: ctx.course.accent });
-      const sideX = (slot) => (slot % 2 ? 1 : -1) * (11.5 + hash(slot * 3) * 4);
-      // Lattice pylons of the abandoned relay along both sides, some snapped off.
-      const pylon = (slot) => {
-        const broken = hash(slot) < 0.22, side = slot % 2 ? 1 : -1;
-        return { x: sideX(slot), y: broken ? -9 : -1, rz: side * (0.08 + hash(slot * 5) * 0.22), sy: broken ? 0.45 : 1 };
+      const COUNT = 22, SPACING = 13;
+      const towerX = (slot) => (slot % 2 ? 1 : -1) * (15.5 + hash(slot * 3) * 7);
+      const towerY = (slot) => -10 + hash(slot * 5) * 7;
+      const towerPlace = (slot) => ({ x: towerX(slot), y: towerY(slot), ry: hash(slot * 11) * 6 });
+      const windows = canvasTexture(THREE, 128, 256, (g, w, h) => {
+        g.fillStyle = '#ffffff'; g.fillRect(0, 0, w, h);
+        for (let y = 14; y < h - 10; y += 26) for (let x = 10; x < w - 10; x += 30) { g.fillStyle = '#2a2244'; g.beginPath(); g.roundRect(x, y, 18, 15, 4); g.fill(); }
+      });
+      const glowMask = canvasTexture(THREE, 128, 256, (g, w, h) => {
+        g.fillStyle = '#000000'; g.fillRect(0, 0, w, h);
+        let n = 0;
+        for (let y = 14; y < h - 10; y += 26) for (let x = 10; x < w - 10; x += 30) { if (hash(++n * 3.3) < 0.62) { g.fillStyle = hash(n) < 0.5 ? '#ffd66b' : '#9ff6ff'; g.beginPath(); g.roundRect(x + 2, y + 2, 14, 11, 3); g.fill(); } }
+      });
+      windows.wrapS = glowMask.wrapS = THREE.RepeatWrapping;
+      windows.repeat.set(3, 2); glowMask.repeat.set(3, 2);
+      const bodyGeo = new THREE.CylinderGeometry(1.5, 1.75, 18, 14);
+      const body = makeTrackside(THREE, bodyGeo, toon(THREE, '#ffffff', { map: windows, emissive: '#ffffff', emissiveMap: glowMask, emissiveIntensity: 1 }), { count: COUNT, spacing: SPACING }, towerPlace);
+      const palette = ['#5b6cff', '#8a5bff', '#33b8ff', '#ff7bd5', '#38d9b8', '#ff9a52'].map((c) => new THREE.Color(c));
+      for (let k = 0; k < COUNT; k++) body.setColorAt(k, palette[k % palette.length]);
+      body.instanceColor.needsUpdate = true;
+      const domeGeo = mergeGeometries([new THREE.SphereGeometry(1.5, 16, 10, 0, Math.PI * 2, 0, Math.PI / 2).translate(0, 9, 0), new THREE.TorusGeometry(1.62, 0.22, 8, 20).rotateX(Math.PI / 2).translate(0, 9, 0)]);
+      const dome = makeTrackside(THREE, domeGeo, toon(THREE, '#fff1d6'), { count: COUNT, spacing: SPACING }, towerPlace);
+      const inkGeo = new THREE.CylinderGeometry(1.68, 1.95, 18.3, 12);
+      const ink = makeTrackside(THREE, inkGeo, new THREE.MeshBasicMaterial({ color: '#140f24', side: THREE.BackSide }), { count: COUNT, spacing: SPACING }, towerPlace);
+      const bulbs = makeTrackside(THREE, new THREE.SphereGeometry(0.42, 10, 8), new THREE.MeshBasicMaterial({ color: '#ff5d7a' }), { count: COUNT, spacing: SPACING }, (slot) => ({ x: towerX(slot), y: towerY(slot) + 11.3, s: hash(slot * 13) < 0.25 ? 0 : 1 }));
+      const masts = makeTrackside(THREE, new THREE.CylinderGeometry(0.09, 0.09, 1.8, 6), new THREE.MeshBasicMaterial({ color: '#140f24' }), { count: COUNT, spacing: SPACING }, (slot) => ({ x: towerX(slot), y: towerY(slot) + 10.2, s: hash(slot * 13) < 0.25 ? 0 : 1 }));
+      ctx.blink = bulbs;
+      // Candy-striped transit pipe running alongside, with a black ink shell.
+      const stripes = canvasTexture(THREE, 64, 64, (g, w) => { g.fillStyle = '#ffffff'; g.fillRect(0, 0, w, w); g.fillStyle = '#ff5d9a'; for (let k = -w; k < w * 2; k += 32) { g.beginPath(); g.moveTo(k, 0); g.lineTo(k + 16, 0); g.lineTo(k + 16 - w, w); g.lineTo(k - w, w); g.fill(); } }, true);
+      stripes.repeat.set(4, 2);
+      const pipePlace = (slot) => ({ x: -21 + Math.sin(slot * 0.4) * 2, y: 6, rx: Math.PI / 2, rz: (hash(slot) - 0.5) * 0.2, s: hash(slot * 4) < 0.15 ? 0 : 1 });
+      const pipe = makeTrackside(THREE, new THREE.CylinderGeometry(1.5, 1.5, 16.6, 14, 1, true), toon(THREE, '#ffffff', { map: stripes, side: THREE.DoubleSide }), { count: 14, spacing: 17 }, pipePlace);
+      const pipeInk = makeTrackside(THREE, new THREE.CylinderGeometry(1.72, 1.72, 16.2, 12, 1, true), new THREE.MeshBasicMaterial({ color: '#140f24', side: THREE.BackSide }), { count: 14, spacing: 17 }, pipePlace);
+      // Floating billboards with alien ads (a pool of four, re-skinned as they recycle down the track).
+      const ADS = [
+        ["ZORP'S ZAP SHACK", 'BLASTERS · 2 FOR 1', '#ff5d7a', '#ffd23f'],
+        ['MOO MILK', 'NOW 50% COW', '#38d9b8', '#ffffff'],
+        ["GLORB'S GAS", 'LAST STOP FOR 3 LIGHT-YEARS', '#ff9a52', '#2a2244'],
+        ['NO PARKING IN ORBIT', 'VIOLATORS WILL BE ZAPPED', '#ffd23f', '#2a2244'],
+        ['BLIX TOWING', 'WE FIND YOUR SHIP. EVENTUALLY.', '#8a5bff', '#ffffff'],
+        ["QUEEP'S DONUT HOLE", "IT'S A BLACK HOLE", '#ff7bd5', '#ffffff'],
+      ].map(([title, line, bg, fg]) => canvasTexture(THREE, 512, 256, (g, w, h) => {
+        g.fillStyle = '#140f24'; g.beginPath(); g.roundRect(0, 0, w, h, 36); g.fill();
+        g.fillStyle = bg; g.beginPath(); g.roundRect(12, 12, w - 24, h - 24, 26); g.fill();
+        g.fillStyle = 'rgba(255,255,255,.18)'; g.beginPath(); g.roundRect(24, 22, w - 48, 40, 18); g.fill();
+        g.textAlign = 'center'; g.textBaseline = 'middle'; g.lineJoin = 'round';
+        let size = 66; g.font = `900 ${size}px system-ui, sans-serif`;
+        while (g.measureText(title).width > w - 70 && size > 30) { size -= 2; g.font = `900 ${size}px system-ui, sans-serif`; }
+        g.lineWidth = 14; g.strokeStyle = '#140f24'; g.strokeText(title, w / 2, 106);
+        g.fillStyle = fg === '#2a2244' ? '#ffffff' : fg; g.fillText(title, w / 2, 106);
+        let small = 30; g.font = `800 ${small}px system-ui, sans-serif`;
+        while (g.measureText(line).width > w - 70 && small > 16) { small -= 2; g.font = `800 ${small}px system-ui, sans-serif`; }
+        g.fillStyle = '#140f24'; g.fillText(line, w / 2, 180);
+      }));
+      const boards = new THREE.Group();
+      const BOARD_SPACING = 64;
+      const pool = Array.from({ length: 4 }, () => {
+        const b = new THREE.Group();
+        const face = new THREE.Mesh(new THREE.PlaneGeometry(8, 4), new THREE.MeshBasicMaterial({ map: ADS[0], transparent: true }));
+        const back = new THREE.Mesh(new THREE.BoxGeometry(8.3, 4.3, 0.35), new THREE.MeshBasicMaterial({ color: '#140f24' }));
+        back.position.z = -0.22;
+        b.add(back, face);
+        b.userData.face = face;
+        boards.add(b);
+        return b;
+      });
+      boards.userData.update = ({ distance, routeAt }) => {
+        const first = Math.floor(distance / BOARD_SPACING);
+        pool.forEach((b, i) => {
+          const slot = first + i, along = slot * BOARD_SPACING + 30, c = routeAt(along), side = slot % 2 ? 1 : -1;
+          b.position.set(c.x + side * (9.5 + hash(slot) * 2), c.y + 5.5 + hash(slot * 3) * 2.5, Z0 - (along - distance));
+          b.rotation.set(0, -side * 0.42, (hash(slot * 7) - 0.5) * 0.12);
+          const ad = ADS[((slot % ADS.length) + ADS.length) % ADS.length];
+          if (b.userData.face.material.map !== ad) b.userData.face.material.map = ad;
+          b.visible = along - distance > -10;
+        });
       };
-      const beams = makeTrackside(THREE, beamGeo, steel, { count: 34, spacing: 8 }, pylon);
-      const strips = makeTrackside(THREE, new THREE.BoxGeometry(0.16, 20, 0.16), neon, { count: 34, spacing: 8 }, (slot) => ({ ...pylon(slot), z: 0.5 }));
-      // Overhead gantries spanning the route, with gaps where they have fallen.
-      const cross = makeTrackside(THREE, gradient(new THREE.BoxGeometry(28, 0.7, 0.9), '#334866', '#7a96bf'), steel, { count: 12, spacing: 24 }, (slot) => ({ x: (hash(slot) - 0.5) * 3, y: 8.5 + hash(slot * 2) * 2, rz: (hash(slot * 7) - 0.5) * 0.25, s: hash(slot * 9) < 0.3 ? 0 : 1 }));
-      const crossGlow = makeTrackside(THREE, new THREE.BoxGeometry(28, 0.12, 0.12), neon, { count: 12, spacing: 24 }, (slot) => ({ x: (hash(slot) - 0.5) * 3, y: 8 + hash(slot * 2) * 2, z: 0.5, rz: (hash(slot * 7) - 0.5) * 0.25, s: hash(slot * 9) < 0.3 ? 0 : 1 }));
-      // The broken transit spine running alongside.
-      const spine = makeTrackside(THREE, gradient(new THREE.CylinderGeometry(1.6, 1.6, 15, 10, 1, true).rotateX(Math.PI / 2).rotateX(-Math.PI / 2), '#22304a', '#5f7aa3'), steel, { count: 14, spacing: 17 }, (slot) => ({ x: -19 + Math.sin(slot * 0.4) * 2, y: 5, rx: Math.PI / 2, rz: (hash(slot) - 0.5) * 0.25, s: hash(slot * 4) < 0.18 ? 0 : 1 }));
-      const beacons = makeTrackside(THREE, new THREE.SphereGeometry(0.35, 8, 6), new THREE.MeshBasicMaterial({ color: '#bff6ff' }), { count: 34, spacing: 8 }, (slot) => ({ x: sideX(slot), y: 9, s: hash(slot) < 0.22 ? 0 : 1 }));
-      ctx.blink = beacons;
-      const glowCloud = skyObject(new THREE.Sprite(new THREE.SpriteMaterial({ map: cloudTexture(THREE, 7, [ctx.course.secondary, ctx.course.accent]), transparent: true, opacity: 0.45, blending: THREE.AdditiveBlending })), [-30, 30, -200], 0.9);
+      const glowCloud = skyObject(new THREE.Sprite(new THREE.SpriteMaterial({ map: cloudTexture(THREE, 7, [ctx.course.secondary, ctx.course.accent]), transparent: true, opacity: 0.5, blending: THREE.AdditiveBlending })), [-30, 30, -200], 0.9);
       glowCloud.scale.set(260, 180, 1);
       const debris = makeParticles(THREE, ctx.glow, { count: 160, color: '#8fc3ff', size: 0.45, opacity: 0.6 });
-      // Distant megastructure city and broken orbital ring (Kenney Space Kit, CC0).
       const skyline = skyObject(createSkyline(THREE, { accent: ctx.course.accent, glowTexture: ctx.glow }), [0, 0, -150], 0.9);
       ctx.skyline = skyline;
-      return [beams, strips, cross, crossGlow, spine, beacons, glowCloud, debris, skyline];
+      return [body, dome, ink, bulbs, masts, pipe, pipeInk, boards, glowCloud, debris, skyline];
     },
     tick(ctx, { now }) {
-      if (ctx.blink) ctx.blink.material.color.set(Math.sin(now * 0.006) > 0.2 ? '#bff6ff' : '#14243a');
+      if (ctx.blink) ctx.blink.material.color.set(Math.sin(now * 0.006) > 0.2 ? '#ff5d7a' : '#4a1830');
       ctx.skyline?.userData.tick(now);
     },
   },
@@ -693,20 +758,18 @@ export function buildWorldFrame(THREE, course, { radius = 8, index = 0 } = {}) {
       break;
     }
     default: {
-      // Neon Rift: hexagonal relay gate with girder struts and status lights.
-      const girder = metal('#33445e', secondary, 0.25);
-      ring(radius, 0.26, 6, girder, Math.PI * 2, 4).rotation.z = Math.PI / 6;
-      ring(radius - 0.38, 0.07, 6, glow(accent), Math.PI * 2, 4).rotation.z = Math.PI / 6;
+      // Neon Rift: a chunky cartoon hex gate. Lilac frame with cream bolts, ink outline and bulb lights,
+      // merged into a few meshes (it used to be ~20 separate parts).
+      const K = partKit(THREE, 0.1);
+      const frame = toon(THREE, '#7d6bff'), trim = toon(THREE, '#fff1d6'), bulbsOn = new THREE.MeshBasicMaterial({ color: accent }), bulbsHot = new THREE.MeshBasicMaterial({ color: '#ff5d7a' });
+      K.add(new THREE.TorusGeometry(radius, 0.42, 8, 6), frame, { r: [0, 0, Math.PI / 6] });
+      K.add(new THREE.TorusGeometry(radius - 0.48, 0.1, 6, 6), trim, { r: [0, 0, Math.PI / 6] }, 0);
       around(6, (i, a) => {
         const corner = a + Math.PI / 6;
-        const strut = new THREE.Mesh(new THREE.BoxGeometry(0.35, 1.6, 0.6), girder);
-        strut.position.set(Math.cos(corner) * (radius + 0.6), Math.sin(corner) * (radius + 0.6), 0);
-        strut.rotation.z = corner - Math.PI / 2;
-        group.add(strut);
-        const light = new THREE.Mesh(new THREE.BoxGeometry(0.22, 0.22, 0.22), glow(i % 2 ? accent : '#ff5d7a'));
-        light.position.set(Math.cos(corner) * (radius + 1.45), Math.sin(corner) * (radius + 1.45), 0.2);
-        group.add(light);
+        K.add(new THREE.BoxGeometry(1.1, 1.1, 1.0), trim, { p: [Math.cos(corner) * radius, Math.sin(corner) * radius, 0], r: [0, 0, corner] });
+        K.add(new THREE.SphereGeometry(0.3, 10, 8), i % 2 ? bulbsOn : bulbsHot, { p: [Math.cos(corner) * (radius + 0.95), Math.sin(corner) * (radius + 0.95), 0.1] }, 0.06);
       });
+      K.build(group);
     }
   }
   // Every gate keeps a bright top marker so checkpoints read at speed.

@@ -1,3 +1,4 @@
+import { toon } from './aliens.js';
 import { makeSwirlMaterial } from './swirl.js';
 import { crystalCluster, roughen, gradient } from './shapes.js';
 import { rimObject } from './rim.js';
@@ -32,7 +33,7 @@ const BUILDERS = {
   relay: (THREE, course) => [
     { at: 0.18, name: 'THE BROKEN HALO', build() {
       const g = new THREE.Group();
-      const hull = solid(THREE, '#3a4c66', '#0f2038', 0.4);
+      const hull = toon(THREE, '#7d6bff');
       for (let i = 0; i < 7; i++) {
         if (i === 4) continue; // the broken section
         const seg = new THREE.Mesh(new THREE.TorusGeometry(15, 1.5, 8, 18, (Math.PI * 2) / 7 - 0.06), hull);
@@ -53,7 +54,7 @@ const BUILDERS = {
     } },
     { at: 0.47, name: 'RELAY TUNNEL', build() {
       const g = new THREE.Group();
-      const frameMat = solid(THREE, '#2b3a52', course.secondary, 0.25);
+      const frameMat = toon(THREE, '#5b6cff');
       for (let i = 0; i < 9; i++) {
         const hex = new THREE.Mesh(new THREE.TorusGeometry(11, 0.45, 4, 6), frameMat);
         hex.rotation.z = Math.PI / 6;
@@ -73,7 +74,7 @@ const BUILDERS = {
     } },
     { at: 0.78, name: 'DOCKING SPIRE', build() {
       const g = new THREE.Group();
-      const steel = solid(THREE, '#344660', '#0f2038', 0.35);
+      const steel = toon(THREE, '#8a5bff');
       const tower = new THREE.Mesh(new THREE.CylinderGeometry(3, 4, 70, 8), steel);
       tower.position.set(20, 0, -6);
       g.add(tower);

@@ -843,6 +843,8 @@ export function createCombat(THREE, { world, getRoute, routeAt, makeShipMesh, sh
   }
 
   return {
+    /** A comic burst over the player's ship (collisions use it: BONK!, CRUNCH!). */
+    bonk: (r, word = 'BONK!', fill = '#ff9a52') => comic(worldPos(r, r.distance + 2.4, r.x, r.y), word, fill, 2.4),
     makeRacerMesh: (opts) => makeNpcShip(0, opts),
     roll,
     /** After a reload: sim pilots keep the point swings they had (no visible standings jump). */

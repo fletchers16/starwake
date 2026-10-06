@@ -6,7 +6,7 @@
  */
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
-import { addRim } from './rim.js';
+import { toon } from './aliens.js';
 
 const MODELS = ['structure_detailed', 'hangar_roundA', 'monorail_trackSupport', 'satelliteDish_large', 'pipe_ringSupport'];
 const cache = new Map();
@@ -21,7 +21,8 @@ const hash = (n) => { const x = Math.sin(n * 91.7 + 13.1) * 43758.5453; return x
 
 export function createSkyline(THREE, { accent = '#71f5dc', glowTexture } = {}) {
   const group = new THREE.Group();
-  const hull = addRim(new THREE.MeshStandardMaterial({ color: '#1c2c48', emissive: '#0a1a30', emissiveIntensity: 0.6, metalness: 0.5, roughness: 0.55, flatShading: true }), { strength: 1.3, power: 1.8 });
+  // Cel-shaded lilac silhouettes (the old rim-lit steel read as wireframe next to the cartoon track).
+  const hull = toon(THREE, '#4a3f9a');
   const strip = new THREE.MeshBasicMaterial({ color: accent, fog: false });
   // Beacons are one point cloud (one draw call) whose per-beacon brightness blinks via vertex colours.
   const beaconSpots = [];

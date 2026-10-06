@@ -7,6 +7,8 @@
  *   node tests/challenge.e2e.mjs [baseUrl]
  */
 import { chromium, devices } from 'playwright-core';
+// Opt in to the playtest hook, so the suite also runs against a deployed site.
+const optIn = async (browser, options) => { const ctx = await browser.newContext(options); await ctx.addInitScript(() => localStorage.setItem('starwake-playtest', '1')); return ctx; };
 import { mkdirSync } from 'node:fs';
 
 const BASE = process.argv[2] || process.env.BASE_URL || 'http://127.0.0.1:5180';
@@ -35,8 +37,8 @@ async function flyHeat(page, rings) {
 }
 
 const browser = await chromium.launch({ headless: !process.env.HEADED });
-const laptop = await (await browser.newContext({ viewport: { width: 1280, height: 800 } })).newPage();
-const phone = await (await browser.newContext({ ...devices['iPhone 13'] })).newPage();
+const laptop = await (await optIn(browser, { viewport: { width: 1280, height: 800 } })).newPage();
+const phone = await (await optIn(browser, { ...devices['iPhone 13'] })).newPage();
 const errors = [];
 for (const page of [laptop, phone]) page.on('pageerror', (e) => errors.push(e.message));
 

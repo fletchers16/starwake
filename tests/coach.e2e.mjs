@@ -5,12 +5,14 @@
  *   node tests/coach.e2e.mjs [baseUrl]
  */
 import { chromium } from 'playwright-core';
+// Opt in to the playtest hook, so the suite also runs against a deployed site.
+const optIn = async (browser, options) => { const ctx = await browser.newContext(options); await ctx.addInitScript(() => localStorage.setItem('starwake-playtest', '1')); return ctx; };
 
 const BASE = process.argv[2] || process.env.BASE_URL || 'http://127.0.0.1:5180';
 const checks = [];
 const check = (name, ok, detail = '') => { checks.push(!!ok); console.log(`${ok ? 'PASS' : 'FAIL'}  ${name}${detail ? `  (${detail})` : ''}`); };
 const browser = await chromium.launch({ headless: !process.env.HEADED });
-const page = await (await browser.newContext({ viewport: { width: 1280, height: 800 } })).newPage();
+const page = await (await optIn(browser, { viewport: { width: 1280, height: 800 } })).newPage();
 const errors = []; page.on('pageerror', (e) => errors.push(e.message));
 const wait = (ms) => new Promise((r) => setTimeout(r, ms));
 const until = async (fn, t = 15000) => { const e = Date.now() + t; while (Date.now() < e) { const v = await page.evaluate(fn).catch(() => null); if (v) return v; await wait(80); } return null; };

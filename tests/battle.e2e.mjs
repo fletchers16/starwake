@@ -11,6 +11,8 @@
  * Uses playwright-core with an installed Chromium (npx playwright install chromium).
  */
 import { chromium, devices } from 'playwright-core';
+// Opt in to the playtest hook, so the suite also runs against a deployed site.
+const optIn = async (browser, options) => { const ctx = await browser.newContext(options); await ctx.addInitScript(() => localStorage.setItem('starwake-playtest', '1')); return ctx; };
 import { mkdirSync } from 'node:fs';
 
 const BASE = process.argv[2] || process.env.BASE_URL || 'http://127.0.0.1:5180';
@@ -35,8 +37,8 @@ const browser = await chromium.launch({
   // Default GPU path (Metal on macOS); forcing SwiftShader fails to create WebGL contexts.
   args: ['--autoplay-policy=no-user-gesture-required'],
 });
-const laptopCtx = await browser.newContext({ viewport: { width: 1280, height: 800 } });
-const phoneCtx = await browser.newContext({ ...devices['iPhone 13'] });
+const laptopCtx = await optIn(browser, { viewport: { width: 1280, height: 800 } });
+const phoneCtx = await optIn(browser, { ...devices['iPhone 13'] });
 const laptop = await laptopCtx.newPage();
 const phone = await phoneCtx.newPage();
 const errors = { laptop: [], phone: [] };

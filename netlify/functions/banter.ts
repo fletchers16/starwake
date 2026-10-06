@@ -108,6 +108,8 @@ export default async (request: Request) => {
     return json({ error: "Unknown request." }, 400);
   } catch (error) {
     console.error("[banter] failed", error instanceof Error ? error.message : error);
-    return json({ error: "The announcer lost signal." }, 502);
+    // The upstream status and error code (never the key or message) help diagnose a deploy: 401 key, 429 quota.
+    const e = error as { upstream?: number; upstreamCode?: string; name?: string };
+    return json({ error: "The announcer lost signal.", upstream: e?.upstream || (e?.name === "TimeoutError" ? "timeout" : "unknown"), upstreamCode: e?.upstreamCode || "" }, 502);
   }
 };

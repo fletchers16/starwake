@@ -38,7 +38,7 @@ export async function structured<T>({ instructions, input, name, schema, maxToke
     }),
   });
   const data = await response.json().catch(() => ({}));
-  if (!response.ok) throw new Error(`OpenAI ${response.status}: ${data?.error?.message || "error"}`);
+  if (!response.ok) throw Object.assign(new Error(`OpenAI ${response.status}: ${data?.error?.message || "error"}`), { upstream: response.status, upstreamCode: String(data?.error?.code || data?.error?.type || "") });
   return JSON.parse(outputText(data)) as T;
 }
 

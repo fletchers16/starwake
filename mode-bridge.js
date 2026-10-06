@@ -272,3 +272,17 @@ async function renderDares() {
   }
 }
 renderDares();
+
+// A 14-second loop of the core moves (snipe, telegraphed shot, perfect reflect), so the hub shows how it plays.
+{
+  const clip = document.createElement('figure');
+  clip.className = 'sw-clip';
+  clip.innerHTML = '<video src="/media/starwake-loop.webm" autoplay muted loop playsinline preload="metadata" aria-label="Gameplay: sniping a rival, then barrel-rolling a shot back"></video><figcaption>GRAB · ZAP · ROLL IT BACK</figcaption>';
+  const video = clip.querySelector('video');
+  // VP8 WebM only: browsers that can't play it simply don't show the card.
+  if (!video.canPlayType('video/webm; codecs="vp8"')) clip.remove();
+  else {
+    video.addEventListener('error', () => clip.remove());
+    document.querySelector('#mode-hub-root .sw-hub-signal')?.after(clip);
+  }
+}

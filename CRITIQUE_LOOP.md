@@ -350,3 +350,4 @@ Score each 1–10 with evidence. A 10 is demo-ready on a phone with no explanati
   - **Locks:** a lock held back by the fairness gate is called off cleanly (no hanging warning, no untelegraphed shot).
   - **Small fixes:** a reload mid item-roll restores the item's real ammo; the coach's sim pilot carries one shot and stands down when the lesson ends or a lock is cancelled; phone coach steps keep a short reason line.
   - **Tests:** coach 7/7 ×2, challenge 11/11, battle 35/35.
+- Cycle 28: a gameplay loop in the hub. A 14-second clip (`public/media/starwake-loop.webm`, 1 MB, VP8) recorded headlessly from a scripted heat (countdown, snipe, telegraphed lock, perfect reflect) with Playwright's built-in video and cached ffmpeg, so nothing new was downloaded. It plays muted and looping in the hub's intro column ("GRAB · ZAP · ROLL IT BACK") and hides itself on browsers without WebM. Challenge 11/11, coach 7/7.

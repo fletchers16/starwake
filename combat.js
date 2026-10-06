@@ -204,7 +204,8 @@ export function createCombat(THREE, { world, getRoute, routeAt, makeShipMesh, sh
   let leaderId = null, frenzy = false;
   /** Steal multiplier against a target: ×2 on the crowned leader, ×2 during the frenzy. */
   // Steal: 8% of the target's score (at least ZAP_STEAL), ×2 on the crowned leader, ×2 in the frenzy.
-  const steal = (id, score = 0) => Math.max(ZAP_STEAL, Math.round(score * STEAL_RATE)) * (id === leaderId ? 2 : 1) * (frenzy ? 2 : 1);
+  // Never more than half of what they have, so one early zap can't wipe a new player back to zero.
+  const steal = (id, score = 0) => Math.min(Math.max(ZAP_STEAL, Math.round(score * STEAL_RATE)) * (id === leaderId ? 2 : 1) * (frenzy ? 2 : 1), Math.floor(Math.max(0, score) * 0.5));
 
   function dizzyStars() {
     const g = new THREE.Group();
@@ -579,6 +580,8 @@ export function createCombat(THREE, { world, getRoute, routeAt, makeShipMesh, sh
     else target = lockTarget(me, [player, ...others]);
     if (!target && b.aimAt) { b.aimAt = 0; b.relockAt = r.time + ROLL_COOLDOWN; b.coachTarget = false; onLockOn(b.name, false); return; }
     if (!target) return;
+    // Opening grace: sim pilots leave you alone for the first 8 seconds of a heat (the coach's pilot excepted).
+    if (target.kind === 'player' && !b.coachTarget && r.time < 8) return;
     // After a lock is called off, give the player a full roll cooldown before the next one.
     if (target.kind === 'player' && !b.aimAt && r.time < (b.relockAt || 0)) return;
     // Fairness: you can be zapped by sim pilots at most once every 5 seconds.

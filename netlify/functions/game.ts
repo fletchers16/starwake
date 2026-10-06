@@ -521,7 +521,7 @@ export default async (request: Request) => {
         const result = body.result || {};
         // A heat can't out-score the time actually flown: ~240 pts/s is a flawless run; allow headroom.
         const flown = Math.max(0, Math.min(HEAT_MS, Date.now() - (draft.startsAt || 0))) / 1000;
-        const score = Math.floor(finite(result.score, 0, Math.min(MAX_HEAT_SCORE, 1500 + flown * 320)));
+        const score = Math.floor(finite(result.score, 0, Math.min(MAX_HEAT_SCORE, 1500 + flown * 480)));
         pilot.progress = 1;
         pilot.score = score;
         pilot.finished = true;

@@ -80,6 +80,11 @@ npm run test:challenge
 ```
 The async dare flow on two isolated devices: a laptop sends a "beat my run" link, a phone opens it (the landing names the target), races the ghost, and gets a verdict that matches the ladder. Then the sender's hub card shows the reply, and TRY AGAIN races the phone's run. 11 checks. `npm run test:coach` checks the first-flight coach end to end, including that quitting mid-lesson leaves nothing behind (8 checks). `npm test` runs all three suites.
 
+```bash
+node tests/live-playtest.mjs https://starwakeracing.netlify.app
+```
+A live playtest against a real deploy: a laptop and a phone on throttled 4G with a phone-speed CPU play a full three-heat season, steering, firing and rolling like players. It reports sync lag (how far behind each screen draws the other), teleports, frame rate, rejected server calls with their reasons, and whether both screens agree on the standings, and saves screenshots from both devices.
+
 ## Deploy (Netlify)
 
 `netlify.toml` builds with `npm run build`, publishes `dist/` and serves functions from `netlify/functions`. Set `OPENAI_API_KEY` (and optionally `OPENAI_MODEL`, default `gpt-5-mini`) in the site's environment variables, redeploy, then run `npm run warm:ai https://<site>`.

@@ -119,3 +119,28 @@ body,#app{background:radial-gradient(ellipse at 70% -10%,#3a2370 0,transparent 5
 .sw-quick-match{display:grid;gap:2px;width:100%;margin-top:10px;padding:9px 12px;text-align:left;border:3px solid var(--cz-ink);border-radius:14px;background:var(--cz-yellow);box-shadow:0 4px 0 var(--cz-ink);color:var(--cz-ink);cursor:pointer}
 .sw-quick-match b{font:400 15px var(--display);letter-spacing:.05em}
 .sw-quick-match span{font-size:12px;opacity:.75}
+/* Team Battle */
+.team-control{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:12px 20px;border-top:1px solid rgba(201,189,242,.14)}
+.team-control strong{display:block;font:400 13px var(--display);letter-spacing:.06em;color:#fff}
+.team-control small{display:block;font-size:11px;color:var(--cz-lilac);margin-top:3px}
+#team-toggle{min-width:58px;padding:6px 10px;border:3px solid var(--cz-ink);border-radius:12px;background:var(--cz-panel-2);color:var(--cz-lilac);font:400 14px var(--display);box-shadow:0 3px 0 var(--cz-ink);cursor:pointer}
+#team-toggle[aria-pressed=true]{background:linear-gradient(90deg,#ff5d6e 50%,#4f8bff 50%);color:#fff;text-shadow:0 2px 0 var(--cz-ink)}
+#team-toggle:disabled{cursor:default;opacity:.8}
+.team-dot{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:7px;border:2px solid var(--cz-ink);vertical-align:0}
+.team-dot.red{background:#ff5d6e}.team-dot.blue{background:#4f8bff}
+#race-screen .team-bar{display:grid;grid-template-columns:auto minmax(70px,1fr) auto;align-items:center;gap:6px;width:100%;font:400 13px var(--display);letter-spacing:.04em;margin-top:2px}
+#race-screen .team-bar[hidden]{display:none}
+#race-screen .team-bar b{font-weight:400;color:#fff;-webkit-text-stroke:4px var(--cz-ink);paint-order:stroke fill}
+#race-screen .team-bar b.red span,#race-screen .team-bar .red{color:#ff8a96}
+#race-screen .team-bar b.blue span,#race-screen .team-bar .blue{color:#8fb4ff}
+#race-screen .team-bar i{height:10px;border:2px solid var(--cz-ink);border-radius:999px;background:#4f8bff;overflow:hidden}
+#race-screen .team-bar em{display:block;height:100%;width:50%;background:#ff5d6e;transition:width .3s}
+#race-screen .draft-chip{font:400 13px var(--display);letter-spacing:.05em;color:var(--cz-ink);background:#a8ff60;border:3px solid var(--cz-ink);border-radius:999px;padding:4px 10px 3px;box-shadow:0 3px 0 var(--cz-ink);animation:pending-blink .8s ease-in-out infinite}
+.team-result{margin:12px 0;padding:12px 14px;border:3px solid var(--cz-ink);border-radius:18px;background:var(--cz-panel);box-shadow:0 5px 0 var(--cz-ink);text-align:center}
+.team-result.red{background:linear-gradient(135deg,rgba(255,93,110,.35),transparent),var(--cz-panel)}
+.team-result.blue{background:linear-gradient(135deg,rgba(79,139,255,.35),transparent),var(--cz-panel)}
+.team-result small{display:block;font:400 12px var(--display);letter-spacing:.06em;color:var(--cz-lilac)}
+.team-result b{display:block;font:400 24px var(--display);letter-spacing:.03em;color:#fff;text-shadow:0 3px 0 var(--cz-ink);margin:4px 0}
+.team-result span{font:400 15px var(--display);letter-spacing:.04em}
+.team-result i.red{font-style:normal;color:#ff8a96}.team-result i.blue{font-style:normal;color:#8fb4ff}
+@media(max-width:760px){#race-screen .team-bar{font-size:10px}#race-screen .draft-chip{font-size:10px;padding:3px 7px 2px}}

@@ -16,6 +16,8 @@ type Pilot = {
   leftAt?: number;
   // Forge Party: this pilot's one-line world idea, fused with everyone's by the host.
   idea?: string;
+  // Team Battle side.
+  team?: "red" | "blue";
 };
 
 type Room = {
@@ -42,6 +44,9 @@ type Room = {
   ladderPosted?: string[];
   // Quick Match lobby: anyone pressing QUICK MATCH may be seated here.
   public?: boolean;
+  // Team Battle: red vs blue, alternating by seat; sim pilots fill the smaller side.
+  teams?: boolean;
+  botTeams?: ("red" | "blue")[];
   scores: Array<{ playerId: string; score: number; heat: number; name?: string; kind?: "human" | "bot"; flightTime?: number; dnf?: boolean }>;
   updatedAt: number;
 };
@@ -221,6 +226,13 @@ function settleHeat(room: Room) {
   if (room.players.every((p) => p.finished)) room.phase = room.heat >= 3 ? "complete" : "results";
 }
 
+/** Team Battle: alternate humans red/blue by seat, then sim pilots continue the alternation. */
+function balanceTeams(room: Room) {
+  if (!room.teams) { room.players.forEach((p) => delete p.team); delete room.botTeams; return; }
+  room.players.forEach((p, i) => { p.team = i % 2 ? "blue" : "red"; });
+  room.botTeams = Array.from({ length: room.bots }, (_, j) => ((room.players.length + j) % 2 ? "blue" : "red"));
+}
+
 function startHeat(room: Room) {
   room.phase = "race";
   room.startsAt = Date.now() + COUNTDOWN_MS;
@@ -235,6 +247,7 @@ function removePilot(room: Room, playerId: string) {
     room.hostId = [...room.players].sort((a, b) => (b.lastSeen || 0) - (a.lastSeen || 0))[0].id;
   }
   if (room.phase === "race") settleHeat(room);
+  else balanceTeams(room);
 }
 
 /**
@@ -310,6 +323,7 @@ function seatPilot(draft: Room, body: Record<string, unknown>, id: string, token
   let name = cleanName(body.name);
   for (let n = 2; draft.players.some((p) => p.name === name); n++) name = `${cleanName(body.name).slice(0, 15)} ${n}`;
   draft.players.push({ id, token, name, ship: cleanShip(body.ship), kind: "human", progress: 0, score: 0, finished: false, lastSeen: Date.now() });
+  balanceTeams(draft);
 }
 
 const QUICK_INDEX = "quick/index";
@@ -558,6 +572,7 @@ export default async (request: Request) => {
       if (action === "bots") {
         if (draft.hostId !== playerId || draft.phase !== "lobby") throw new Error("Only the lobby host can change sim pilots.");
         draft.bots = Math.max(0, Math.min(8 - draft.players.length, Number(body.count) || 0));
+        balanceTeams(draft);
       } else if (action === "start") {
         if (draft.hostId !== playerId || draft.phase !== "lobby") throw new Error("Only the lobby host can start this race.");
         startHeat(draft);
@@ -588,6 +603,11 @@ export default async (request: Request) => {
         draft.extendedMs = (draft.extendedMs || 0) + ms;
         draft.startsAt = (draft.startsAt || 0) + ms;
         draft.endsAt = (draft.endsAt || 0) + ms;
+      } else if (action === "teams") {
+        // Team Battle on or off (host, lobby only).
+        if (draft.hostId !== playerId || draft.phase !== "lobby") throw new Error("Only the lobby host can switch Team Battle.");
+        draft.teams = !!body.on;
+        balanceTeams(draft);
       } else if (action === "idea") {
         // Forge Party: each pilot pitches one short world idea in the lobby.
         if (draft.phase !== "lobby") throw new Error("Ideas are pitched in the lobby, before heat 1.");

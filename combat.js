@@ -243,6 +243,8 @@ export function createCombat(THREE, { world, getRoute, routeAt, makeShipMesh, sh
   let effects = [];         // beams, impact flashes, seekers
   let pods = [];            // pod distances (one lap)
   let forks = [];           // [start, end] of each fork section (one lap): sim pilots pick a lane
+  let teamOf = null, myTeam = null; // Team Battle: id -> 'red' | 'blue' ('player' is you)
+  const foes = (list, team = myTeam) => (teamOf && team ? list.filter((o) => teamOf(o.id === 'player' ? 'player' : o.id) !== team) : list);
   let zapCounts = {};       // human target id -> cumulative zaps we've landed
   let zapSeen = {};         // shooter id -> zaps on us already applied
   let paid = {};            // shooter id -> points we've actually lost to them (reported back)
@@ -313,9 +315,11 @@ export function createCombat(THREE, { world, getRoute, routeAt, makeShipMesh, sh
   // ---------- lifecycle ----------
 
   let field = () => 0;
-  function start(r, { botPaces = [], botFinals = [], podDistances = [], fieldScore = null, forks: forkList = [] } = {}) {
+  function start(r, { botPaces = [], botFinals = [], podDistances = [], fieldScore = null, forks: forkList = [], teams = null } = {}) {
     if (fieldScore) field = fieldScore;
     forks = forkList;
+    teamOf = teams ? (id) => (id === 'player' ? teams.mine : teams.of(id)) : null;
+    myTeam = teams?.mine || null;
     dispose();
     pods = podDistances.slice().sort((a, b) => a - b);
     racers = botPaces.map((pace, i) => {
@@ -552,7 +556,7 @@ export function createCombat(THREE, { world, getRoute, routeAt, makeShipMesh, sh
 
   function fire(r, rivals, shipPos) {
     if (!r.item || r.rolling || r.time < r.stunUntil) return;
-    const kind = r.item, list = opponents(r, rivals), me = { d: r.distance, x: r.x, y: r.y };
+    const kind = r.item, list = foes(opponents(r, rivals)), me = { d: r.distance, x: r.x, y: r.y };
     if (kind === 'blaster') {
       const target = lockTarget(me, list);
       const from = shipPos.clone().add(new THREE.Vector3(0, 0.2, -1.6));
@@ -595,7 +599,7 @@ export function createCombat(THREE, { world, getRoute, routeAt, makeShipMesh, sh
   /** Blaster lock for the HUD reticle (null when nothing is in the cone). */
   function currentLock(r, rivals) {
     if (r.item !== 'blaster' || r.rolling) return null;
-    return lockTarget({ d: r.distance, x: r.x, y: r.y }, opponents(r, rivals));
+    return lockTarget({ d: r.distance, x: r.x, y: r.y }, foes(opponents(r, rivals)));
   }
 
   // ---------- simulation ----------
@@ -695,7 +699,7 @@ export function createCombat(THREE, { world, getRoute, routeAt, makeShipMesh, sh
     let target;
     if (b.aimAt) target = loose(player) ? player : null; // committed lock on you
     else if (b.coachTarget) target = lockTarget(me, [player]); // the coach's sim pilot: only you
-    else target = lockTarget(me, [player, ...others]);
+    else target = lockTarget(me, foes([player, ...others], teamOf ? teamOf(b.id) : null));
     if (!target && b.aimAt) { b.aimAt = 0; b.relockAt = r.time + ROLL_COOLDOWN; b.coachTarget = false; onLockOn(b.name, false); return; }
     if (!target) return;
     // Opening grace: sim pilots leave you alone for the first 8 seconds of a heat (the coach's pilot excepted).
@@ -843,6 +847,19 @@ export function createCombat(THREE, { world, getRoute, routeAt, makeShipMesh, sh
   }
 
   return {
+    /** Team Battle: the teammate you're slipstreaming (2–14 m ahead, close behind them), or null. */
+    drafting(r, rivals) {
+      if (!teamOf) return null;
+      return opponents(r, rivals).find((o) => teamOf(o.id) === myTeam && o.d - r.distance > 2 && o.d - r.distance < 14 && Math.abs(o.x - r.x) < 2.4 && Math.abs(o.y - r.y) < 2) || null;
+    },
+    /** Team Battle: live team totals (your score plus every racer's on each side). */
+    teamScores(r, rivals) {
+      if (!teamOf) return null;
+      const out = { red: 0, blue: 0 };
+      out[myTeam] += Math.max(0, Math.floor(r.score || 0));
+      for (const o of opponents(r, rivals)) { const t = teamOf(o.id); if (t) out[t] += o.score || 0; }
+      return out;
+    },
     /** A comic burst over the player's ship (collisions use it: BONK!, CRUNCH!). */
     bonk: (r, word = 'BONK!', fill = '#ff9a52') => comic(worldPos(r, r.distance + 2.4, r.x, r.y), word, fill, 2.4),
     makeRacerMesh: (opts) => makeNpcShip(0, opts),

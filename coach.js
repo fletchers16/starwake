@@ -1,6 +1,6 @@
 /**
  * First-flight coach: on a player's first solo race, three live prompts teach the battle verbs
- * by doing them instead of reading them: grab a ? pod, zap the racer it puts ahead of you,
+ * by doing them instead of reading them: grab a ? crate, zap the racer it puts ahead of you,
  * then barrel-roll a sim pilot's telegraphed shot. Runs once (remembered in localStorage),
  * and can be skipped.
  */
@@ -26,7 +26,7 @@ export function createCoach({ el, combat, touch }) {
     document.body.classList.add('coaching');
     step = 0;
     stepAt = r.time;
-    say('Fly through a <em>?</em> pod', 'Rainbow boxes give you an item. Steer into one.');
+    say('Fly through a <em>?</em> crate', 'Crates give you an item. Steer into one.');
   }
 
   function update(r) {
@@ -48,7 +48,7 @@ export function createCoach({ el, combat, touch }) {
         if (combat.coachArm(r)) armedAt = r.time;
       }
       // The PERFECT REFLECT banner already celebrates; the card just hands over.
-      if ((r.reflects || 0) > 0) { step = 3; say('Now win the heat!', 'You know every move: pods, zaps and rolls.'); setTimeout(finish, 2600); }
+      if ((r.reflects || 0) > 0) { step = 3; say('Now win the heat!', 'You know every move: crates, zaps and rolls.'); setTimeout(finish, 2600); }
       else if (armedAt && r.stunUntil > stunSeen && !retried) {
         // Hit before rolling: one more telegraphed shot.
         retried = true; stunSeen = r.stunUntil; armedAt = 0; stepAt = r.time + 0.8;

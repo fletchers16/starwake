@@ -1,66 +1,53 @@
 # Starwake: cartoon battle racing
 
-Race your friends and zap them. Starwake is a browser battle racer for 2–8 players on any device: grab "?" pods, snipe rivals with laser blasters, steal their points, and out-fly five alien rivals whose trash talk is written by OpenAI. Play live through an invite link, or dare a friend to beat your recorded run whenever they're free.
+**Play: https://starwakeracing.netlify.app**
 
-Built for the Handshake AI Skills Studio × OpenAI Multiplayer Game Challenge. The submission copy is in [SUBMISSION.md](SUBMISSION.md).
+First place is a target. Starwake is a cartoon space battle racer for 2–8 friends on any phone or laptop. Share a link or QR code: no install, no account. Grab crates, blast whoever is ahead to steal their points, barrel-roll their lasers straight back, and fight for the crown. OpenAI writes the alien rivals' trash talk, recaps every race, and fuses everyone's ideas into a brand-new world.
+
+Built for the Handshake AI Skills Studio × OpenAI Multiplayer Game Challenge. Submission copy: [SUBMISSION.md](SUBMISSION.md).
+
+## How it maps to the judging criteria
+
+| Criterion | What Starwake does |
+|---|---|
+| **Execution** | Live multiplayer for 2–8 on separate devices, verified with full three-heat seasons on the deployed site (laptop vs a throttled-4G phone: 0 errors, both screens agree on every standing, each screen shows the other player within a second). Reloads mid-race resume your seat; the room survives the host leaving; rematches; server-side score caps and signed pilot tokens. Automated suites plus a live playtest. See [docs/VERIFICATION.md](docs/VERIFICATION.md). |
+| **Creativity** | Racing plus combat: steal points with zaps, reflect shots with a barrel roll, a crown worth double, a final-15-second Zap Frenzy, forks with a boost lane and a ring lane. **Forge Party** fuses every player's one-line idea into the track the room races. Async "beat my run" dares replay your flight as a ghost your friend can zap. |
+| **Usefulness / value** | A 3-minute session that works across phones and laptops with one link or a QR code. Solo races against five alien rivals when friends are busy; dares when they're in another time zone; a coached first race and Flight School so nobody needs the rules explained. |
+| **Polish** | Hand-built cartoon ships, crates and grumpy asteroids with ink outlines; comic ZAP!/POW!/BOING! bursts; six themed worlds; a cartoon HUD sized separately for phones; season awards and a heat-by-heat chart; graceful AI fallbacks; reduced-motion support. |
 
 ## How to play
 
-- **Score the most points across three 60-second heats** (a challenge is a single heat).
-- **"?" pods** give a random item, and racers further behind get better ones:
-  - **Laser Blaster:** 3 shots that auto-aim at the racer ahead.
-  - **Comet Seeker:** hunts down 1st place.
-  - **Bubble Shield:** blocks one zap.
-  - **Turbo Snack:** an instant boost.
-- **Zaps** spin the target out and **steal 8% of their points** (minimum 40). The leader wears a **crown** worth double. In the final 15 seconds, **Zap Frenzy** doubles every steal again.
-- **Barrel roll** (**Q**, or double-tap on a phone): a zap that lands mid-roll bounces back at whoever fired it. Sim pilots flash a lock-on warning before they fire, so you can time it, and they sometimes roll your shots back at you too.
-- **Ring trails** score 100 × your combo (up to ×5), and a perfect trail adds +300. Gold stars refill boost. **Space cows** are worth +250. Glowing-outlined rocks and mines cost hull.
-- **Controls:**
-  - Steer with **A/D** or **←/→**, climb with **W/S** or **↑/↓**.
-  - **Space** boosts, **F** fires and **Q** barrel-rolls.
-  - **1–3** send emotes in multiplayer.
-  - On a phone, drag to steer and use the on-screen buttons.
-
-**First flight:** a brand-new player's first solo race is coached live, one move at a time: fly through a ? pod, zap the racer it puts ahead of you, then barrel-roll the shot when a sim pilot locks on. It's skippable and runs once.
+- **Score the most points across three 60-second heats** (a dare is a single heat).
+- **"?" crates** give a random item, and racers further behind get better ones: a **Laser Blaster** (3 shots that auto-aim at the racer ahead), a **Comet Seeker** (hunts 1st place), a **Bubble Shield** (blocks one zap) or a **Turbo Snack** (instant boost).
+- **Zaps** spin the target out and **steal 8% of their points** (never more than half). The leader wears a **crown** worth double, and in the final 15 seconds **Zap Frenzy** doubles every steal again.
+- **Barrel roll** (**Q**, or tap **ROLL**): a zap that lands mid-roll bounces back at whoever fired it. Alien rivals flash **LOCKED ON** before they shoot, so you can time it.
+- **The track** sweeps left, right, up and down. At a **fork**, a pillar wall splits it: the left lane has boost gates, the right lane a ring trail and a crate. **Boost gates** give a burst of speed; **ring trails** come as arcs, slaloms, corkscrews and dives and score 100 × your combo (up to ×5). Grumpy asteroids and sea-mines cost hull.
+- **Controls:** steer with **A/D** or **←/→**, climb with **W/S** or **↑/↓**, **Space** boosts, **F** fires, **Q** rolls, **1–3** send emotes. On a phone, drag to steer and use the on-screen buttons.
+- **Flight School** (in the hub) replays the coached first race: fly through a crate, zap the racer it puts ahead, then roll a telegraphed shot.
 
 ## Playing together
 
-- **Live battles:** **⚔ BATTLE → OPEN A BATTLE ROOM**, then share the invite link or let friends scan the lobby's QR code. Friends join from any phone or laptop with no install or account.
-  - The server keeps every screen in sync: live positions, zaps, victim-confirmed point steals, the room-wide steal feed and emotes.
-  - After heat 3, the host can **REMATCH** with the same crew.
-  - Sim pilots fill empty seats.
-- **Async dares:** on any results screen, press **BEAT MY RUN**.
-  - Your friend races your recorded flight on the exact same track layout, as a ghost they can zap. The target stays fixed.
-  - Each chain of dare links keeps a **ladder** of everyone who tried.
-  - The hub's **Your dares** card shows who replied.
+- **Live battles:** **PLAY WITH FRIENDS** opens a room; share the link or let friends scan the lobby's QR code. The server keeps every screen in sync: positions, zaps, victim-confirmed steals, the steal feed and emotes. After heat 3, the host can **REMATCH**. Alien rivals fill empty seats.
+- **Forge Party:** in the lobby, everyone pitches a world ("candy volcano", "haunted space station"), and the aliens chip in too. The host fuses the ideas and OpenAI builds the course the whole room races. One live fusion produced *SUGARFIRE: a haunted candy station perched above molten syrup vents*.
+- **Async dares:** on any results screen, **BEAT MY RUN** sends a link. Your friend races your recorded flight on the same layout as a ghost they can zap; every reply joins that link's ladder.
 
 ## Built with OpenAI
 
-- **AI rivals:** ZORP, BLIX, MUNGO, QUEEP and GLORB taunt you when they zap you, get zapped, or take the lead.
-  - Lines are written per world by `netlify/functions/banter.ts` and cached once per course.
-  - `npm run warm:ai <site>` pre-generates them after deploy.
-- **AI announcer:** a two-sentence recap of every heat and a three-sentence story at the end of each season, from the real standings and stats.
-- **World Forge:** turns a sentence into a raceable world (track shape, palette, gravity, crosswind, hazards) using structured outputs. `course-forge.js` clamps every value so AI tracks are fair and flyable.
-- **Limits and fallbacks:**
-  - Every AI call is rate-limited per IP per day, and repeated prompts are cached.
-  - Without `OPENAI_API_KEY` the game falls back to canned lines and template recaps.
+- **Alien rivals:** ZORP, BLIX, MUNGO, QUEEP and GLORB taunt you when they zap you, get zapped, or take the lead, in lines written per world (`netlify/functions/banter.ts`, cached per course).
+- **Announcer:** a two-sentence recap of every heat and a three-sentence season story, written from the real standings and stats.
+- **World Forge and Forge Party:** a sentence (or everyone's fused ideas) becomes a raceable world: track shape, palette, gravity, crosswind and hazards, via structured outputs. `course-forge.js` clamps every value so AI tracks are fair and flyable.
+- **Limits and fallbacks:** per-IP daily limits, a site-wide daily cap (`AI_DAILY_CAP`) and caching. Without a key or credit, the game uses canned lines, template recaps and remixed built-in worlds, so nothing breaks.
 
 ## Architecture
 
 | Area | Files |
 |---|---|
-| Rendering | three.js, a toon/ink cartoon style, six hand-built worlds (`world-themes.js`, `landmarks.js`, `skyline.js`, `textures.js`), a post-processing grade |
-| Battle systems | `combat.js` (items, zaps, NPC racers, bounty, frenzy), `aliens.js` (alien pilots, canned lines), `critters.js` (space cows, UFO spectators, crown), `challenge.js` (run recording, links) |
-| Game shell | `game.js` (race loop, HUD, lobby, results), `mode-hub.js` / `mode-bridge.js` (hub, invite and dare landings) |
-| Server | `netlify/functions/game.ts`, `forge.ts`, `banter.ts`, `netlify/lib/openai.ts` |
+| Rendering | three.js with a toon/ink style: `ships3d.js` (cartoon ships), `obstacles.js` (asteroids, mines, boost gates, fork pillars), `world-themes.js`, `landmarks.js`, `skyline.js` |
+| Battle systems | `combat.js` (crates, items, zaps, comic bursts, alien racers, bounty, frenzy), `aliens.js`, `critters.js`, `challenge.js`, `coach.js` |
+| Game shell | `game.js` (race loop, HUD, lobby, Forge Party, results, awards), `mode-hub.js` / `mode-bridge.js` (landing, hub, invite and dare links), `cartoon-skin.css` |
+| Server | `netlify/functions/game.ts` (rooms on Netlify Blobs with strong consistency and conditional writes), `forge.ts`, `banter.ts`, `netlify/lib/openai.ts` |
 
-### `netlify/functions/game.ts`
-
-Rooms live on Netlify Blobs with strong consistency and conditional writes.
-
-- **Who can act:** each pilot has a private token that authorises every action. The server is authoritative for heat clocks, sim-pilot scores (rubber-banded to the human field) and score caps (by time flown).
-- **Zaps and steals:** zap inboxes and confirmed steals are scoped by room, season round and heat.
-- **Challenges:** stored with ladders. A dare's target and every ladder entry come from scores the server recorded for a signed-in pilot.
+The server is authoritative for heat clocks, alien racer scores (rubber-banded to the human field), score caps and room state. Each pilot has a private token that authorises its actions; zap and steal records are scoped by room, season and heat.
 
 ## Development
 
@@ -68,23 +55,18 @@ Rooms live on Netlify Blobs with strong consistency and conditional writes.
 npm install
 npm run dev
 ```
-That serves http://127.0.0.1:5180, running the real Netlify functions with an in-memory Blobs store. `window.__starwake` exposes dev hooks: `state`, `scene`, `combat`, `capture()` and `stats()`.
+Serves http://127.0.0.1:5180 with the real Netlify functions and an in-memory Blobs store. `window.__starwake` exposes dev hooks (on a deployed site only when a test sets the `starwake-playtest` localStorage flag).
 
 ```bash
-npm run test:battle
+npm test
 ```
-A laptop and an emulated iPhone, in isolated browsers, play a full PvP season. They join through an invite link, zap each other (the keyboard on one, the touch FIRE button on the other), check credits, emotes, standings and security, keep the room when the host finishes last, survive phone reloads mid-heat and between heats, send emotes in the lobby and in the race, bounce a zap back with a barrel roll, and run a rematch. 35 checks.
-
-```bash
-npm run test:challenge
-```
-The async dare flow on two isolated devices: a laptop sends a "beat my run" link, a phone opens it (the landing names the target), races the ghost, and gets a verdict that matches the ladder. Then the sender's hub card shows the reply, and TRY AGAIN races the phone's run. 11 checks. `npm run test:coach` checks the first-flight coach end to end, including that quitting mid-lesson leaves nothing behind (8 checks). `npm test` runs all three suites.
+Runs the battle (35 checks), challenge (11) and coach (8) suites against a local dev server.
 
 ```bash
 node tests/live-playtest.mjs https://starwakeracing.netlify.app
 ```
-A live playtest against a real deploy: a laptop and a phone on throttled 4G with a phone-speed CPU play a full three-heat season, steering, firing and rolling like players. It reports sync lag (how far behind each screen draws the other), teleports, frame rate, rejected server calls with their reasons, and whether both screens agree on the standings, and saves screenshots from both devices.
+Plays a full live season on a deploy: a laptop and a phone on throttled 4G with a phone-speed CPU, both steering, firing and rolling. Reports sync lag, teleports, frame rate, rejected server calls and whether both screens agree on the standings.
 
 ## Deploy (Netlify)
 
-`netlify.toml` builds with `npm run build`, publishes `dist/` and serves functions from `netlify/functions`. Set `OPENAI_API_KEY` (and optionally `OPENAI_MODEL`, default `gpt-5-mini`) in the site's environment variables, redeploy, then run `npm run warm:ai https://<site>`.
+`netlify.toml` builds with `npm run build`, publishes `dist/` and serves functions from `netlify/functions`. Set `OPENAI_API_KEY` (optionally `OPENAI_MODEL`, default `gpt-5-mini`, and `AI_DAILY_CAP`, default 800), redeploy, then run `npm run warm:ai https://<site>`.

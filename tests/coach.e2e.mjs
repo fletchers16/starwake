@@ -37,7 +37,7 @@ try {
   const leak = await page.evaluate(() => ({ coaching: document.body.classList.contains('coaching'), hidden: document.querySelector('#coach').hidden, done: localStorage.getItem('starwake-coached') }));
   check('quitting mid-lesson clears the coach without marking it done', !leak.coaching && leak.hidden && leak.done !== '1', JSON.stringify(leak));
   await launch();
-  check('coach opens with the pod lesson', /pod/i.test(await coach()), await coach());
+  check('coach opens with the crate lesson', /crate/i.test(await coach()), await coach());
   await page.evaluate(() => { const r = window.__starwake.state.race; r.item = 'blaster'; r.ammo = 3; }); // as if a pod was flown through
   await wait(300);
   check('picking up an item moves to the zap lesson', /zap/i.test(await coach()), await coach());

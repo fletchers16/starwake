@@ -282,6 +282,21 @@ async function renderDares() {
 }
 renderDares();
 
+// Flight School: replay the coached first race any time (it teaches crates, zaps and the barrel roll by doing them).
+{
+  const school = document.createElement('button');
+  school.type = 'button';
+  school.className = 'sw-flight-school';
+  school.innerHTML = '<b>🎓 FLIGHT SCHOOL</b><span>New here? A coach teaches every move in one race.</span>';
+  school.addEventListener('click', () => {
+    try { localStorage.removeItem('starwake-coached'); } catch {}
+    root.querySelector('[data-mode=pve]')?.click();
+    root.querySelector('.sw-hub-launch')?.click();
+  });
+  // After the gameplay clip is placed, so the school sits right under the pitch.
+  window.setTimeout(() => root.querySelector('.sw-hub-signal')?.after(school), 0);
+}
+
 // A 14-second loop of the core moves (snipe, telegraphed shot, perfect reflect), so the hub shows how it plays.
 {
   const clip = document.createElement('figure');

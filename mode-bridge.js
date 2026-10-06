@@ -174,6 +174,7 @@ window.addEventListener('starwake:launch-complete', (event) => {
     const { intent, code } = event.detail || {};
     if (intent) window.setTimeout(() => {
       if (intent === 'join') { const input = document.querySelector('#join-code'); if (input) input.value = code; window.starwakeJoinLobby?.(); return; }
+      if (intent === 'quick') { window.starwakeQuickMatch?.(); return; }
       root.querySelector(`[data-mode=${intent === 'solo' ? 'pve' : 'pvp'}]`)?.click();
       root.querySelector('.sw-hub-launch')?.click();
     }, 160);
@@ -281,6 +282,16 @@ async function renderDares() {
   }
 }
 renderDares();
+
+// Quick Match in the hub, beside the invite-code row.
+{
+  const quick = document.createElement('button');
+  quick.type = 'button';
+  quick.className = 'sw-quick-match';
+  quick.innerHTML = "<b>⚡ QUICK MATCH</b><span>Race whoever's online right now</span>";
+  quick.addEventListener('click', () => window.starwakeQuickMatch?.());
+  (root.querySelector('.sw-pvp-join') || root.querySelector('.sw-hub-launch'))?.after(quick);
+}
 
 // Flight School: replay the coached first race any time (it teaches crates, zaps and the barrel roll by doing them).
 {

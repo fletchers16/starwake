@@ -48,6 +48,7 @@ if (intro && launchButton && skipButton) {
   launchButton.addEventListener('click', () => finishLaunch(false, { kind: 'battle' }));
   skipButton.addEventListener('click', () => finishLaunch(true));
   document.querySelector('#launch-solo')?.addEventListener('click', () => finishLaunch(true, { kind: 'solo' }));
+  document.querySelector('#launch-quick')?.addEventListener('click', () => finishLaunch(true, { kind: 'quick' }));
   const join = document.querySelector('#launch-join'), code = document.querySelector('#launch-code');
   code?.addEventListener('input', () => { code.value = code.value.toUpperCase().replace(/[^A-Z0-9]/g, ''); code.classList.remove('bad'); });
   join?.addEventListener('submit', (event) => {

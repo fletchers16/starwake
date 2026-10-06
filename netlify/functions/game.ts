@@ -40,6 +40,8 @@ type Room = {
   // Set when the room was opened to race a challenge link; its pilots' scores may join that ladder.
   challengeId?: string;
   ladderPosted?: string[];
+  // Quick Match lobby: anyone pressing QUICK MATCH may be seated here.
+  public?: boolean;
   scores: Array<{ playerId: string; score: number; heat: number; name?: string; kind?: "human" | "bot"; flightTime?: number; dnf?: boolean }>;
   updatedAt: number;
 };
@@ -299,6 +301,19 @@ async function observeRoom(code: string, playerId?: string) {
   return { room: found.room, live, emotes: await recentEmotes(code, found.room) };
 }
 
+/** Seat a new human in a room (lobby or between heats), making room by dropping a sim pilot if needed. */
+function seatPilot(draft: Room, body: Record<string, unknown>, id: string, token: string) {
+  if (draft.players.length >= 8) throw new Error("This lobby is full.");
+  // Humans take priority over sim pilots: drop a bot to make room.
+  if (totalOccupancy(draft) >= 8) draft.bots = Math.max(0, draft.bots - 1);
+  // Two pilots can't share a name in one room: the newcomer gets a number.
+  let name = cleanName(body.name);
+  for (let n = 2; draft.players.some((p) => p.name === name); n++) name = `${cleanName(body.name).slice(0, 15)} ${n}`;
+  draft.players.push({ id, token, name, ship: cleanShip(body.ship), kind: "human", progress: 0, score: 0, finished: false, lastSeen: Date.now() });
+}
+
+const QUICK_INDEX = "quick/index";
+
 export default async (request: Request) => {
   if (request.method === "OPTIONS") return new Response(null, { status: 204, headers: { "Access-Control-Allow-Origin": "*", "Access-Control-Allow-Headers": "Content-Type", "Access-Control-Allow-Methods": "GET, POST, OPTIONS" } });
   try {
@@ -313,6 +328,41 @@ export default async (request: Request) => {
 
     const body = await request.json();
     const action = body.action;
+
+    if (action === "quick") {
+      // Quick Match: join the newest open public lobby whose host is still around, or open one.
+      const now = Date.now();
+      const index = (((await store().get(QUICK_INDEX, { type: "json" }).catch(() => null)) as { code: string; at: number }[] | null) || []).filter((e) => validCode(e.code) && now - e.at < 15 * 60_000);
+      for (const entry of [...index].sort((a, b) => b.at - a.at)) {
+        const id = crypto.randomUUID();
+        const token = crypto.randomUUID();
+        try {
+          const { room } = await mutateRoom(entry.code, (draft) => {
+            const host = draft.players.find((p) => p.id === draft.hostId);
+            if (!draft.public || draft.phase !== "lobby" || !host || now - (host.lastSeen || 0) > 45_000) throw new Error("closed");
+            seatPilot(draft, body, id, token);
+          });
+          return json({ room: publicRoom(room), playerId: id, token, host: room.hostId === id, quick: true });
+        } catch { /* closed, full or gone: try the next one */ }
+      }
+      for (let attempt = 0; attempt < 8; attempt++) {
+        const code = Math.random().toString(36).slice(2, 7).toUpperCase();
+        if (!validCode(code)) continue;
+        const hostId = crypto.randomUUID();
+        const token = crypto.randomUUID();
+        const room: Room = {
+          code, hostId, phase: "lobby", heat: 1, public: true,
+          courseId: COURSES[Math.floor(Math.random() * COURSES.length)], course: null, coursePrompt: "", courseSeed: 0,
+          players: [{ id: hostId, token, name: cleanName(body.name), ship: cleanShip(body.ship), kind: "human", progress: 0, score: 0, finished: false, lastSeen: now }],
+          bots: 2, botSkill: Math.max(0.45, Math.min(2, Number(body.botSkill) || 1)), scores: [], updatedAt: now,
+        };
+        const result = await store().setJSON(code, room, { onlyIfNew: true });
+        if (!result.modified) continue;
+        await store().setJSON(QUICK_INDEX, [...index, { code, at: now }].slice(-20)).catch(() => {});
+        return json({ room: publicRoom(room), playerId: hostId, token, host: true, quick: true });
+      }
+      return json({ error: "Could not open a quick match. Try again." }, 503);
+    }
 
     if (action === "create") {
       const forged = normalizeCourseDefinition(body.course);
@@ -423,13 +473,7 @@ export default async (request: Request) => {
         // New pilots can join in the lobby or between heats (they fly from the next heat).
         if (draft.phase === "race") throw new Error("A heat is in progress. Try again in a moment: the room accepts pilots between heats.");
         if (draft.phase === "complete") throw new Error("This season is over. Ask the host for a rematch or a new room.");
-        if (draft.players.length >= 8) throw new Error("This lobby is full.");
-        // Humans take priority over sim pilots: drop a bot to make room.
-        if (totalOccupancy(draft) >= 8) draft.bots = Math.max(0, draft.bots - 1);
-        // Two pilots can't share a name in one room: the newcomer gets a number.
-        let name = cleanName(body.name);
-        for (let n = 2; draft.players.some((p) => p.name === name); n++) name = `${cleanName(body.name).slice(0, 15)} ${n}`;
-        draft.players.push({ id, token, name, ship: cleanShip(body.ship), kind: "human", progress: 0, score: 0, finished: false, lastSeen: Date.now() });
+        seatPilot(draft, body, id, token);
       });
       return json({ room: publicRoom(room), playerId: id, token, host: room.hostId === id });
     }

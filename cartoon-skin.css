@@ -111,3 +111,11 @@ body,#app{background:radial-gradient(ellipse at 70% -10%,#3a2370 0,transparent 5
 .sw-flight-school:hover{transform:translateY(-2px)}
 .sw-flight-school b{font:400 15px var(--display);letter-spacing:.05em;color:var(--cz-yellow)}
 .sw-flight-school span{font-size:12px;color:var(--cz-lilac)}
+.launch-links{display:flex;flex-wrap:wrap;gap:4px 18px;margin-top:14px}
+.launch-links .launch-skip{margin-top:0!important}
+.launch-quick{background:none;border:0;padding:5px 0;font:400 13px var(--display);letter-spacing:.05em;color:var(--cz-yellow);cursor:pointer}
+.launch-quick:hover{color:#fff}
+#launch-intro.invited .launch-quick{display:none}
+.sw-quick-match{display:grid;gap:2px;width:100%;margin-top:10px;padding:9px 12px;text-align:left;border:3px solid var(--cz-ink);border-radius:14px;background:var(--cz-yellow);box-shadow:0 4px 0 var(--cz-ink);color:var(--cz-ink);cursor:pointer}
+.sw-quick-match b{font:400 15px var(--display);letter-spacing:.05em}
+.sw-quick-match span{font-size:12px;opacity:.75}

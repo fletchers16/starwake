@@ -23,6 +23,7 @@ try {
   const challenge = String(params.get('challenge') || '');
   const label = document.querySelector('#launch-button span:nth-child(2)');
   const eyebrow = document.querySelector('.launch-eyebrow');
+  if (/^[A-Z0-9]{5}$/.test(invitedRoom) || /^[a-z0-9]{8}$/.test(challenge)) document.querySelector('#launch-intro')?.classList.add('invited');
   if (/^[A-Z0-9]{5}$/.test(invitedRoom)) {
     if (label) label.textContent = `JOIN ROOM ${invitedRoom}`;
     if (eyebrow) eyebrow.innerHTML = from ? `<i></i> ⚔ ${from} CHALLENGES YOU TO A LIVE BATTLE` : `<i></i> YOU'VE BEEN INVITED TO A PRIVATE RACE`;
@@ -159,7 +160,7 @@ function applyHubVisibility() {
   if (active) root.hidden = true;
 }
 
-window.addEventListener('starwake:launch-complete', () => {
+window.addEventListener('starwake:launch-complete', (event) => {
   launched = true;
   window.setTimeout(applyHubVisibility, 0);
   // Invite links (?room=CODE) drop the pilot straight into that lobby.
@@ -168,6 +169,13 @@ window.addEventListener('starwake:launch-complete', () => {
   const challengeId = String(params.get('challenge') || '');
   if (!/^[A-Z0-9]{5}$/.test(invited) && !/^[a-z0-9]{8}$/.test(challengeId)) {
     window.setTimeout(() => window.starwakeResumeSeat?.(), 50);
+    // The landing's buttons: open a battle room, race the aliens, or join with a code, straight from the first screen.
+    const { intent, code } = event.detail || {};
+    if (intent) window.setTimeout(() => {
+      if (intent === 'join') { const input = document.querySelector('#join-code'); if (input) input.value = code; window.starwakeJoinLobby?.(); return; }
+      root.querySelector(`[data-mode=${intent === 'solo' ? 'pve' : 'pvp'}]`)?.click();
+      root.querySelector('.sw-hub-launch')?.click();
+    }, 160);
   }
   if (/^[a-z0-9]{8}$/.test(challengeId)) {
     params.delete('challenge');

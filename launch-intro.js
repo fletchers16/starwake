@@ -12,8 +12,11 @@ if (intro && launchButton && skipButton) {
   let clock = 0;
   const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
 
-  function finishLaunch(skipped = false) {
+  // intent: 'battle' (open a room), 'solo' (race the aliens), 'join' (with code), or none (browse the hub).
+  let intent = null;
+  function finishLaunch(skipped = false, next = null) {
     if (completed) return;
+    intent = next;
     completed = true;
     window.clearInterval(clock);
     launchButton.disabled = true;
@@ -34,7 +37,7 @@ if (intro && launchButton && skipButton) {
     intro.setAttribute('aria-hidden', 'true');
     intro.setAttribute('inert', '');
     window.dispatchEvent(new CustomEvent('starwake:launch-complete', {
-      detail: { via, timestamp: Date.now() },
+      detail: { via, timestamp: Date.now(), intent: intent?.kind || null, code: intent?.code || '' },
     }));
     window.setTimeout(() => {
       intro.classList.remove('ready');
@@ -42,13 +45,22 @@ if (intro && launchButton && skipButton) {
     }, 450);
   }
 
-  launchButton.addEventListener('click', () => finishLaunch(false));
+  launchButton.addEventListener('click', () => finishLaunch(false, { kind: 'battle' }));
   skipButton.addEventListener('click', () => finishLaunch(true));
+  document.querySelector('#launch-solo')?.addEventListener('click', () => finishLaunch(true, { kind: 'solo' }));
+  const join = document.querySelector('#launch-join'), code = document.querySelector('#launch-code');
+  code?.addEventListener('input', () => { code.value = code.value.toUpperCase().replace(/[^A-Z0-9]/g, ''); code.classList.remove('bad'); });
+  join?.addEventListener('submit', (event) => {
+    event.preventDefault();
+    const value = (code?.value || '').trim();
+    if (!/^[A-Z0-9]{5}$/.test(value)) { code?.classList.add('bad'); code?.focus(); return; }
+    finishLaunch(true, { kind: 'join', code: value });
+  });
   window.addEventListener('keydown', (event) => {
     if (!intro.classList.contains('ready') || completed) return;
-    if (event.key === 'Enter' && document.activeElement !== skipButton) {
+    if (event.key === 'Enter' && document.activeElement === document.body) {
       event.preventDefault();
-      finishLaunch(false);
+      finishLaunch(false, { kind: 'battle' });
     } else if (event.key === 'Escape') {
       event.preventDefault();
       finishLaunch(true);

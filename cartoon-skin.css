@@ -87,3 +87,23 @@ body,#app{background:radial-gradient(ellipse at 70% -10%,#3a2370 0,transparent 5
 .party-status{margin:8px 0 0;color:var(--cz-lilac);font-size:12px;line-height:1.45}
 .party-status b{display:block;font:400 15px var(--display);letter-spacing:.04em;color:var(--cz-yellow)}
 .toast{font:400 14px var(--display)!important;letter-spacing:.04em;background:var(--cz-panel)!important;border:3px solid var(--cz-ink)!important;border-radius:14px!important;box-shadow:0 4px 0 var(--cz-ink)!important;color:#fff!important}
+/* Season awards + heat-by-heat history (final results) */
+.season-awards{margin:12px 0;padding:14px;border:3px solid var(--cz-ink);border-radius:18px;background:linear-gradient(135deg,rgba(255,210,63,.16),rgba(255,123,213,.1)),var(--cz-panel);box-shadow:0 5px 0 var(--cz-ink)}
+.season-awards>small{display:block;font:400 14px var(--display);letter-spacing:.06em;color:var(--cz-yellow);margin-bottom:10px}
+.award-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:8px}
+.award{display:grid;gap:2px;padding:10px;border:3px solid var(--cz-ink);border-radius:14px;background:rgba(14,9,32,.6);box-shadow:0 3px 0 var(--cz-ink)}
+.award i{font-style:normal;font-size:22px;line-height:1;color:var(--cz-yellow)}
+.award b{font:400 14px var(--display);letter-spacing:.05em;color:#fff}
+.award span{font:400 13px var(--display);letter-spacing:.03em;color:var(--cz-cyan)}
+.award em{font-style:normal;font-size:11px;color:var(--cz-lilac);line-height:1.35}
+.award.mine{background:var(--cz-yellow)}.award.mine b,.award.mine span,.award.mine em,.award.mine i{color:var(--cz-ink)}
+.award.personal{background:var(--cz-cyan)}
+.history-title{display:block;font:400 12px var(--display)!important;letter-spacing:.06em;color:var(--cz-lilac)!important;margin:14px 0 6px!important}
+.heat-history{display:grid;gap:6px}
+.hh-row{display:grid;grid-template-columns:1fr repeat(3,34px) 70px;gap:6px;align-items:end;font:400 13px var(--display);letter-spacing:.03em;color:#fff}
+.hh-row span{align-self:center;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.hh-row b{align-self:center;text-align:right;font-weight:400;color:var(--cz-yellow)}
+.hh-row i{position:relative;height:38px;border:2px solid var(--cz-ink);border-radius:8px;background:rgba(14,9,32,.7);overflow:hidden}
+.hh-row i em{position:absolute;left:0;right:0;bottom:0;background:linear-gradient(0deg,var(--cz-pink),var(--cz-yellow))}
+.hh-row i small{position:absolute;left:0;right:0;top:2px;text-align:center;font:400 9px var(--display);color:rgba(255,255,255,.75)}
+.hh-row.me span{color:var(--cz-yellow)}

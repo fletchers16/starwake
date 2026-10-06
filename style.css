@@ -604,3 +604,10 @@ body.coaching #app.racing .race-toast,body.coaching .race-toast{top:66%}
 .sw-clip{margin:14px 0 0;border-radius:16px;overflow:hidden;border:3px solid #1b1430;box-shadow:0 6px 0 rgba(0,0,0,.35);background:#0b0718;position:relative}
 .sw-clip video{display:block;width:100%;aspect-ratio:16/9;object-fit:cover}
 .sw-clip figcaption{position:absolute;left:10px;bottom:8px;padding:3px 8px;border-radius:8px;background:rgba(27,20,48,.85);font:400 12px var(--display);letter-spacing:.06em;color:#ffd84d}
+
+/* Lobby: START HEAT stays reachable when the QR card makes the panel taller than the screen.
+   (#app clips overflow, so sticky can't follow the page scroll; pin it to the viewport instead.) */
+@media (max-width:760px),(max-height:860px){
+  #lobby-screen #start-button{position:fixed;z-index:12;margin:0;width:auto;left:max(16px,calc(50% - 255px));right:max(16px,calc(50% - 255px));bottom:max(14px,env(safe-area-inset-bottom));box-shadow:0 8px 28px rgba(0,0,0,.55)}
+  #lobby-screen .panel-wrap{padding-bottom:84px}
+}

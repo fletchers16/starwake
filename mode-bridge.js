@@ -283,6 +283,8 @@ renderDares();
   if (!video.canPlayType('video/webm; codecs="vp8"')) clip.remove();
   else {
     video.addEventListener('error', () => clip.remove());
-    document.querySelector('#mode-hub-root .sw-hub-signal')?.after(clip);
+    // On phones the clip goes under the launch button so OPEN A BATTLE ROOM stays above the fold.
+    const narrow = matchMedia('(max-width: 760px)').matches;
+    document.querySelector(narrow ? '#mode-hub-root .sw-hub-launch' : '#mode-hub-root .sw-hub-signal')?.after(clip);
   }
 }

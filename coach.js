@@ -16,7 +16,9 @@ export function createCoach({ el, combat, touch }) {
     el.querySelector('.coach-skip').onclick = finish;
     el.hidden = false;
   };
-  function finish() { active = false; el.hidden = true; document.body.classList.remove('coaching'); combat.coachStandDown?.(); markDone(); }
+  // Stop coaching without marking it done (quit mid-lesson, or a race that isn't a first solo flight).
+  function reset() { active = false; el.hidden = true; document.body.classList.remove('coaching'); combat.coachStandDown?.(); }
+  function finish() { reset(); markDone(); }
 
   function begin(r) {
     if (coachDone()) return;
@@ -45,7 +47,8 @@ export function createCoach({ el, combat, touch }) {
       if (!armedAt && r.time - stepAt > 1.2) {
         if (combat.coachArm(r)) armedAt = r.time;
       }
-      if ((r.reflects || 0) > 0) { step = 3; say('Perfect reflect!', 'You know every move. Now win the heat.'); setTimeout(finish, 2600); }
+      // The PERFECT REFLECT banner already celebrates; the card just hands over.
+      if ((r.reflects || 0) > 0) { step = 3; say('Now win the heat!', 'You know every move: pods, zaps and rolls.'); setTimeout(finish, 2600); }
       else if (armedAt && r.stunUntil > stunSeen && !retried) {
         // Hit before rolling: one more telegraphed shot.
         retried = true; stunSeen = r.stunUntil; armedAt = 0; stepAt = r.time + 0.8;
@@ -58,5 +61,5 @@ export function createCoach({ el, combat, touch }) {
     }
   }
 
-  return { begin, update, finish, get active() { return active; } };
+  return { begin, update, finish, reset, get active() { return active; } };
 }

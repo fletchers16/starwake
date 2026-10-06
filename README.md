@@ -78,7 +78,7 @@ A laptop and an emulated iPhone, in isolated browsers, play a full PvP season. T
 ```bash
 npm run test:challenge
 ```
-The async dare flow on two isolated devices: a laptop sends a "beat my run" link, a phone opens it (the landing names the target), races the ghost, and gets a verdict that matches the ladder. Then the sender's hub card shows the reply, and TRY AGAIN races the phone's run. 11 checks. `npm run test:coach` checks the first-flight coach end to end (7 checks). `npm test` runs all three suites.
+The async dare flow on two isolated devices: a laptop sends a "beat my run" link, a phone opens it (the landing names the target), races the ghost, and gets a verdict that matches the ladder. Then the sender's hub card shows the reply, and TRY AGAIN races the phone's run. 11 checks. `npm run test:coach` checks the first-flight coach end to end, including that quitting mid-lesson leaves nothing behind (8 checks). `npm test` runs all three suites.
 
 ## Deploy (Netlify)
 

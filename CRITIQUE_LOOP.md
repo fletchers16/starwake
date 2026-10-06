@@ -47,6 +47,7 @@ Score each 1–10 with evidence. A 10 is demo-ready on a phone with no explanati
 | 23 (grade) | 6 | 7 | 7 | 6 | Resume holds adversarially (guest and host mid-heat, late join auto-seated); both suites green; a reload repairs hull and drops the item (an exploit worth up to 140); hull double-counted on resume; phone roll timing; late-joiner waiting state; HUD clutter; stale tab title. Read: about #4, credible top 3 |
 | 25 (grade) | 6 | 7 | 7 | 6 | Coach roll lesson fails (the armed bot spends its only shot on another NPC), so the coach suite is flaky; phone coach card covers the item slot and ROLL; roll copy contradicts; locks cancel then re-lock inside the roll cooldown; blocked zaps counted as landed; join CANCEL racy. Read: about #4 |
 | 27 (grade) | 7 | 7 | 7 | 6 | All green (coach 7/7 ×3, battle 35/35, challenge 11/11); roll lesson reliable, reflect banner has punch; centre-screen text collides with the coach card; a committed lock can stick behind the fairness gate; a reload mid-roll gives 3 ammo; the coach bot over-punishes; phone coach hides its body text; still no live URL. Read: about #4, close to top 3 |
+| 29 (grade) | 7 | 7 | 7 | 7 | All green; centre lane fixed on desktop; QR verified byte for byte; coach leaks into PvP after quitting a coached race (changes items); hub clip pushes the main button below the fold on phones; START HEAT needs a scroll; phone coach reappears over the reflect banner. Read: about #3–4, borderline top 3 |
 
 ## Backlog
 (ready / in-progress / done; each item notes the criterion it moves)
@@ -193,6 +194,13 @@ Score each 1–10 with evidence. A 10 is demo-ready on a phone with no explanati
 113. `done` (C27) [Usefulness] The coach bot over-punishes (3 ammo; coachTarget not cleared on cancel or finish).
 114. `done` (C27) [Usefulness] The phone coach hides why the moves matter (body text hidden).
 115. `blocked (user)` [Usefulness/Execution] Deploy with OPENAI_API_KEY, run warm:ai, and do a real two-device session on the live URL.
+
+**From grade 29:**
+116. `done` [Execution/Polish] Coach state leaks into later races after quitting a coached one: reset on quit and whenever the coach is skipped.
+117. `done` [Usefulness/Polish] Hub clip pushes the main button below the fold on phones: move it below the course cards on narrow screens.
+118. `done` [Polish] START HEAT needs a scroll (the QR adds height): make it sticky.
+119. `blocked (encoder)` [Polish] Clip is VP8-only: an H.264 fallback needs an encoder that isn't installed.
+120. `done` [Polish] Phone coach card returns over the reflect banner (fixed 1400 ms yield; duplicate "Perfect reflect!"); rapid reflects cut the yield short.
 
 ## Log
 - Cycle 2: fixed the top grade-1 findings.
@@ -351,3 +359,4 @@ Score each 1–10 with evidence. A 10 is demo-ready on a phone with no explanati
   - **Small fixes:** a reload mid item-roll restores the item's real ammo; the coach's sim pilot carries one shot and stands down when the lesson ends or a lock is cancelled; phone coach steps keep a short reason line.
   - **Tests:** coach 7/7 ×2, challenge 11/11, battle 35/35.
 - Cycle 28: a gameplay loop in the hub. A 14-second clip (`public/media/starwake-loop.webm`, 1 MB, VP8) recorded headlessly from a scripted heat (countdown, snipe, telegraphed lock, perfect reflect) with Playwright's built-in video and cached ffmpeg, so nothing new was downloaded. It plays muted and looping in the hub's intro column ("GRAB · ZAP · ROLL IT BACK") and hides itself on browsers without WebM. Challenge 11/11, coach 7/7.
+- Cycle 29: coach.reset() on quit and whenever the coach is skipped, so a coached race can't leak into PvP (new e2e check). The reflect yield waits for the banner's animationend, and the coach card no longer repeats "Perfect reflect!". The hub clip goes under the launch button on phones. START HEAT is pinned to the viewport on phones and short screens (#app clips overflow, so sticky can't work). Battle 35/35, challenge 11/11, coach 8/8 twice.

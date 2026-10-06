@@ -83,13 +83,13 @@ export function mountModeHub({ root, onAction = () => {}, initialCourse = 'neon-
       </header>
       <div class="sw-hub-content">
         <section class="sw-hub-intro">
-          <p class="sw-hub-kicker">FLIGHT DECK <span></span> 01 / 03</p>
-          <h1 id="sw-hub-title">Blast your<br><em>friends.</em></h1>
-          <p>A cartoon battle racer. Grab <span class="pod-chip">?</span> pods, snipe rivals with laser blasters and steal their points. Race your crew live on any device, or dare them to beat your run.</p>
-          <div class="sw-hub-signal"><span>⚔</span><div><b>BATTLE ROOMS</b><small>Send a link. Friends join from a phone or laptop, no install.</small></div></div>
+          <p class="sw-hub-kicker">LIVE MULTIPLAYER <span></span> ANY DEVICE</p>
+          <h1 id="sw-hub-title">Every race<br>is a <em>dogfight.</em></h1>
+          <p>Snipe rivals with laser blasters, barrel-roll their shots straight back, and steal their points. Race friends live from one link, or send a dare to beat your run.</p>
+          <div class="sw-hub-signal"><span>⚔</span><div><b>PLAY WITH FRIENDS</b><small>Open a room, share the link or QR code. Phones and laptops race together.</small></div></div>
         </section>
         <section class="sw-hub-main" aria-label="Choose a flight mode">
-          <div class="sw-hub-section-head"><div><small>01 — BATTLE HUB</small><h2>Pick your battle.</h2></div><div class="sw-hub-mode" role="group" aria-label="Race mode"><button type="button" data-mode="pvp" aria-pressed="${selectedMode === 'pvp'}">⚔ BATTLE <small>LIVE WITH FRIENDS</small></button><button type="button" data-mode="pve" aria-pressed="${selectedMode === 'pve'}">SOLO <small>VS ALIEN RACERS</small></button></div></div>
+          <div class="sw-hub-section-head"><div><small>CHOOSE A WORLD</small><h2>Pick your track.</h2></div><div class="sw-hub-mode" role="group" aria-label="Race mode"><button type="button" data-mode="pvp" aria-pressed="${selectedMode === 'pvp'}">⚔ BATTLE <small>LIVE WITH FRIENDS</small></button><button type="button" data-mode="pve" aria-pressed="${selectedMode === 'pve'}">SOLO <small>VS ALIEN RACERS</small></button></div></div>
           <div class="sw-hub-maps" role="list" aria-label="Race maps">${MAPS.map(m => `<button class="sw-hub-map ${m.id === selectedCourse ? 'is-selected' : ''}" type="button" role="listitem" data-course="${m.id}" aria-pressed="${m.id === selectedCourse}" style="--map-tone:${m.tone}"><span class="sw-map-art sw-map-${m.kind}">${mapArt(m.kind)}</span><span class="sw-map-num">${m.number}</span><span class="sw-map-copy"><small>${m.place}</small><b>${m.name}</b><span>${m.note}</span></span><span class="sw-map-check" aria-hidden="true">✓</span></button>`).join('')}</div>
           <label class="sw-callsign" for="sw-callsign"><span>CALLSIGN</span><input id="sw-callsign" maxlength="18" autocomplete="nickname" spellcheck="false" aria-label="Pilot callsign"><small>OTHER PILOTS SEE THIS</small></label><button class="sw-hub-launch" type="button" data-action="launch"><span><small id="sw-hub-launch-label">${selectedMode === 'pve' ? 'RACE THE ALIENS' : 'OPEN A BATTLE ROOM'}</small><b id="sw-hub-launch-course">${esc(courseName(selectedCourse))}</b></span><span class="sw-hub-arrow">↗</span></button>
           <div class="sw-pvp-join" id="sw-pvp-join" ${selectedMode === 'pvp' ? '' : 'hidden'}><label for="sw-room-code">GOT AN INVITE CODE?</label><div><input id="sw-room-code" maxlength="5" autocomplete="off" placeholder="ROOM CODE" aria-label="Room code"><button type="button" data-action="pvp-join">JOIN BATTLE ↗</button></div></div>
@@ -97,17 +97,17 @@ export function mountModeHub({ root, onAction = () => {}, initialCourse = 'neon-
         <section class="sw-hub-side" aria-label="Explore and create">
           <article class="sw-hub-destination sw-freeflight">
             <div class="sw-destination-visual" aria-hidden="true"><span class="sw-planet"></span><span class="sw-orbit sw-orbit-a"></span><span class="sw-orbit sw-orbit-b"></span><i class="sw-flight-path"></i><b>∞</b></div>
-            <div class="sw-destination-copy"><small>02 — FREE FLIGHT</small><h2>Keep going.</h2><p>No clock, no rivals. Roam your selected world freely and chase glowing signal shards for a new best.</p><button type="button" data-action="freeflight">ENTER FREE FLIGHT <span>↗</span></button></div>
+            <div class="sw-destination-copy"><small>FREE FLIGHT</small><h2>Just fly.</h2><p>No clock, no rivals. Cruise your chosen world and chase glowing shards at your own pace.</p><button type="button" data-action="freeflight">ENTER FREE FLIGHT <span>↗</span></button></div>
           </article>
           <article class="sw-hub-destination sw-designer">
-            <div class="sw-designer-heading"><small>03 — WORLD FORGE</small><span>AI COURSE DESIGNER</span></div><h2>Describe a new world.</h2><p>OpenAI designs the track shape, palette, gravity, crosswinds, and hazards from your words. Your whole lobby races the forged course.</p>
+            <div class="sw-designer-heading"><small>WORLD FORGE</small><span>BUILT WITH OPENAI</span></div><h2>Dream up a track.</h2><p>Describe any world in a sentence. OpenAI designs its track, colors, gravity, wind and hazards, and your whole room races it.</p>
             <form class="sw-forge-form"><label class="sw-sr-only" for="sw-forge-prompt">Describe your racing world</label><textarea id="sw-forge-prompt" maxlength="180" placeholder="Type the racing world of your dreams…" required></textarea><button type="submit" aria-label="Build course">✦</button></form>
             <div class="sw-forge-result" id="sw-forge-result" hidden></div>
             <div class="sw-forge-foot"><span id="sw-forge-status" role="status">TRY: “A CANYON RACE THROUGH A SHATTERED MOON”</span><button type="button" data-action="forge">FORGE WORLD <span>→</span></button></div>
           </article>
         </section>
       </div>
-      <footer class="sw-hub-footer"><span>STARWAKE FLIGHT SYSTEMS</span><span>FLY CLEAN · FIND YOUR LINE · MAKE THE FRONTIER</span></footer>
+      <footer class="sw-hub-footer"><span>STARWAKE</span><span>GRAB · BLAST · ROLL · WIN</span></footer>
     </main>`;
 
   const $ = (sel) => root.querySelector(sel);

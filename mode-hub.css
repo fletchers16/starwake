@@ -267,3 +267,9 @@
 .sw-ship-action{padding:6px 8px;border:1px solid var(--ship-tone);background:transparent;color:var(--ship-tone);font:7px 'DM Mono',monospace;letter-spacing:.12em}.sw-ship-action:disabled{opacity:.6;cursor:default}
 .sw-ship-pick .sw-ship-action{font:600 8px 'DM Mono',monospace!important;letter-spacing:.1em;padding:6px 8px;white-space:nowrap}
 .sw-forge-race{border:0;cursor:pointer}.sw-forge-race:focus-visible{outline:2px solid #fff;outline-offset:2px}
+
+/* Netlify's hosted badge sits bottom-right on the live site: lift the pinned phone buttons clear of it. */
+@media (max-width: 760px) {
+  body:has(#nl-badge-frame) #mode-hub-root:not([hidden]) .sw-hub-launch { bottom: 62px; }
+  body:has(#nl-badge-frame) #mode-hub-root .sw-hub { padding-bottom: 140px; }
+}

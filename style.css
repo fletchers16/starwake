@@ -611,3 +611,8 @@ body.coaching #app.racing .race-toast,body.coaching .race-toast{top:66%}
   #lobby-screen #start-button{position:fixed;z-index:12;margin:0;width:auto;left:max(16px,calc(50% - 255px));right:max(16px,calc(50% - 255px));bottom:max(14px,env(safe-area-inset-bottom));box-shadow:0 8px 28px rgba(0,0,0,.55)}
   #lobby-screen .panel-wrap{padding-bottom:84px}
 }
+@media (max-width:760px),(max-height:860px){
+  body:has(#nl-badge-frame) #lobby-screen #start-button{bottom:62px}
+  body:has(#nl-badge-frame) #lobby-screen .panel-wrap{padding-bottom:136px}
+}
+

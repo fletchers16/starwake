@@ -32,7 +32,7 @@ Your Netlify URL, after deploying (see the checklist below).
 ---
 
 ## How a judge should try it (about 5 minutes)
-1. Open the link and press **START BLASTING** (or Skip intro). The briefing explains every rule on one screen.
+1. Open the link and press **PLAY NOW** (or Skip intro). The briefing explains every rule on one screen.
 2. **Solo vs the aliens:** pick a world, then **RACE THE ALIENS**. Fly through a **?** pod, press **F** (or tap **FIRE**) to zap the racer ahead, and watch the steal feed and the crown.
 3. **Battle a friend:** select **⚔ BATTLE**, then **OPEN A BATTLE ROOM**, then scan the lobby's **QR code** with a phone (or use **COPY INVITE LINK**). The host presses Start. Zap each other, and press **1–3** (or tap the chips) for emotes. After heat 3, press **REMATCH**.
 4. **Dare a friend:** on any results screen, press **BEAT MY RUN** and open the link in another browser. Race the ghost, and see the verdict and the link's ladder.

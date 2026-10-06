@@ -14,6 +14,8 @@ type Pilot = {
   token?: string;
   // Set by a soft leave (reload / closed tab); the seat is released if not resumed in time.
   leftAt?: number;
+  // Forge Party: this pilot's one-line world idea, fused with everyone's by the host.
+  idea?: string;
 };
 
 type Room = {
@@ -542,6 +544,21 @@ export default async (request: Request) => {
         draft.extendedMs = (draft.extendedMs || 0) + ms;
         draft.startsAt = (draft.startsAt || 0) + ms;
         draft.endsAt = (draft.endsAt || 0) + ms;
+      } else if (action === "idea") {
+        // Forge Party: each pilot pitches one short world idea in the lobby.
+        if (draft.phase !== "lobby") throw new Error("Ideas are pitched in the lobby, before heat 1.");
+        const idea = String(body.idea ?? "").replace(/[<>&"\\]/g, "").replace(/\s+/g, " ").trim().slice(0, 48);
+        if (idea) pilot.idea = idea; else delete pilot.idea;
+      } else if (action === "course") {
+        // Forge Party: the host sets the world everyone races (an AI-forged course or a seeded built-in remix).
+        if (draft.hostId !== playerId || draft.phase !== "lobby") throw new Error("Only the lobby host can change the world before heat 1.");
+        const forged = normalizeCourseDefinition(body.course);
+        const courseId = forged && body.courseId === forged.id ? forged.id : COURSES.includes(body.courseId) ? body.courseId : null;
+        if (!courseId) throw new Error("That world isn't valid.");
+        draft.courseId = courseId;
+        draft.course = forged && courseId === forged.id ? forged : null;
+        draft.coursePrompt = typeof body.coursePrompt === "string" ? body.coursePrompt.slice(0, 180) : "";
+        draft.courseSeed = Number.isFinite(Number(body.courseSeed)) ? Number(body.courseSeed) >>> 0 : 0;
       } else if (action === "emote") {
         // Quick chat outside races (lobby / results); written after the room update below.
         if (!Number.isInteger(body.emote) || !EMOTES[body.emote]) throw new Error("Unknown emote.");

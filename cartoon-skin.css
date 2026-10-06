@@ -68,3 +68,22 @@ body,#app{background:radial-gradient(ellipse at 70% -10%,#3a2370 0,transparent 5
 #mode-hub-root .sw-hub-map:not(.is-selected) .sw-map-check{background:rgba(14,9,32,.6)!important;color:transparent!important;border-color:rgba(201,189,242,.35)!important}
 #result-rows b,#result-rows i{font-family:var(--display)!important;font-weight:400!important;letter-spacing:.04em}
 #mode-hub-root .sw-hub-mode button[aria-pressed=true] small{color:rgba(20,15,36,.7)!important;opacity:1}
+/* Forge Party panel in the lobby */
+.party-forge{margin:6px 20px 14px;padding:12px;border:3px solid var(--cz-ink);border-radius:16px;background:linear-gradient(135deg,rgba(255,123,213,.18),rgba(126,245,226,.12)),var(--cz-panel-2);box-shadow:0 4px 0 var(--cz-ink)}
+.party-head b{display:block;font:400 18px var(--display);letter-spacing:.05em;color:var(--cz-pink)}
+.party-head small{display:block;margin-top:3px;color:var(--cz-lilac);font-size:12px;line-height:1.4}
+.party-idea{display:flex;margin-top:10px;border:3px solid var(--cz-ink);border-radius:12px;overflow:hidden;background:rgba(14,9,32,.75)}
+.party-idea input{flex:1;min-width:0;border:0;background:none;color:#fff;font:400 15px var(--display);letter-spacing:.03em;padding:9px 10px;outline:none}
+.party-idea input::placeholder{color:#9d92c4}
+.party-idea button{border:0;border-left:3px solid var(--cz-ink);background:var(--cz-pink);color:var(--cz-ink);font:400 14px var(--display);padding:0 14px;cursor:pointer}
+.party-ideas{display:flex;flex-wrap:wrap;gap:6px;margin:10px 0}
+.party-chip{font:400 13px var(--display);letter-spacing:.02em;color:#fff;background:rgba(36,26,64,.95);border:2px solid var(--cz-ink);border-radius:999px;padding:5px 10px 4px}
+.party-chip b{font-weight:400;color:var(--cz-cyan);margin-right:3px}
+.party-chip.me{background:var(--cz-yellow);color:var(--cz-ink)}.party-chip.me b{color:var(--cz-ink)}
+.party-chip.alien b{color:#a8ff60}
+.party-empty{color:var(--cz-lilac);font-size:12px}
+.party-fuse{margin-top:4px!important;background:var(--cz-pink)!important}
+.party-fuse:disabled{opacity:.55;cursor:not-allowed}
+.party-status{margin:8px 0 0;color:var(--cz-lilac);font-size:12px;line-height:1.45}
+.party-status b{display:block;font:400 15px var(--display);letter-spacing:.04em;color:var(--cz-yellow)}
+.toast{font:400 14px var(--display)!important;letter-spacing:.04em;background:var(--cz-panel)!important;border:3px solid var(--cz-ink)!important;border-radius:14px!important;box-shadow:0 4px 0 var(--cz-ink)!important;color:#fff!important}

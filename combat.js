@@ -392,15 +392,53 @@ export function createCombat(THREE, { world, getRoute, routeAt, makeShipMesh, sh
 
   function beam(from, to, color) {
     const len = from.distanceTo(to);
-    const mesh = new THREE.Mesh(new THREE.CylinderGeometry(0.07, 0.07, len, 6, 1, true), new THREE.MeshBasicMaterial({ color, transparent: true, opacity: 1, depthWrite: false, blending: THREE.AdditiveBlending }));
+    const mesh = new THREE.Mesh(new THREE.CylinderGeometry(0.16, 0.16, len, 8, 1, true), new THREE.MeshBasicMaterial({ color, transparent: true, opacity: 1, depthWrite: false, blending: THREE.AdditiveBlending }));
     mesh.position.copy(from).lerp(to, 0.5);
     mesh.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), to.clone().sub(from).normalize());
-    const core = new THREE.Mesh(new THREE.CylinderGeometry(0.025, 0.025, len, 5, 1, true), new THREE.MeshBasicMaterial({ color: '#ffffff', transparent: true, depthWrite: false }));
+    const core = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.06, len, 6, 1, true), new THREE.MeshBasicMaterial({ color: '#ffffff', transparent: true, depthWrite: false }));
     mesh.add(core);
     world.add(mesh);
-    effects.push({ mesh, life: 0.22, age: 0, fade: [mesh.material, core.material] });
-    flash(to, color, 2.4);
+    effects.push({ mesh, life: 0.3, age: 0, fade: [mesh.material, core.material] });
+    flash(to, color, 3.4);
   }
+
+  // Comic-book impact bursts: a jagged starburst with a word on it that pops in, wobbles and fades.
+  const comicCache = new Map();
+  function comicTex(word, fill) {
+    const key = word + fill;
+    if (comicCache.has(key)) return comicCache.get(key);
+    const S = 256, c = document.createElement('canvas');
+    c.width = c.height = S;
+    const g = c.getContext('2d');
+    const burst = (scale, color) => {
+      g.beginPath();
+      for (let i = 0; i < 28; i++) { const a = (i / 28) * Math.PI * 2 - Math.PI / 2, rr = (i % 2 ? 0.62 : 1) * scale * (0.9 + ((i * 37) % 10) / 50); g.lineTo(S / 2 + Math.cos(a) * rr, S / 2 + Math.sin(a) * rr * 0.8); }
+      g.closePath(); g.fillStyle = color; g.fill();
+    };
+    burst(124, '#140f24');
+    burst(110, fill);
+    burst(70, '#ffffff');
+    g.font = `italic 900 ${word.length > 5 ? 50 : 62}px system-ui, sans-serif`;
+    g.textAlign = 'center'; g.textBaseline = 'middle'; g.lineJoin = 'round';
+    g.save(); g.translate(S / 2, S / 2); g.rotate(-0.12);
+    g.lineWidth = 14; g.strokeStyle = '#140f24'; g.strokeText(word, 0, 4);
+    g.fillStyle = fill === '#ffffff' ? '#ff4d6a' : fill; g.fillText(word, 0, 4);
+    g.restore();
+    const t = new THREE.CanvasTexture(c);
+    t.colorSpace = THREE.SRGBColorSpace;
+    t.userData.shared = true;
+    comicCache.set(key, t);
+    return t;
+  }
+  function comic(at, word, fill = '#ffd23f', size = 2.6) {
+    const mesh = new THREE.Sprite(new THREE.SpriteMaterial({ map: comicTex(word, fill), transparent: true, depthWrite: false, depthTest: false }));
+    mesh.position.copy(at).add(new THREE.Vector3(0, 0.9, 0));
+    mesh.material.rotation = (Math.random() - 0.5) * 0.5;
+    mesh.renderOrder = 5;
+    world.add(mesh);
+    effects.push({ mesh, life: 0.75, age: 0, pop: size });
+  }
+  const pick = (list) => list[Math.floor(Math.random() * list.length)];
 
   function flash(at, color, size = 2) {
     const mesh = new THREE.Sprite(new THREE.SpriteMaterial({ map: glow, color, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending }));
@@ -419,6 +457,7 @@ export function createCombat(THREE, { world, getRoute, routeAt, makeShipMesh, sh
       r.reflects = (r.reflects || 0) + 1;
       toast('REFLECTED!', `BOUNCED BACK AT ${shooterName}`);
       onReflect(shooterName);
+      comic(worldPos(r, r.distance + 2.4, r.x, r.y), 'BOING!', '#7ef5e2', 3);
       if (shooter) { const stolen = hitOpponent(r, shooter, 'reflect'); r.zapPoints += stolen; r.stolenPts = (r.stolenPts || 0) + stolen; flash(worldPos(r, shooter.d ?? shooter.ref?.d, shooter.x ?? shooter.ref?.x, shooter.y ?? shooter.ref?.y), '#ffffff', 3); }
       return -1;
     }
@@ -432,11 +471,20 @@ export function createCombat(THREE, { world, getRoute, routeAt, makeShipMesh, sh
     r.combo = 0;
     sfx.zapped?.();
     toast(bouncedBack ? `BOUNCED BACK BY ${shooterName}` : `ZAPPED BY ${shooterName}`, `−${stolen}${bouncedBack ? ' · THEY ROLLED YOUR SHOT' : leaderId === 'player' ? ' · BOUNTY' : ''} · SPIN OUT`);
+    comic(worldPos(r, r.distance + 2.4, r.x, r.y), pick(['BZZT!', 'OUCH!', 'ZAP!']), '#ff6b81', 2.8);
     onPlayerHit(color);
     return stolen;
   }
 
   function hitOpponent(r, target, shooter) {
+    const got = hitOpponentCore(r, target, shooter), t = target.ref || target;
+    const at = worldPos(r, target.d ?? t.d, target.x ?? t.x, target.y ?? t.y);
+    if (target.kind === 'human' || got > 0) comic(at, shooter === 'reflect' ? 'BOINK!' : pick(['ZAP!', 'POW!', 'ZORCH!', 'BLAM!']), shooter === 'player' || shooter === 'reflect' ? '#ffd23f' : '#c39bff');
+    else comic(at, 'NOPE!', '#ffffff', 2.2);
+    return got;
+  }
+
+  function hitOpponentCore(r, target, shooter) {
     const t = target.ref;
     if (target.kind === 'bot') {
       if (r.time < t.shieldUntil) { t.shieldUntil = -9; return 0; }
@@ -615,6 +663,7 @@ export function createCombat(THREE, { world, getRoute, routeAt, makeShipMesh, sh
       const k = Math.min(1, e.age / e.life);
       if (e.fade) e.fade.forEach((m) => { m.opacity = 1 - k; });
       if (e.grow) e.mesh.scale.setScalar(e.grow * (0.6 + k));
+      if (e.pop) { e.mesh.scale.setScalar(e.pop * (k < 0.14 ? (k / 0.14) * 1.25 : 1.25 - Math.min(0.25, (k - 0.14) * 0.6))); e.mesh.material.opacity = k > 0.62 ? 1 - (k - 0.62) / 0.38 : 1; }
       if (e.seeker) {
         const t = e.seeker.target, to = worldPos(r, t.ref.d ?? t.d, t.ref.x ?? t.x, t.ref.y ?? t.y);
         const p = e.seeker.from.clone().lerp(to, k);

@@ -68,6 +68,53 @@ export function createAudio() {
 
   const note = (step, base = 523.25) => base * 2 ** (step / 12);
 
+  // ---- Music: a bouncy cartoon chiptune, sequenced live (bass, drums, a lead), faster and busier in Zap Frenzy.
+  // Call music(mode) every race tick; it stops by itself a moment after the calls stop (results, quit, menus).
+  const CHORDS = [[0, 4, 7], [-3, 0, 4], [-7, -3, 0], [-5, -1, 2]]; // C, Am, F, G
+  const LEAD = [[7, null, 9, 7, 4, null, 2, 4], [0, 2, 4, null, 7, 4, 2, null], [5, null, 4, 2, 0, null, 2, null], [2, 4, 7, 9, 7, null, 11, null]];
+  let musicBus = null, musicTimer = 0, step16 = 0, nextAt = 0, musicMode = 'off', musicSeen = 0;
+  function drum(kind, t) {
+    if (kind === 'kick') {
+      const o = ctx.createOscillator(), g = ctx.createGain();
+      o.frequency.setValueAtTime(150, t); o.frequency.exponentialRampToValueAtTime(42, t + 0.12);
+      g.gain.setValueAtTime(0.5, t); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.16);
+      o.connect(g).connect(musicBus); o.start(t); o.stop(t + 0.18);
+      return;
+    }
+    const len = kind === 'hat' ? 0.04 : 0.14, buf = ctx.createBuffer(1, Math.ceil(ctx.sampleRate * len), ctx.sampleRate), d = buf.getChannelData(0);
+    for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
+    const src = ctx.createBufferSource(), f = ctx.createBiquadFilter(), g = ctx.createGain();
+    src.buffer = buf; f.type = kind === 'hat' ? 'highpass' : 'bandpass'; f.frequency.value = kind === 'hat' ? 7000 : 1800;
+    g.gain.setValueAtTime(kind === 'hat' ? 0.12 : 0.3, t); g.gain.exponentialRampToValueAtTime(0.0001, t + len);
+    src.connect(f).connect(g).connect(musicBus); src.start(t);
+  }
+  function blip(freq, t, dur, type, gain) {
+    const o = ctx.createOscillator(), g = ctx.createGain();
+    o.type = type; o.frequency.setValueAtTime(freq, t);
+    g.gain.setValueAtTime(0.0001, t); g.gain.linearRampToValueAtTime(gain, t + 0.008); g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+    o.connect(g).connect(musicBus); o.start(t); o.stop(t + dur + 0.02);
+  }
+  function scheduleMusic() {
+    if (!ready() || musicMode === 'off' || performance.now() - musicSeen > 700) { stopMusic(); return; }
+    const frenzy = musicMode === 'frenzy', sixteenth = 60 / (frenzy ? 152 : 128) / 4;
+    while (nextAt < now() + 0.15) {
+      const i = step16 % 16, bar = Math.floor(step16 / 16) % 4, chord = CHORDS[bar], t = nextAt;
+      if (i % 4 === 0) drum('kick', t);
+      if (i === 4 || i === 12) drum('snare', t);
+      if (i % 2 === 0 || frenzy) drum('hat', t);
+      if (i % 2 === 0) blip(note(chord[0] + (i % 4 === 2 ? 12 : 0), 130.81), t, sixteenth * 1.6, 'triangle', 0.22);
+      const lead = LEAD[bar][i >> 1];
+      if (i % 2 === 0 && lead !== null) blip(note(lead, 523.25), t, sixteenth * 1.8, 'square', 0.045);
+      if (frenzy) blip(note(chord[i % 3] + 12, 523.25), t, sixteenth * 0.9, 'sawtooth', 0.03);
+      nextAt += sixteenth;
+      step16++;
+    }
+  }
+  function stopMusic() {
+    clearInterval(musicTimer); musicTimer = 0; musicMode = 'off';
+    if (musicBus) { const bus = musicBus; bus.gain.setTargetAtTime(0.0001, now(), 0.15); setTimeout(() => bus.disconnect(), 600); musicBus = null; }
+  }
+
   return {
     unlock,
     get enabled() { return enabled; },
@@ -75,7 +122,7 @@ export function createAudio() {
       enabled = on;
       localStorage.setItem(KEY, on ? 'on' : 'off');
       if (on) unlock();
-      else this.engine(0, false);
+      else { this.engine(0, false); if (musicTimer) stopMusic(); }
     },
     /** Ring collected: pitch climbs with the combo. */
     ring(combo = 1) {
@@ -102,6 +149,19 @@ export function createAudio() {
     countdown(final = false) { tone({ freq: final ? 880 : 440, type: 'square', decay: final ? 0.45 : 0.14, gain: 0.07 }); },
     lap() { [0, 7, 12].forEach((s, i) => tone({ freq: note(s, 392), type: 'triangle', decay: 0.4, gain: 0.1, delay: i * 0.09 })); },
     finish() { [0, 4, 7, 12, 16].forEach((s, i) => tone({ freq: note(s, 523.25), type: 'triangle', decay: 0.5, gain: 0.1, delay: i * 0.08 })); },
+    /** Background music: 'race', 'frenzy' or 'off'. Call it every tick while it should play. */
+    music(mode = 'race') {
+      if (!ready() || mode === 'off') { if (musicTimer) stopMusic(); return; }
+      musicSeen = performance.now();
+      if (mode !== musicMode && musicTimer) musicMode = mode;
+      if (musicTimer) return;
+      musicBus = ctx.createGain();
+      musicBus.gain.value = 0.0001;
+      musicBus.gain.setTargetAtTime(0.16, now(), 0.4);
+      musicBus.connect(master);
+      musicMode = mode; step16 = 0; nextAt = now() + 0.08;
+      musicTimer = setInterval(scheduleMusic, 40);
+    },
     /** Continuous engine hum; `level` 0..1 maps to pitch and loudness. */
     engine(level = 0, on = true) {
       if (!ctx) return;

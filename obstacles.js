@@ -219,8 +219,91 @@ export function makeBrokenRing(THREE, item, course) {
 /** Dispatch for every damaging obstacle type. */
 export function makeHazardObstacle(THREE, item, course, look) {
   HZ = hazardColor(course);
+  if (item.type === 'boost') return makeBoostGate(THREE, item, course);
+  if (item.type === 'pillar') return makePillar(THREE, item, course);
   if (item.type === 'blocker') return makeFence(THREE, item, course);
   if (item.type === 'ring-plane') return makeBrokenRing(THREE, item, course);
   if (item.mine) return makeMine(THREE, item, course);
   return makeRock(THREE, item, course, look);
+}
+
+/** Boost gate: a chunky yellow hoop with scrolling chevrons. Fly through it for a burst of speed. */
+let chevronTexture = null;
+function chevrons(THREE) {
+  if (chevronTexture) return chevronTexture;
+  const c = document.createElement('canvas');
+  c.width = 64; c.height = 128;
+  const g = c.getContext('2d');
+  g.lineWidth = 12; g.lineCap = 'round'; g.lineJoin = 'round'; g.strokeStyle = '#ffffff';
+  for (const y of [40, 104]) { g.beginPath(); g.moveTo(10, y); g.lineTo(32, y - 24); g.lineTo(54, y); g.stroke(); }
+  chevronTexture = new THREE.CanvasTexture(c);
+  chevronTexture.wrapT = THREE.RepeatWrapping;
+  chevronTexture.repeat.set(1, 1.5);
+  chevronTexture.userData.shared = true;
+  return chevronTexture;
+}
+export function makeBoostGate(THREE, item, course) {
+  const group = new THREE.Group();
+  const hoop = new THREE.Mesh(new THREE.TorusGeometry(1.55, 0.2, 12, 40), toon(THREE, '#ffd23f'));
+  group.add(hoop);
+  const ink = new THREE.Mesh(new THREE.TorusGeometry(1.55, 0.27, 10, 40), new THREE.MeshBasicMaterial({ color: '#140f24', side: THREE.BackSide }));
+  group.add(ink);
+  const studs = new THREE.Mesh(mergeGeometries(Array.from({ length: 8 }, (_, i) => { const a = (i / 8) * Math.PI * 2; return new THREE.SphereGeometry(0.11, 8, 6).translate(Math.cos(a) * 1.55, Math.sin(a) * 1.55, 0.18); })), new THREE.MeshBasicMaterial({ color: '#ff7a1a' }));
+  group.add(studs);
+  const map = chevrons(THREE).clone();
+  map.needsUpdate = true;
+  const arrows = new THREE.Mesh(new THREE.CircleGeometry(1.36, 32), new THREE.MeshBasicMaterial({ map, color: '#ffe14d', transparent: true, opacity: 0.9, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide }));
+  group.add(arrows);
+  const glow = new THREE.Mesh(new THREE.CircleGeometry(1.4, 32), new THREE.MeshBasicMaterial({ color: '#ff9a1a', transparent: true, opacity: 0.18, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide }));
+  glow.position.z = -0.02;
+  group.add(glow);
+  group.userData.animate = (now) => {
+    map.offset.y = -(now * 0.0025) % 1;
+    hoop.scale.setScalar(1 + Math.sin(now * 0.01) * 0.03);
+    studs.rotation.z = now * 0.002;
+  };
+  return group;
+}
+
+/** Fork divider pillar: a tall cel-shaded stone column with hazard bands. The first one carries the lane sign. */
+let pillarGeometry = null, pillarBands = null;
+function laneSign(THREE) {
+  const c = document.createElement('canvas');
+  c.width = 512; c.height = 160;
+  const g = c.getContext('2d');
+  g.fillStyle = '#1b1430'; g.beginPath(); g.roundRect(4, 4, 504, 152, 28); g.fill();
+  g.fillStyle = '#fff4dc'; g.beginPath(); g.roundRect(14, 14, 484, 132, 20); g.fill();
+  g.font = '900 54px system-ui, sans-serif'; g.textBaseline = 'middle'; g.textAlign = 'center';
+  g.fillStyle = '#ff7a1a'; g.fillText('◀ BOOST', 130, 82);
+  g.fillStyle = '#1b1430'; g.fillRect(254, 30, 6, 100);
+  g.fillStyle = '#6a3cff'; g.fillText('RINGS ▶', 384, 82);
+  const t = new THREE.CanvasTexture(c);
+  t.colorSpace = THREE.SRGBColorSpace;
+  return t;
+}
+export function makePillar(THREE, item, course) {
+  const group = new THREE.Group();
+  if (!pillarGeometry) {
+    const base = new THREE.BufferGeometry();
+    base.setAttribute('position', roughen(new THREE.CylinderGeometry(1.05, 1.3, 9, 10, 8), 0.12, 7).getAttribute('position').clone());
+    pillarGeometry = mergeVertices(base, 0.02);
+    pillarGeometry.computeVertexNormals();
+  }
+  const look = new THREE.Color(course?.secondary || '#8a7a92').lerp(new THREE.Color('#d9c8b4'), 0.55);
+  const body = new THREE.Mesh(pillarGeometry, toon(THREE, look));
+  group.add(body);
+  const ink = new THREE.Mesh(pillarGeometry, new THREE.MeshBasicMaterial({ color: '#140f24', side: THREE.BackSide }));
+  ink.scale.set(1.09, 1.01, 1.09);
+  group.add(ink);
+  pillarBands ||= mergeGeometries([-2.6, 0, 2.6].map((y) => new THREE.CylinderGeometry(1.24, 1.24, 0.34, 14, 1, true).translate(0, y, 0)));
+  const bands = new THREE.Mesh(pillarBands, glowMat(THREE, HZ, 0.9));
+  bands.material.side = THREE.DoubleSide;
+  group.add(bands);
+  if (item.sign) {
+    const sign = new THREE.Mesh(new THREE.PlaneGeometry(4.4, 1.38), new THREE.MeshBasicMaterial({ map: laneSign(THREE), transparent: true }));
+    sign.position.set(0, 4.2, 1.4);
+    group.add(sign);
+  }
+  group.userData.animate = () => {};
+  return group;
 }

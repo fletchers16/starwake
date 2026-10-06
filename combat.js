@@ -242,6 +242,7 @@ export function createCombat(THREE, { world, getRoute, routeAt, makeShipMesh, sh
   let externals = [];       // scripted opponents (challenge ghosts)
   let effects = [];         // beams, impact flashes, seekers
   let pods = [];            // pod distances (one lap)
+  let forks = [];           // [start, end] of each fork section (one lap): sim pilots pick a lane
   let zapCounts = {};       // human target id -> cumulative zaps we've landed
   let zapSeen = {};         // shooter id -> zaps on us already applied
   let paid = {};            // shooter id -> points we've actually lost to them (reported back)
@@ -312,8 +313,9 @@ export function createCombat(THREE, { world, getRoute, routeAt, makeShipMesh, sh
   // ---------- lifecycle ----------
 
   let field = () => 0;
-  function start(r, { botPaces = [], botFinals = [], podDistances = [], fieldScore = null } = {}) {
+  function start(r, { botPaces = [], botFinals = [], podDistances = [], fieldScore = null, forks: forkList = [] } = {}) {
     if (fieldScore) field = fieldScore;
+    forks = forkList;
     dispose();
     pods = podDistances.slice().sort((a, b) => a - b);
     racers = botPaces.map((pace, i) => {
@@ -359,7 +361,9 @@ export function createCombat(THREE, { world, getRoute, routeAt, makeShipMesh, sh
   // ---------- helpers ----------
 
   // Rubber-banded to the human field (matches the server's scoreBots at the end of the heat).
-  const liveBotScore = (b, r) => { const k = r.time / r.duration, f = field(r); return Math.max(0, Math.floor(0.55 * b.profile.pace * f + 0.45 * Math.min(b.profile.base * k, f * 1.4 + 300 * k) + b.adj)); };
+  // Mostly tracks the human field (pace 0.8–1.25, so the best sim pilot runs right at your shoulder) plus a small
+  // skill floor, so the lead keeps changing hands. Mirrored server-side in game.ts.
+  const liveBotScore = (b, r) => { const k = r.time / r.duration, f = field(r); return Math.max(0, Math.floor(0.82 * b.profile.pace * f + 0.18 * Math.min(b.profile.base * k, f * 1.4 + 300 * k) + b.adj)); };
 
   /** Everyone except the player, as targetable records with route distance d and lane x/y. */
   function opponents(r, rivals) {
@@ -583,6 +587,9 @@ export function createCombat(THREE, { world, getRoute, routeAt, makeShipMesh, sh
       const band = 1 + Math.max(-0.12, Math.min(0.14, (r.distance - b.d) / 140));
       b.d += dt * r.rate * b.pace * band * (stunned ? 0.35 : 1);
       if (r.time > b.nextWeave) { b.tx = (Math.random() - 0.5) * 8; b.ty = (Math.random() - 0.5) * 3.6; b.nextWeave = r.time + 1.4 + Math.random() * 2.2; }
+      // Forks: pick a side of the pillar wall and stay there until the lanes rejoin.
+      const lapD = ((b.d % lap) + lap) % lap;
+      if (forks.some(([a, z]) => lapD > a - 18 && lapD < z + 4)) { if (Math.abs(b.tx) < 2.6) b.tx = (b.index % 2 ? -1 : 1) * (3.2 + Math.random() * 0.8); b.ty = Math.max(-1.8, Math.min(1.8, b.ty)); }
       // Sidestep the player's ship (which sits ~2.4 m ahead of the track origin) instead of flying through it.
       const near = b.d - r.distance - 2.4;
       if (Math.abs(near) < 3.2 && Math.abs(b.x - r.x) < 2.4 && Math.abs(b.y - r.y) < 2) b.tx = r.x + (b.x >= r.x ? 3 : -3);
@@ -732,6 +739,7 @@ export function createCombat(THREE, { world, getRoute, routeAt, makeShipMesh, sh
       // Racers just behind you stay visible beside the ship, but never between the camera and the ship.
       b.ship.visible = gap > -1.5 && gap < 130;
       b.ship.rotation.z = -(b.tx - b.x) * 0.06 + b.spin;
+      { const route = getRoute(), pre = routeAt(b.d - 3, route), post = routeAt(b.d + 6, route); b.ship.rotation.y = -Math.atan2(post.x - pre.x, 9); b.ship.rotation.x = Math.atan2(post.y - pre.y, 9); }
       // Level of detail: past ~45 m the pilot and fishbowl are a few pixels, so skip their draw calls.
       const near = gap < 45;
       b.pilot.visible = near;

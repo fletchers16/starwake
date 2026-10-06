@@ -190,7 +190,7 @@ function botLapTime(pace: number, skill: number, seed: number) {
  * Sim-pilot heat score (same formula as the client's botLiveScore): rubber-banded to
  * the human field, so races stay close and zaps swing the standings, plus a
  * rank-scaled base so stronger leagues field stronger pilots.
- *   score = 0.55 * pace * fieldAverage + 0.45 * base + zap swings
+ *   score = 0.82 * pace * fieldAverage + 0.18 * base + zap swings
  */
 function botProfile(code: string, heat: number, i: number, skill = 1) {
   const seed = botSeed(code, heat, i);
@@ -206,7 +206,7 @@ function scoreBots(room: Room) {
     const botId = `bot-${i}`;
     const { seed, base, pace } = botProfile(room.code, room.heat, i, room.botSkill ?? 1);
     // The rank-scaled floor never towers over the field, so a first-timer still has a race.
-    const score = Math.floor(finite(Math.round(0.55 * pace * field + 0.45 * Math.min(base, field * 1.4 + 300)) + (adjust[i] || 0), 0, MAX_HEAT_SCORE));
+    const score = Math.floor(finite(Math.round(0.82 * pace * field + 0.18 * Math.min(base, field * 1.4 + 300)) + (adjust[i] || 0), 0, MAX_HEAT_SCORE));
     const entry = room.scores.find((e) => e.playerId === botId && e.heat === room.heat);
     if (entry) entry.score = score;
     else room.scores.push({ playerId: botId, name: BOT_NAMES[i % BOT_NAMES.length], kind: "bot", score, heat: room.heat, flightTime: botLapTime(pace, room.botSkill ?? 1, seed) });

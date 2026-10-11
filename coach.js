@@ -17,7 +17,7 @@ export function createCoach({ el, combat, touch }) {
     el.hidden = false;
   };
   // Stop coaching without marking it done (quit mid-lesson, or a race that isn't a first solo flight).
-  function reset() { active = false; el.hidden = true; document.body.classList.remove('coaching'); combat.coachStandDown?.(); }
+  function reset() { active = false; el.hidden = true; document.body.classList.remove('coaching'); combat.debugRacers?.().forEach((b) => { b.holdAhead = 0; }); combat.coachStandDown?.(); }
   function finish() { reset(); markDone(); }
 
   function begin(r) {
@@ -36,10 +36,12 @@ export function createCoach({ el, combat, touch }) {
       step = 1; stepAt = r.time;
       // Guarantee a target: a sim pilot just ahead of you.
       const b = combat.debugRacers()[0];
-      if (b) { b.d = r.distance + 14; b.x = r.x; b.y = r.y; b.tx = r.x; b.ty = r.y; b.stunUntil = -9; b.noDodgeUntil = r.time + 20; b.nextWeave = r.time + 4; }
+      // It stays at least 12 m ahead until zapped (sim pilots ease off when leading, so it would drift behind).
+      if (b) { b.d = r.distance + 14; b.x = r.x; b.y = r.y; b.tx = r.x; b.ty = r.y; b.stunUntil = -9; b.noDodgeUntil = r.time + 30; b.nextWeave = r.time + 4; b.holdAhead = 12; }
       if (!r.item || r.item === 'shield' || r.item === 'turbo') { r.item = 'blaster'; r.ammo = 3; r.rolling = 0; r.pendingItem = null; }
       say(`${touch ? 'Tap <em>FIRE</em>' : 'Press <em>F</em>'} to zap`, 'Your blaster locks onto the racer ahead. A zap steals 8% of their points.');
     } else if (step === 1 && (r.zapsLanded || 0) > 0) {
+      combat.debugRacers().forEach((b) => { b.holdAhead = 0; });
       step = 2; stepAt = r.time; armedAt = 0; retried = false; stunSeen = r.stunUntil;
       say('Incoming fire!', `When you see <em>LOCKED ON</em>, ${touch ? 'tap <em>ROLL</em>' : 'press <em>Q</em>'} to barrel-roll. The shot bounces back.`);
     } else if (step === 2) {

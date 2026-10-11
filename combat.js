@@ -483,19 +483,24 @@ export function createCombat(THREE, { world, getRoute, routeAt, makeShipMesh, sh
   function hitOpponent(r, target, shooter) {
     const got = hitOpponentCore(r, target, shooter), t = target.ref || target;
     const at = worldPos(r, target.d ?? t.d, target.x ?? t.x, target.y ?? t.y);
-    if (target.kind === 'human' || got > 0) comic(at, shooter === 'reflect' ? 'BOINK!' : pick(['ZAP!', 'POW!', 'ZORCH!', 'BLAM!']), shooter === 'player' || shooter === 'reflect' ? '#ffd23f' : '#c39bff');
+    if (target.kind === 'human' || lastOutcome === 'hit') comic(at, shooter === 'reflect' ? 'BOINK!' : pick(['ZAP!', 'POW!', 'ZORCH!', 'BLAM!']), shooter === 'player' || shooter === 'reflect' ? '#ffd23f' : '#c39bff');
     else comic(at, 'NOPE!', '#ffffff', 2.2);
     return got;
   }
 
+  // What the last shot did ('hit', 'blocked' or 'dodged'), separate from points stolen: a hit on a racer with
+  // nothing to steal still spins them out and counts as landed.
+  let lastOutcome = 'hit';
   function hitOpponentCore(r, target, shooter) {
     const t = target.ref;
+    lastOutcome = 'hit';
     if (target.kind === 'bot') {
-      if (r.time < t.shieldUntil) { t.shieldUntil = -9; return 0; }
+      if (r.time < t.shieldUntil) { t.shieldUntil = -9; lastOutcome = 'blocked'; return 0; }
       if (shooter === 'player' && r.time >= t.stunUntil && r.time > (t.noDodgeUntil || -9) && botHitsOnPlayer < BOT_HITS_PER_HEAT && Math.random() < BOT_DODGE && r.time > (t.rollUntil || -9) + ROLL_COOLDOWN) {
         // The sim pilot barrel-rolls: your shot bounces back.
         t.rollUntil = r.time + ROLL_TIME;
         t.dodgedAt = r.time;
+        lastOutcome = 'dodged';
         botHitsOnPlayer++;
         sfx.shield?.();
         if (r.time < r.shieldUntil) { r.shieldUntil = -9; toast(`${t.name} DODGED!`, 'YOUR SHIELD ATE THE BOUNCE'); return 0; }
@@ -519,7 +524,7 @@ export function createCombat(THREE, { world, getRoute, routeAt, makeShipMesh, sh
       return stolen;
     }
     if (target.kind === 'ext') {
-      if (!t.zappable) return 0;
+      if (!t.zappable) { lastOutcome = 'blocked'; return 0; }
       // The challenge target is fixed: your steals add to your score but don't lower theirs.
       const live = Math.max(0, Math.floor(t.score(r.time))), stolen = Math.min(steal(t.id, live), live);
       t.stunUntil = r.time + STUN;
@@ -567,9 +572,10 @@ export function createCombat(THREE, { world, getRoute, routeAt, makeShipMesh, sh
         // A dodge already explained itself ("ZORP DODGED!"): no SNIPED toast, not a landed zap.
         if (target.kind === 'bot' && target.ref.dodgedAt === r.time) { if (--r.ammo <= 0) r.item = null; return; }
         r.zapPoints += stolen;
-        if (stolen > 0 || target.kind === 'human') r.zapsLanded = (r.zapsLanded || 0) + 1;
+        const landed = target.kind === 'human' || lastOutcome === 'hit';
+        if (landed) r.zapsLanded = (r.zapsLanded || 0) + 1;
         r.stolenPts = (r.stolenPts || 0) + stolen;
-        toast(`SNIPED ${target.name}!`, target.kind === 'human' ? 'STEALING…' : stolen ? `+${stolen} STOLEN${target.id === leaderId ? ' · BOUNTY ♛' : ''}` : 'SHIELD BLOCKED IT');
+        toast(`SNIPED ${target.name}!`, target.kind === 'human' ? 'STEALING…' : stolen ? `+${stolen} STOLEN${target.id === leaderId ? ' · BOUNTY ♛' : ''}` : landed ? 'SPIN OUT!' : 'SHIELD BLOCKED IT');
       } else {
         beam(from, worldPos(r, r.distance + 70, r.x, r.y), ITEMS.blaster.color);
       }
@@ -638,6 +644,8 @@ export function createCombat(THREE, { world, getRoute, routeAt, makeShipMesh, sh
       // Rubber band: sim pilots close up when far behind you and ease off far ahead, so the pack stays a fight.
       const band = 1 + Math.max(-0.12, Math.min(0.14, (r.distance - b.d) / 140));
       b.d += dt * r.rate * b.pace * band * (stunned ? 0.35 : 1);
+      // The coach's practice target keeps a lead on you until you zap it.
+      if (b.holdAhead && !stunned) { const floor = r.distance + b.holdAhead; if (b.d < floor) b.d += Math.min(floor - b.d, dt * r.rate * 1.5); }
       if (r.time > b.nextWeave) { b.tx = (Math.random() - 0.5) * 8; b.ty = (Math.random() - 0.5) * 3.6; b.nextWeave = r.time + 1.4 + Math.random() * 2.2; }
       // Forks: pick a side of the pillar wall and stay there until the lanes rejoin.
       const lapD = ((b.d % lap) + lap) % lap;
@@ -681,7 +689,7 @@ export function createCombat(THREE, { world, getRoute, routeAt, makeShipMesh, sh
           r.stolenPts = (r.stolenPts || 0) + stolen;
           flash(to, ITEMS.seeker.color, 4);
           sfx.zapped?.();
-          toast(`COMET HIT ${t.name}`, t.kind === 'human' ? 'STEALING…' : stolen ? `+${stolen} STOLEN` : 'SHIELD BLOCKED IT');
+          toast(`COMET HIT ${t.name}`, t.kind === 'human' ? 'STEALING…' : stolen ? `+${stolen} STOLEN` : lastOutcome === 'hit' ? 'SPIN OUT!' : 'SHIELD BLOCKED IT');
         }
       }
     }

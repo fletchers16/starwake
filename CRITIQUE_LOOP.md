@@ -360,3 +360,19 @@ Score each 1–10 with evidence. A 10 is demo-ready on a phone with no explanati
   - **Tests:** coach 7/7 ×2, challenge 11/11, battle 35/35.
 - Cycle 28: a gameplay loop in the hub. A 14-second clip (`public/media/starwake-loop.webm`, 1 MB, VP8) recorded headlessly from a scripted heat (countdown, snipe, telegraphed lock, perfect reflect) with Playwright's built-in video and cached ffmpeg, so nothing new was downloaded. It plays muted and looping in the hub's intro column ("GRAB · ZAP · ROLL IT BACK") and hides itself on browsers without WebM. Challenge 11/11, coach 7/7.
 - Cycle 29: coach.reset() on quit and whenever the coach is skipped, so a coached race can't leak into PvP (new e2e check). The reflect yield waits for the banner's animationend, and the coach card no longer repeats "Perfect reflect!". The hub clip goes under the launch button on phones. START HEAT is pinned to the viewport on phones and short screens (#app clips overflow, so sticky can't work). Battle 35/35, challenge 11/11, coach 8/8 twice.
+
+## Blind grade, Oct 11 (tested an older build: before Quick Match, music, Team Battle, watch-while-waiting)
+Official 1–5: Execution 4, Creativity 3, Usefulness 3, Polish 4 (~3.6 avg; "top quartile, plausible top 20, not yet a top-3 favourite").
+Backlog, in order:
+1. `ready` [Usefulness] Sim pilots' scores are derived from the humans' (game.ts scoreBots), so a pilot with pace ≥1.22 can't be beaten and sims win human seasons/awards. Tie sims to the player's own performance, keep them below a top human who flies well, exclude them from Champion, derive their lap times from score.
+2. `ready` [Usefulness] Hull does nothing at 0: add a spin-out/limp and a points penalty so steering matters.
+3. `ready` [Creativity] Forge Party offline shows no trace of the ideas: generate a name/palette from the ideas, tint the world, show "Racing X · ideas by …" on HUD/results; raise AI_DAILY_CAP for judging.
+4. `ready` [Polish] Hub launch button below the fold at 1440×900; drop the hub's duplicate hero column.
+5. `ready` [Polish] Pre-race briefing, landing background and top header still old navy/monospace: reskin.
+6. `ready` [Value] No BEAT MY RUN / share after a multiplayer season.
+7. `ready` [Polish] Centre-screen message pile-up early in a race (coach, banter, toasts, lock-on): one prioritised slot.
+8. `ready` [Polish] Phone: comic bursts too big (cover FIRE); header clips the music button.
+9. `ready` [Polish] Results: ~8 px labels, unreadable heat chart, CTA below fold, vague "VIEW FLIGHT DECK".
+10. `ready` [Execution] Client-reported scores: validate against server telemetry, tighten the cap.
+11. `ready` [Polish] Return 200 {fallback:true} instead of 503 when AI is unconfigured/capped (no red console errors).
+12. `ready` [Polish] Small: dare landing shows party chips; alien Forge ideas differ per device; "You placed 3rd" vs table order; FORGE WORLD text clipped; frenzy timer low contrast.

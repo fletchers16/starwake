@@ -66,24 +66,43 @@ export function makeMine(THREE, item, course) {
   return group;
 }
 
-/** Laser fence: two emitter posts with glowing beams between them. Replaces box-and-cone blockers. */
+/** Laser fence: two chunky hazard-striped posts with ink outlines, warning lights and buzzing red beams. */
+let fenceStripe = null;
+function stripeTexture(THREE) {
+  if (fenceStripe) return fenceStripe;
+  const c = document.createElement('canvas');
+  c.width = c.height = 64;
+  const g = c.getContext('2d');
+  g.fillStyle = '#ffd23f'; g.fillRect(0, 0, 64, 64);
+  g.fillStyle = '#1b1430';
+  for (let k = -64; k < 128; k += 24) { g.beginPath(); g.moveTo(k, 0); g.lineTo(k + 12, 0); g.lineTo(k + 12 - 64, 64); g.lineTo(k - 64, 64); g.fill(); }
+  fenceStripe = new THREE.CanvasTexture(c);
+  fenceStripe.wrapS = fenceStripe.wrapT = THREE.RepeatWrapping;
+  fenceStripe.repeat.set(1, 3);
+  fenceStripe.colorSpace = THREE.SRGBColorSpace;
+  fenceStripe.userData.shared = true;
+  return fenceStripe;
+}
 export function makeFence(THREE, item, course) {
   const group = new THREE.Group();
   const width = 3.1, height = 1.5;
-  const postMat = new THREE.MeshStandardMaterial({ color: '#141c28', emissive: HZ, emissiveIntensity: 0.25, metalness: 0.85, roughness: 0.28 });
+  const post = toon(THREE, '#ffffff', { map: stripeTexture(THREE) }), inkMat = new THREE.MeshBasicMaterial({ color: '#140f24', side: THREE.BackSide });
+  const lights = [];
   for (const side of [-1, 1]) {
-    const post = new THREE.Mesh(new THREE.BoxGeometry(0.26, height + 0.5, 0.26), postMat);
-    post.position.x = side * width / 2;
-    group.add(post);
-    for (const y of [-1, 1]) {
-      const cap = new THREE.Mesh(new THREE.BoxGeometry(0.34, 0.08, 0.34), glowMat(THREE, HZ));
-      cap.position.set(side * width / 2, y * (height / 2 + 0.25), 0);
-      group.add(cap);
-    }
+    const p = new THREE.Mesh(new THREE.CylinderGeometry(0.2, 0.24, height + 0.7, 10), post);
+    p.position.x = side * width / 2;
+    group.add(p);
+    const pi = new THREE.Mesh(new THREE.CylinderGeometry(0.27, 0.31, height + 0.82, 10), inkMat);
+    pi.position.copy(p.position);
+    group.add(pi);
+    const bulb = new THREE.Mesh(new THREE.SphereGeometry(0.2, 10, 8), glowMat(THREE, HZ));
+    bulb.position.set(side * width / 2, height / 2 + 0.5, 0);
+    group.add(bulb);
+    lights.push(bulb);
   }
   const beams = [];
   for (let i = 0; i < 4; i++) {
-    const beam = new THREE.Mesh(new THREE.BoxGeometry(width, 0.05, 0.05), glowMat(THREE, HZ));
+    const beam = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.05, width, 6).rotateZ(Math.PI / 2), glowMat(THREE, HZ));
     beam.position.y = -height / 2 + (i / 3) * height;
     group.add(beam);
     beams.push(beam);
@@ -92,7 +111,9 @@ export function makeFence(THREE, item, course) {
   group.add(field);
   const seed = (item.distance || 0) * 0.21;
   group.userData.animate = (now) => {
-    beams.forEach((beam, i) => { beam.scale.y = beam.scale.z = 0.8 + 0.5 * Math.max(0, Math.sin(now * 0.012 + i * 1.3 + seed)); });
+    beams.forEach((beam, i) => { beam.scale.x = beam.scale.z = 0.8 + 0.7 * Math.max(0, Math.sin(now * 0.014 + i * 1.3 + seed)); });
+    const on = Math.sin(now * 0.01 + seed) > 0;
+    lights[0].visible = on; lights[1].visible = !on;
     field.material.opacity = 0.08 + 0.06 * Math.sin(now * 0.006 + seed);
   };
   return group;
@@ -197,22 +218,22 @@ export function makeRock(THREE, item, course, look) {
   return group;
 }
 
-/** Broken ring plane: hazard-coloured arcs with clean gaps; fly through the middle. */
+/** Broken ring plane: chunky cel-shaded arcs with ink outlines and glowing hazard rims; fly through the middle. */
 export function makeBrokenRing(THREE, item, course) {
   const group = new THREE.Group();
   const radius = Number(item.width) > 0 ? Math.max(4.1, Number(item.width) * 0.72) : 4.8;
-  const metal = new THREE.MeshStandardMaterial({ color: '#1c1a22', emissive: HZ, emissiveIntensity: 0.35, metalness: 0.8, roughness: 0.3 });
+  const arcMat = toon(THREE, '#5b4f8a'), inkMat = new THREE.MeshBasicMaterial({ color: '#140f24', side: THREE.BackSide }), rimMat = glowMat(THREE, HZ);
+  const arcs = [], inks = [], rims = [], seg = (Math.PI * 2) / 5 - 0.32;
   for (let i = 0; i < 5; i++) {
-    const arc = new THREE.Mesh(new THREE.TorusGeometry(radius, 0.42, 10, 32, (Math.PI * 2) / 5 - 0.32), metal);
-    arc.rotation.z = (i / 5) * Math.PI * 2;
-    group.add(arc);
-    const rim = new THREE.Mesh(new THREE.TorusGeometry(radius - 0.5, 0.04, 6, 32, (Math.PI * 2) / 5 - 0.32), glowMat(THREE, HZ));
-    rim.rotation.z = arc.rotation.z;
-    group.add(rim);
+    const rot = new THREE.Matrix4().makeRotationZ((i / 5) * Math.PI * 2);
+    arcs.push(new THREE.TorusGeometry(radius, 0.42, 10, 24, seg).applyMatrix4(rot));
+    inks.push(new THREE.TorusGeometry(radius, 0.52, 8, 24, seg + 0.04).applyMatrix4(new THREE.Matrix4().makeRotationZ((i / 5) * Math.PI * 2 - 0.02)));
+    rims.push(new THREE.TorusGeometry(radius - 0.48, 0.07, 6, 24, seg).applyMatrix4(rot));
   }
-  const safe = new THREE.Mesh(new THREE.TorusGeometry(radius - 1.6, 0.03, 6, 72), glowMat(THREE, course.accent, 0.5));
+  group.add(new THREE.Mesh(mergeGeometries(arcs), arcMat), new THREE.Mesh(mergeGeometries(inks), inkMat), new THREE.Mesh(mergeGeometries(rims), rimMat));
+  const safe = new THREE.Mesh(new THREE.TorusGeometry(radius - 1.6, 0.04, 6, 72), glowMat(THREE, course.accent, 0.6));
   group.add(safe);
-  group.userData.animate = (now) => { group.rotation.z = now * 0.00025 + (item.distance || 0); };
+  group.userData.animate = (now) => { group.children.forEach((c) => { c.rotation.z = now * 0.00025 + (item.distance || 0); }); };
   return group;
 }
 

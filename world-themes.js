@@ -6,8 +6,8 @@ import { rimColor, rimObject } from './rim.js';
 import { createFogRamp } from './fog-ramp.js';
 import { buildLandmarks } from './landmarks.js';
 import { partKit } from './ships3d.js';
-import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
-import { toon } from './aliens.js';
+import { mergeGeometries, mergeVertices } from 'three/addons/utils/BufferGeometryUtils.js';
+import { toon, toonGradient } from './aliens.js';
 /**
  * Per-world environments: sky, fog, ground, and scrolling set pieces that make
  * each course look like its name.
@@ -132,6 +132,61 @@ function makeSky(THREE) {
  * apart, re-placed every frame relative to the route so they scroll past.
  * `place(i, slot, pos)` returns { x, y, z offsets, scale, rotY } for the slot.
  */
+/** A copy of a geometry pushed out along smooth normals: rendered back-face only, it becomes an ink outline. */
+function inkShell(THREE, g, t) {
+  const base = new THREE.BufferGeometry();
+  base.setAttribute('position', (g.index ? g.toNonIndexed() : g).getAttribute('position').clone());
+  const m = mergeVertices(base, 1e-3);
+  m.computeVertexNormals();
+  const p = m.attributes.position, n = m.attributes.normal;
+  for (let i = 0; i < p.count; i++) p.setXYZ(i, p.getX(i) + n.getX(i) * t, p.getY(i) + n.getY(i) * t, p.getZ(i) + n.getZ(i) * t);
+  return m;
+}
+
+/**
+ * Cartoon pass for a world's scenery and landmarks: realistic (standard/physical) materials become
+ * cel-shaded toon materials with slightly lifted colours, and every solid prop gets an ink-outline
+ * shell (instanced props share their twin's placement buffer, so it scrolls for free).
+ * Sky shaders, sprites, particles, glows and see-through pieces are left as they are.
+ */
+const INK_MATERIAL = { value: null };
+function cartoonize(THREE, root) {
+  const swaps = new Map(), white = new THREE.Color('#ffffff');
+  const ink = INK_MATERIAL.value ||= new THREE.MeshBasicMaterial({ color: '#140f24', side: THREE.BackSide });
+  const lifted = new WeakSet();
+  const todo = [];
+  root.traverse((o) => { if (o.isMesh && !o.userData.ink) todo.push(o); });
+  for (const o of todo) {
+    const m = o.material;
+    if (!m || Array.isArray(m) || !(m.isMeshStandardMaterial || m.isMeshPhysicalMaterial || m.isMeshLambertMaterial || m.isMeshPhongMaterial)) continue;
+    let t = swaps.get(m);
+    if (!t) {
+      t = new THREE.MeshToonMaterial({ color: m.color.clone().lerp(white, 0.1), map: m.map, vertexColors: m.vertexColors, emissive: m.emissive, emissiveMap: m.emissiveMap, emissiveIntensity: m.emissiveIntensity, transparent: m.transparent, opacity: m.opacity, side: m.side, fog: m.fog, gradientMap: toonGradient(THREE) });
+      swaps.set(m, t);
+    }
+    o.material = t;
+    const g = o.geometry;
+    if (!g?.attributes?.position) continue;
+    // Very dark vertex-coloured rock reads as a black hole under cel shading: lift it toward its own hue.
+    if (m.vertexColors && g.attributes.color && !lifted.has(g)) {
+      lifted.add(g);
+      const c = g.attributes.color;
+      for (let i = 0; i < c.count; i++) c.setXYZ(i, c.getX(i) + (1 - c.getX(i)) * 0.18, c.getY(i) + (1 - c.getY(i)) * 0.14, c.getZ(i) + (1 - c.getZ(i)) * 0.14);
+      c.needsUpdate = true;
+    }
+    if (g.type === 'PlaneGeometry' || (m.transparent && m.opacity < 0.9) || o.userData.noInk) continue;
+    g.computeBoundingSphere();
+    const r = g.boundingSphere?.radius || 0;
+    if (r < 0.3 || r > 400 || g.attributes.position.count > 40000) continue;
+    const shell = inkShell(THREE, g, Math.min(0.7, Math.max(0.05, r * 0.03)));
+    const twin = o.isInstancedMesh ? new THREE.InstancedMesh(shell, ink, o.count) : new THREE.Mesh(shell, ink);
+    if (o.isInstancedMesh) { twin.instanceMatrix = o.instanceMatrix; twin.frustumCulled = false; }
+    twin.userData.ink = true;
+    o.add(twin);
+  }
+  return root;
+}
+
 function makeTrackside(THREE, geometry, material, { count, spacing, behind = 2 }, place) {
   const mesh = new THREE.InstancedMesh(geometry, material, count);
   mesh.frustumCulled = false;
@@ -301,7 +356,7 @@ const THEMES = {
         boards.add(b);
         return b;
       });
-      boards.userData.update = ({ distance, routeAt }) => {
+      boards.userData.update = ({ distance, routeAt, cameraX = 0, cameraY = 0 }) => {
         const first = Math.floor(distance / BOARD_SPACING);
         pool.forEach((b, i) => {
           const slot = first + i, along = slot * BOARD_SPACING + 30, c = routeAt(along), side = slot % 2 ? 1 : -1;
@@ -309,7 +364,8 @@ const THEMES = {
           b.rotation.set(0, -side * 0.42, (hash(slot * 7) - 0.5) * 0.12);
           const ad = ADS[((slot % ADS.length) + ADS.length) % ADS.length];
           if (b.userData.face.material.map !== ad) b.userData.face.material.map = ad;
-          b.visible = along - distance > -10;
+          // Hidden when a bend swings it in front of the lens (the scrolling scenery does the same).
+          b.visible = along - distance > -10 && !(along - distance < 50 && Math.abs(b.position.x - cameraX) < 9 && Math.abs(b.position.y - cameraY) < 7);
         });
       };
       const glowCloud = skyObject(new THREE.Sprite(new THREE.SpriteMaterial({ map: cloudTexture(THREE, 7, [ctx.course.secondary, ctx.course.accent]), transparent: true, opacity: 0.5, blending: THREE.AdditiveBlending })), [-30, 30, -200], 0.9);
@@ -591,10 +647,10 @@ export function createWorldEnvironment(THREE, scene) {
       clear();
       ctx = { course, glow, smoke, sky, theme, boltAt: -1e9 };
       ctx.pieces = theme.build(THREE, ctx);
-      ctx.pieces.forEach((piece) => { root.add(piece); rimObject(piece, { strength: 0.45 }); });
+      ctx.pieces.forEach((piece) => { root.add(piece); cartoonize(THREE, piece); });
       // Named attractions the route flies through (see landmarks.js).
       ctx.landmarks = buildLandmarks(THREE, course, ctx);
-      ctx.landmarks.objects.forEach((object) => { root.add(object); ctx.pieces.push(object); });
+      ctx.landmarks.objects.forEach((object) => { root.add(object); ctx.pieces.push(object); cartoonize(THREE, object); });
       const [top, mid, bottom] = theme.sky;
       // Forged courses keep the world's look but take their own palette.
       sky.material.uniforms.top.value.set(course?.forged ? course.sky : top);

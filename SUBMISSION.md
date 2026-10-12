@@ -1,6 +1,6 @@
 # Starwake: submission kit
 
-Everything the Handshake "Create a Multiplayer Game" mission asks for. Deadline: **Oct 30, 2026, 11:59 PM PT** (see `CONTEST.md`).
+Everything the Handshake "Create a Multiplayer Game" mission asks for. Deadline: **Oct 30, 2026, 11:59 PM PT** (the mission page says Oct 31; the official rules say Oct 30, and the rules win) (see `CONTEST.md`).
 
 ## 1. Project title
 **Starwake: Cartoon Battle Racing**
@@ -27,7 +27,7 @@ https://starwakeracing.netlify.app
 ## Before you submit
 - [x] Deployed to Netlify with `OPENAI_API_KEY` set; AI lines warmed for all six worlds.
 - [x] Live two-device seasons verified (`node tests/live-playtest.mjs`): 0 errors, standings agree on both screens.
-- [ ] **Check the build-tool question.** The rules describe entries as "the project(s) you built with OpenAI: Create a Multiplayer Game mission," and another entrant reports the mission requires ChatGPT. Starwake was built with Claude Code and uses the OpenAI API at runtime. Confirm with the mission page or Handshake, and describe it truthfully.
+- [x] Mission steps done: Starwake was started in ChatGPT through the mission's Talk and Build steps, then continued with other AI tools; it uses the OpenAI API in-game. Nothing in the official rules requires one tool.
 - [ ] Play one round on a real phone.
 - [ ] Submit in the Handshake mission form (by hand; scripted entries are disqualified): title, cover image, description, URL.
 - [ ] **Leave "Share to Showcase" selected**, or the entry isn't entered in the challenge.

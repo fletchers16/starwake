@@ -191,16 +191,19 @@ function botSeed(code: string, heat: number, i: number) {
 }
 
 function botLapTime(pace: number, skill: number, seed: number) {
-  // Laps come from the pilot's pace and the league's skill (scores at rookie level all hit the cap before).
-  return Math.round(Math.max(38, Math.min(59.5, 57 - (pace - 0.8) * 20 - Math.min(2, skill) * 2 + (seed % 300) / 100)) * 10) / 10;
+  // Same range as human laps (~34–41 s at race speed): faster pilots (higher pace and league skill) lap quicker.
+  return Math.round(Math.max(33, Math.min(42, 35 + (1.25 - pace) * 10 - (Math.min(2, skill) - 1) * 1.5 + (seed % 200) / 100)) * 10) / 10;
 }
 
 /**
  * Sim-pilot heat score (same formula as the client's botLiveScore): rubber-banded to
  * the human field, so races stay close and zaps swing the standings, plus a
  * rank-scaled base so stronger leagues field stronger pilots.
- *   score = 0.82 * pace * fieldAverage + 0.18 * base + zap swings
+ *   score = natural + 0.35 * (bestHuman - natural) + zap swings, natural = 12000 * skill * pace
  */
+// A sim pilot's full-heat score at league skill 1 and pace 1 (a decent human run at race speed).
+const BOT_PAR = 12000;
+
 function botProfile(code: string, heat: number, i: number, skill = 1) {
   const seed = botSeed(code, heat, i);
   return { seed, base: (1500 + (seed % 2500)) * skill, pace: 0.8 + (seed % 46) / 100 };
@@ -209,13 +212,15 @@ function botProfile(code: string, heat: number, i: number, skill = 1) {
 // Upserts this heat's sim-pilot scores from the humans reported so far (re-run on every report).
 function scoreBots(room: Room) {
   const humans = room.scores.filter((e) => e.kind === "human" && e.heat === room.heat && !e.dnf);
-  const field = humans.length ? humans.reduce((sum, e) => sum + e.score, 0) / humans.length : 0;
+  const leader = humans.length ? Math.max(...humans.map((e) => e.score)) : 0;
   const adjust = room.botAdjust?.[room.heat] || [];
   for (let i = 0; i < room.bots; i++) {
     const botId = `bot-${i}`;
     const { seed, base, pace } = botProfile(room.code, room.heat, i, room.botSkill ?? 1);
-    // The rank-scaled floor never towers over the field, so a first-timer still has a race.
-    const score = Math.floor(finite(Math.round(0.82 * pace * field + 0.18 * Math.min(base, field * 1.4 + 300)) + (adjust[i] || 0), 0, MAX_HEAT_SCORE));
+    // Skill decides: each sim pilot has its own level (league skill × its pace) and is pulled only 35% of the way
+    // toward the best human. Fly better than its level and you beat it; fly worse and it beats you. Mirrored in combat.js.
+    const natural = BOT_PAR * (room.botSkill ?? 1) * pace;
+    const score = Math.floor(finite(Math.round(natural + 0.35 * (leader - natural)) + (adjust[i] || 0), 0, MAX_HEAT_SCORE));
     const entry = room.scores.find((e) => e.playerId === botId && e.heat === room.heat);
     if (entry) entry.score = score;
     else room.scores.push({ playerId: botId, name: BOT_NAMES[i % BOT_NAMES.length], kind: "bot", score, heat: room.heat, flightTime: botLapTime(pace, room.botSkill ?? 1, seed) });

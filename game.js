@@ -368,8 +368,8 @@ function botSeed(code,heat,i){let h=2166136261;for(const c of `${code}:${heat}:$
 function botLapTime(pace,skill,seed){return Math.round(Math.max(38,Math.min(59.5,57-(pace-.8)*20-Math.min(2,skill)*2+(seed%300)/100))*10)/10}
 // Sim pilots are rubber-banded to the human field (same formula as the server's scoreBots):
 // score = 0.55 * pace * fieldAverage + 0.45 * base + zap swings.
-function botProfile(code,heat,i,skill=1){const seed=botSeed(code,heat,i);return{seed,base:(1500+seed%2500)*skill,pace:.8+(seed%46)/100}}
-function fieldScore(r){const humans=[projectedScore(r),...Object.values(state.rivals||{}).map(x=>x.score||0)];return humans.reduce((a,b)=>a+b,0)/humans.length}
+function botProfile(code,heat,i,skill=1){const seed=botSeed(code,heat,i);return{seed,skill,base:(1500+seed%2500)*skill,pace:.8+(seed%46)/100}}
+/* The best human's live score: sim pilots are pulled partway toward it (see liveBotScore). */function fieldScore(r){return Math.max(projectedScore(r),...Object.values(state.rivals||{}).map(x=>x.score||0))}
 // Rookie curve: sim pilots start at about half strength and scale to 2x (8k-22k, competitive with clean runs) by FRONTIER LEGEND.
 function botSkillForRank(){return Math.max(.45,Math.min(2,.45+state.rp/2400))}
 function heatRp(score){return Math.round(24+score/400)}
@@ -383,7 +383,7 @@ function challengerRow(){const res=state.race?.challengeResult,c=state.race?.cha
 // (plus personal badges from this device's own season stats).
 function renderSeasonAwards(room){let box=$('season-awards');if(!box){box=document.createElement('div');box.id='season-awards';box.className='season-awards';$('ai-recap')?.after(box)}if(room.phase!=='complete'||state.race?.challengeResult){box.hidden=true;return}const scores=room.scores||[],names=new Map([...(room.players||[]).map(p=>[p.id,p.name]),...scores.map(s=>[s.playerId,s.name]),...BOT_NAMES.map((n,i)=>[`bot-${i}`,n])]),ids=[...new Set(scores.map(s=>s.playerId))],heats=[1,2,3],rows=ids.map(id=>({id,name:(names.get(id)||'PILOT').toUpperCase(),you:id===state.playerId,by:heats.map(h=>scores.find(s=>s.playerId===id&&s.heat===h)?.score),laps:scores.filter(s=>s.playerId===id&&s.flightTime&&s.flightTime<60).map(s=>s.flightTime)})).map(r=>({...r,total:r.by.reduce((a,b)=>a+(b||0),0)})).sort((a,b)=>b.total-a.total);if(!rows.length){box.hidden=true;return}
   const rankIn=h=>{const list=rows.filter(r=>r.by[h-1]!==undefined).sort((a,b)=>b.by[h-1]-a.by[h-1]);return id=>list.findIndex(r=>r.id===id)+1},wins=new Map(rows.map(r=>[r.id,heats.filter(h=>rankIn(h)(r.id)===1).length])),awards=[];
-  awards.push({icon:'★',title:'CHAMPION',who:rows[0],line:`${rows[0].total.toLocaleString()} points over three heats`});
+  awards.push({icon:'★',title:'CHAMPION',who:rows[0],line:`${rows[0].total.toLocaleString()} points over three heats`});const isBot=id=>/^bot-/.test(id),topHuman=rows.find(r=>!isBot(r.id));if(isBot(rows[0].id)&&topHuman)awards.push({icon:'✪',title:'TOP PILOT',who:topHuman,line:`Best human: ${topHuman.total.toLocaleString()} points`});
   const hero=[...rows].sort((a,b)=>wins.get(b.id)-wins.get(a.id))[0];if(wins.get(hero.id)>=2)awards.push({icon:'✦',title:'HEAT HERO',who:hero,line:`Won ${wins.get(hero.id)} of 3 heats`});
   const first=rankIn(1),climb=rows.map((r,i)=>({r,gain:first(r.id)-(i+1)})).sort((a,b)=>b.gain-a.gain)[0];if(climb&&climb.gain>=2)awards.push({icon:'↗',title:'COMEBACK KID',who:climb.r,line:`Climbed ${climb.gain} places after heat 1`});
   const fast=rows.filter(r=>r.laps.length).map(r=>({r,lap:Math.min(...r.laps)})).sort((a,b)=>a.lap-b.lap)[0];if(fast)awards.push({icon:'⚡',title:'FASTEST LAP',who:fast.r,line:`${fast.lap.toFixed(1)} s around the course`});

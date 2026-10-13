@@ -27,6 +27,8 @@ import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.j
 
 // A zap steals STEAL_RATE of the target's points (minimum ZAP_STEAL).
 export const STEAL_RATE = 0.08;
+// A sim pilot's full-heat score at league skill 1 and pace 1 (mirrors BOT_PAR in game.ts).
+const BOT_PAR = 12000;
 export const ZAP_STEAL = 40;
 // Sim pilots can zap a human at most this many times per heat.
 const BOT_HITS_PER_HEAT = 3;
@@ -365,9 +367,9 @@ export function createCombat(THREE, { world, getRoute, routeAt, makeShipMesh, sh
   // ---------- helpers ----------
 
   // Rubber-banded to the human field (matches the server's scoreBots at the end of the heat).
-  // Mostly tracks the human field (pace 0.8–1.25, so the best sim pilot runs right at your shoulder) plus a small
-  // skill floor, so the lead keeps changing hands. Mirrored server-side in game.ts.
-  const liveBotScore = (b, r) => { const k = r.time / r.duration, f = field(r); return Math.max(0, Math.floor(0.82 * b.profile.pace * f + 0.18 * Math.min(b.profile.base * k, f * 1.4 + 300 * k) + b.adj)); };
+  // Skill decides: a sim pilot's own level (league skill × pace, scaled through the heat), pulled 35% toward the
+  // best human's live score. Mirrored server-side in game.ts scoreBots.
+  const liveBotScore = (b, r) => { const k = Math.min(1, r.time / r.duration), natural = BOT_PAR * (b.profile.skill ?? 1) * b.profile.pace * k; return Math.max(0, Math.floor(natural + 0.35 * (field(r) - natural) + b.adj)); };
 
   /** Everyone except the player, as targetable records with route distance d and lane x/y. */
   function opponents(r, rivals) {

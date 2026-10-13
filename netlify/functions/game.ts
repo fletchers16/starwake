@@ -53,7 +53,9 @@ type Room = {
 
 // rs/hull/item/ammo/ba are the pilot's own state, kept so a reloaded tab can continue exactly (raw score, hull, held item, sim-pilot swings).
 type Live = { id: string; name: string; ship: string; d: number; x: number; y: number; score: number; at: number; rs?: number; hull?: number; item?: string; ammo?: number; ba?: number[] };
-const ITEM_IDS = ["blaster", "seeker", "shield", "turbo"];
+const ITEM_IDS = ["blaster", "seeker", "shield", "turbo", "goo", "banana", "magnet", "decoy", "ink", "swap"];
+// Gadget effects on human rivals, relayed like zaps (cumulative counts per kind).
+const FX_KINDS = ["goo", "ink", "magnet", "swap"];
 
 const COURSES = ["neon-rift", "io-storm", "titan-veil", "helix-deep", "earthfall-circuit", "jovian-shear"];
 const SHIPS = ["kite", "bastion", "needle", "manta"];
@@ -145,6 +147,14 @@ async function readAllPaid(code: string, heat: string): Promise<(Paid & { shoote
 // Quick-chat emotes between humans: one current emote per pilot, shown to everyone else for a few seconds.
 const EMOTES = ["GG!", "COMING FOR YOU", "NICE SHOT!", "OOPS", "CATCH ME!"];
 const emoteKey = (code: string, pilot: string) => `emote/${code}/${pilot}`;
+const fxKey = (code: string, heat: string, target: string, from: string) => `fx/${code}/${heat}/${target}/${from}`;
+const dropKey = (code: string, heat: string, from: string) => `drop/${code}/${heat}/${from}`;
+type Fx = { from: string; name: string; counts: Record<string, number>; d: number; at: number };
+type Drops = { from: string; list: { id: string; kind: string; d: number; x: number; y: number }[] };
+async function readPrefix<T>(prefix: string): Promise<T[]> {
+  const { blobs } = await store().list({ prefix }).catch(() => ({ blobs: [] as { key: string }[] }));
+  return (await Promise.all(blobs.map((b) => store().get(b.key, { type: "json" }).catch(() => null)))).filter(Boolean) as T[];
+}
 type Emote = { from: string; name: string; text: string; at: number };
 async function recentEmotes(code: string, room: Room): Promise<Emote[]> {
   if (room.players.length < 2) return [];
@@ -535,16 +545,30 @@ export default async (request: Request) => {
         await store().setJSON(paidKey(code, heatKey(found.room), p.to, pilot.id), { from: pilot.id, name: pilot.name, amount: Math.floor(finite(p.amount, 0, zaps * 1500)) });
       }));
       if (Number.isInteger(body.emote) && EMOTES[body.emote]) await store().setJSON(emoteKey(code, pilot.id), { from: pilot.id, name: pilot.name, text: EMOTES[body.emote], at: Date.now() });
-      const [live, zapped, allPaid, emotes] = await Promise.all([
+      const hk = heatKey(found.room);
+      // Gadget effects (goo, ink, magnet, swap) on human rivals: at most one new of each kind per update.
+      const fx = Array.isArray(body.fx) ? body.fx.slice(0, 8) : [];
+      await Promise.all(fx.filter((f: { target?: string }) => f && f.target !== pilot.id && found.room.players.some((p) => p.id === f.target)).map(async (f: { target: string; counts?: Record<string, unknown>; d?: unknown }) => {
+        const key = fxKey(code, hk, f.target, pilot.id);
+        const prev = (await store().get(key, { type: "json" }).catch(() => null)) as Fx | null;
+        const counts: Record<string, number> = { ...(prev?.counts || {}) };
+        let changed = false;
+        for (const k of FX_KINDS) { const want = Math.floor(finite(f.counts?.[k], 0, 99)), have = counts[k] || 0, next = Math.min(want, have + 1); if (next > have) { counts[k] = next; changed = true; } }
+        if (changed) await store().setJSON(key, { from: pilot.id, name: pilot.name, counts, d: finite(f.d, 0, 1e6), at: Date.now() });
+      }));
+      // Dropped gadgets (bananas, decoys): this pilot's current list, replaced whenever it changes.
+      if (Array.isArray(body.drops)) await store().setJSON(dropKey(code, hk, pilot.id), { from: pilot.id, list: body.drops.slice(0, 8).map((d: Record<string, unknown>) => ({ id: String(d.id || "").replace(/[^a-z0-9]/gi, "").slice(0, 12), kind: d.kind === "decoy" ? "decoy" : "banana", d: finite(d.d, 0, 1e6), x: finite(d.x, -8, 8), y: finite(d.y, -6, 6) })).filter((d: { id: string }) => d.id) });
+      const [live, zapped, allPaid, emotes, effects, drops] = await Promise.all([
         readLive(code), readZaps(code, heatKey(found.room), pilot.id), readAllPaid(code, heatKey(found.room)),
         Promise.all(found.room.players.filter((p) => p.id !== pilot.id).map((p) => store().get(emoteKey(code, p.id), { type: "json" }).catch(() => null))),
+        readPrefix<Fx>(`fx/${code}/${hk}/${pilot.id}/`), readPrefix<Drops>(`drop/${code}/${hk}/`),
       ]);
       const names = new Map(found.room.players.map((p) => [p.id, p.name]));
       const credits = allPaid.filter((p) => p.shooter === pilot.id);
       // The room-wide steal feed: who stole how much from whom (cumulative per pair).
       const steals = allPaid.map((p) => ({ thief: names.get(p.shooter) || "RIVAL", thiefId: p.shooter, victim: p.name, victimId: p.from, amount: p.amount }));
       const recentEmotes = (emotes as ({ from: string; name: string; text: string; at: number } | null)[]).filter((e) => e && Date.now() - e.at < 6000);
-      return json({ live: live.filter((other) => other.id !== pilot.id && found.room.players.some((p) => p.id === other.id)), zapped, credits, steals, emotes: recentEmotes, phase: found.room.phase, heat: found.room.heat });
+      return json({ live: live.filter((other) => other.id !== pilot.id && found.room.players.some((p) => p.id === other.id)), zapped, credits, steals, emotes: recentEmotes, effects, drops: drops.filter((d) => d.from !== pilot.id && found.room.players.some((p) => p.id === d.from)), phase: found.room.phase, heat: found.room.heat });
     }
 
     if (action === "leave") {
@@ -560,7 +584,7 @@ export default async (request: Request) => {
       if (!room.players.length) {
         await store().delete(code).catch(() => {});
         // Empty room: drop its telemetry, zap and steal records too.
-        for (const prefix of [`live/${code}/`, `zap/${code}/`, `paid/${code}/`, `emote/${code}/`]) {
+        for (const prefix of [`live/${code}/`, `zap/${code}/`, `paid/${code}/`, `emote/${code}/`, `fx/${code}/`, `drop/${code}/`]) {
           const { blobs } = await store().list({ prefix }).catch(() => ({ blobs: [] as { key: string }[] }));
           await Promise.all(blobs.map((b) => store().delete(b.key).catch(() => {})));
         }

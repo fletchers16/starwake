@@ -46,11 +46,19 @@ export const ITEMS = {
   seeker: { label: 'COMET SEEKER', icon: '☄', ammo: 1, color: '#ffd166', tip: 'HUNTS DOWN 1ST PLACE' },
   shield: { label: 'BUBBLE SHIELD', icon: '◯', ammo: 1, color: '#9dffcf', tip: 'BLOCKS ONE ZAP' },
   turbo: { label: 'TURBO SNACK', icon: '✸', ammo: 1, color: '#ff9bf0', tip: 'INSTANT BOOST' },
+  goo: { label: 'SLOW-MO GOO', icon: '◍', ammo: 1, color: '#c77dff', tip: 'BUMP A RIVAL · THEY CRAWL FOR 3 S' },
+  banana: { label: 'SPACE BANANA', icon: '☾', ammo: 1, color: '#ffe14d', tip: 'DROPS BEHIND YOU · SPINS THEM OUT' },
+  magnet: { label: 'MAGNET', icon: '∩', ammo: 1, color: '#ff6b81', tip: 'YANKS YOU AHEAD · STEALS THEIR ITEM' },
+  decoy: { label: 'DECOY CRATE', icon: '?', ammo: 1, color: '#ff9a52', tip: 'DROPS A FAKE CRATE BEHIND YOU' },
+  ink: { label: 'INK CLOUD', icon: '✺', ammo: 1, color: '#9b7bff', tip: 'SPLATS RACERS BEHIND YOU' },
+  swap: { label: 'SWAP RAY', icon: '⇄', ammo: 1, color: '#7ef5e2', tip: 'TRADE PLACES WITH THE RACER AHEAD' },
 };
+// Gadgets that act on human rivals travel through the server's effects channel (see outgoingFx / receiveEffects).
+export const FX_KINDS = ['goo', 'ink', 'magnet', 'swap'];
 
 // Item odds for the leader and for last place; everyone else is blended between.
-const ODDS_FRONT = { blaster: 0.5, shield: 0.35, turbo: 0.15, seeker: 0 };
-const ODDS_BACK = { blaster: 0.3, shield: 0.08, turbo: 0.3, seeker: 0.32 };
+const ODDS_FRONT = { blaster: 0.34, shield: 0.24, turbo: 0.08, seeker: 0, banana: 0.16, decoy: 0.12, ink: 0.06, goo: 0, magnet: 0, swap: 0 };
+const ODDS_BACK = { blaster: 0.18, shield: 0.04, turbo: 0.14, seeker: 0.16, banana: 0.03, decoy: 0.03, ink: 0.1, goo: 0.14, magnet: 0.11, swap: 0.07 };
 
 function rollItem(placeFraction, rand = Math.random) {
   const w = Object.keys(ODDS_FRONT).map((k) => [k, ODDS_FRONT[k] + (ODDS_BACK[k] - ODDS_FRONT[k]) * placeFraction]);
@@ -260,6 +268,34 @@ export function createCombat(THREE, { world, getRoute, routeAt, makeShipMesh, sh
   shield.add(shieldRim);
   shield.visible = false;
   world.add(shield);
+  const gooBubble = new THREE.Mesh(new THREE.SphereGeometry(1.6, 20, 14), new THREE.MeshBasicMaterial({ color: '#c77dff', transparent: true, opacity: 0.28, depthWrite: false, blending: THREE.AdditiveBlending }));
+  gooBubble.visible = false;
+  world.add(gooBubble);
+  // ---- Gadget state ----
+  let drops = [];           // dropped gadgets on the track: { id, kind, d, x, y, from, mine, mesh, born }
+  let dropsVersion = 0, dropsSent = -1;
+  let fxCounts = {};        // human target id -> { kind: cumulative count, d }
+  let fxSeen = {};          // shooter id -> { kind: count already applied }
+  let gooed = new Set();    // racers slowed by the current goo
+  const bananaGeo = new THREE.TorusGeometry(0.55, 0.18, 8, 16, Math.PI * 1.1);
+  const bananaInk = new THREE.TorusGeometry(0.55, 0.25, 6, 16, Math.PI * 1.18);
+  function dropMesh(kind) {
+    if (kind === 'decoy') return makeItemPod(THREE); // a perfect fake
+    const g = new THREE.Group();
+    g.add(new THREE.Mesh(bananaGeo, toon(THREE, '#ffe14d')));
+    const ink = new THREE.Mesh(bananaInk, new THREE.MeshBasicMaterial({ color: '#140f24', side: THREE.BackSide }));
+    ink.rotation.z = -0.04;
+    g.add(ink);
+    g.userData.animate = (now) => { g.rotation.set(0.4, now * 0.003, Math.PI * 0.9 + Math.sin(now * 0.004) * 0.2); };
+    return g;
+  }
+  function addDrop(drop) {
+    const mesh = dropMesh(drop.kind);
+    world.add(mesh);
+    drops.push({ ...drop, mesh, born: performance.now() });
+    if (drop.mine) dropsVersion++;
+  }
+  function removeDrop(drop) { world.remove(drop.mesh); drops = drops.filter((d) => d !== drop); if (drop.mine) dropsVersion++; }
   const reticle = new THREE.Sprite(new THREE.SpriteMaterial({ map: reticleTex, color: '#7ef5ff', transparent: true, depthTest: false, depthWrite: false }));
   reticle.renderOrder = 30;
   reticle.visible = false;
@@ -336,6 +372,8 @@ export function createCombat(THREE, { world, getRoute, routeAt, makeShipMesh, sh
     });
     zapCounts = {};
     zapSeen = {};
+    for (const d of drops) world.remove(d.mesh);
+    drops = []; dropsVersion++; fxCounts = {}; fxSeen = {}; gooed = new Set();
     paid = {};
     credited = 0;
     creditBy = {};
@@ -355,7 +393,9 @@ export function createCombat(THREE, { world, getRoute, routeAt, makeShipMesh, sh
     racers = [];
     effects = [];
     externals = [];
-    shield.visible = reticle.visible = playerStars.visible = crown.visible = false;
+    shield.visible = reticle.visible = playerStars.visible = crown.visible = gooBubble.visible = false;
+    for (const d of drops) world.remove(d.mesh);
+    drops = [];
   }
 
   /** Scripted opponent (e.g. a challenge ghost): { id, name, color, mesh, sample(t)->{d,x,y}, score(t), zappable }. */
@@ -476,7 +516,7 @@ export function createCombat(THREE, { world, getRoute, routeAt, makeShipMesh, sh
     r.stunUntil = r.time + STUN;
     r.combo = 0;
     sfx.zapped?.();
-    toast(bouncedBack ? `BOUNCED BACK BY ${shooterName}` : `ZAPPED BY ${shooterName}`, `−${stolen}${bouncedBack ? ' · THEY ROLLED YOUR SHOT' : leaderId === 'player' ? ' · BOUNTY' : ''} · SPIN OUT`);
+    toast(bouncedBack ? `BOUNCED BACK BY ${shooterName}` : `ZAPPED BY ${shooterName}`, `${stolen ? `−${stolen} · ` : ''}${bouncedBack ? 'THEY ROLLED YOUR SHOT · ' : leaderId === 'player' ? 'BOUNTY · ' : ''}SPIN OUT`);
     comic(worldPos(r, r.distance + 2.4, r.x, r.y), pick(['BZZT!', 'OUCH!', 'ZAP!']), '#ff6b81', 2.8);
     onPlayerHit(color);
     return stolen;
@@ -600,6 +640,50 @@ export function createCombat(THREE, { world, getRoute, routeAt, makeShipMesh, sh
       r.starBoostUntil = Math.max(r.starBoostUntil || 0, r.time + 1.8);
       sfx.boost?.();
       toast('TURBO SNACK', 'NOM NOM · BOOST');
+    } else if (kind === 'goo') {
+      r.gooUntil = r.time + 6;
+      gooed = new Set();
+      sfx.shield?.();
+      toast('SLOW-MO GOO', 'BUMP A RIVAL TO SLOW THEM');
+    } else if (kind === 'banana' || kind === 'decoy') {
+      addDrop({ id: Math.random().toString(36).slice(2, 9), kind, d: r.distance - 3, x: r.x, y: r.y, from: 'player', mine: true });
+      sfx.pop?.();
+      toast(kind === 'banana' ? 'SPACE BANANA' : 'DECOY CRATE', 'DROPPED BEHIND YOU · HEH HEH');
+    } else if (kind === 'magnet') {
+      const ahead = list.filter((o) => o.d - r.distance > 3 && o.d - r.distance < 70).sort((a, b) => a.d - b.d)[0];
+      r.item = null; r.ammo = 0;
+      if (!ahead) { toast('MAGNET', 'NOBODY CLOSE ENOUGH'); return; }
+      r.distance = Math.max(r.distance, ahead.d - 5);
+      r.x += (ahead.x - r.x) * 0.6; r.y += (ahead.y - r.y) * 0.6;
+      sfx.boost?.();
+      comic(worldPos(r, r.distance + 2.4, r.x, r.y), 'YOINK!', '#ff6b81', 2.6);
+      let got = null;
+      if (ahead.kind === 'bot' && ahead.ref.item) { got = ahead.ref.item; r.ammo = ahead.ref.ammo || 1; ahead.ref.item = null; ahead.ref.ammo = 0; }
+      else if (ahead.kind === 'human') { const theirs = ahead.ref.item; if (theirs && ITEMS[theirs]) { got = theirs; r.ammo = Math.max(1, ahead.ref.ammo || 1); } sendFx(ahead.id, 'magnet'); }
+      if (got && ITEMS[got]) r.item = got; else r.ammo = 0;
+      toast(`MAGNETED ${ahead.name}!`, got ? `STOLE THEIR ${ITEMS[got].label}` : 'YANKED RIGHT BEHIND THEM');
+      return;
+    } else if (kind === 'ink') {
+      const behind = list.filter((o) => r.distance - o.d > -1 && r.distance - o.d < 45);
+      for (const o of behind) {
+        if (o.kind === 'bot') { o.ref.inkUntil = r.time + 2.2; o.ref.tx = (Math.random() - 0.5) * 9; }
+        else if (o.kind === 'human') sendFx(o.id, 'ink');
+      }
+      comic(worldPos(r, r.distance - 2, r.x, r.y), 'SPLURT!', '#9b7bff', 3);
+      sfx.pop?.();
+      toast('INK CLOUD', behind.length ? `SPLATTED ${behind.length} BEHIND YOU` : 'NOBODY BEHIND TO SPLAT');
+    } else if (kind === 'swap') {
+      const ahead = list.filter((o) => o.d - r.distance > 2 && o.d - r.distance < 140).sort((a, b) => a.d - b.d)[0];
+      if (!ahead) toast('SWAP RAY', 'NOBODY AHEAD TO SWAP WITH');
+      else {
+        const mine = { d: r.distance, x: r.x, y: r.y };
+        if (ahead.kind === 'bot') { const b = ahead.ref; r.distance = b.d; r.x = b.x; r.y = b.y; b.d = mine.d; b.x = b.tx = mine.x; b.y = b.ty = mine.y; }
+        else if (ahead.kind === 'human') { sendFx(ahead.id, 'swap', mine.d); r.distance = ahead.d; r.x = ahead.x; r.y = ahead.y; }
+        flash(worldPos(r, r.distance + 2.4, r.x, r.y), '#7ef5e2', 5);
+        comic(worldPos(r, r.distance + 2.4, r.x, r.y), 'ZWOOP!', '#7ef5e2', 2.8);
+        sfx.boost?.();
+        toast('SWAP RAY', `TRADED PLACES WITH ${ahead.name}!`);
+      }
     }
     if (--r.ammo <= 0) r.item = null;
   }
@@ -611,6 +695,86 @@ export function createCombat(THREE, { world, getRoute, routeAt, makeShipMesh, sh
   }
 
   // ---------- simulation ----------
+
+  // ---- Gadgets: effects on human rivals go out as cumulative counts per kind (like zaps). ----
+  function sendFx(target, kind, d = 0) {
+    const c = (fxCounts[target] ||= {});
+    c[kind] = (c[kind] || 0) + 1;
+    if (d) c.d = d;
+  }
+  const outgoingFx = () => Object.entries(fxCounts).map(([target, c]) => ({ target, counts: Object.fromEntries(FX_KINDS.map((k) => [k, c[k] || 0])), d: c.d || 0 }));
+  /** Apply gadget effects other humans landed on us: [{ from, name, counts: { goo, ink, magnet, swap }, d, at }]. */
+  function receiveEffects(r, list = [], serverOffset = 0) {
+    for (const e of list) {
+      // A record we first see after a reload holds effects from before it: those become the baseline, not replays.
+      const seen = (fxSeen[e.from] ||= {}), first = !seen.init && Date.now() + serverOffset - (Number(e.at) || 0) > 6000;
+      seen.init = true;
+      for (const k of FX_KINDS) {
+        const n = Number(e.counts?.[k]) || 0, fresh = n - (seen[k] || 0);
+        seen[k] = n;
+        // After a reload, old effects become the baseline instead of replaying.
+        if (fresh <= 0 || first || !r.started || r.done) continue;
+        const who = String(e.name || 'RIVAL').toUpperCase();
+        if (k === 'goo') { r.slowUntil = r.time + 3; comic(worldPos(r, r.distance + 2.4, r.x, r.y), 'SLOOOW!', '#c77dff', 2.6); toast(`GOOED BY ${who}`, 'HALF SPEED FOR 3 S'); }
+        else if (k === 'ink') { r.inkUntil = r.time + 2.2; sfx.pop?.(); toast(`INKED BY ${who}`, 'WIPE YOUR VISOR!'); }
+        else if (k === 'magnet') { if (r.item && !r.rolling) { toast(`${who} MAGNETED YOUR ITEM`, `BYE BYE ${ITEMS[r.item].label}`); r.item = null; r.ammo = 0; } }
+        else if (k === 'swap' && Number(e.d) > 0) { r.distance = Number(e.d); comic(worldPos(r, r.distance + 2.4, r.x, r.y), 'ZWOOP!', '#7ef5e2', 2.6); toast(`${who} SWAPPED PLACES WITH YOU!`, 'SNEAKY'); }
+      }
+    }
+  }
+  /** Our live drops, sent only when they change. */
+  const outgoingDrops = () => { if (dropsSent === dropsVersion) return undefined; dropsSent = dropsVersion; return drops.filter((d) => d.mine).map(({ id, kind, d, x, y }) => ({ id, kind, d, x, y })); };
+  /** Other humans' drops: [{ from, list: [{ id, kind, d, x, y }] }] (we keep consumed ones gone). */
+  const consumed = new Set();
+  function receiveDrops(list = []) {
+    const live = new Set();
+    for (const entry of list) for (const dr of entry.list || []) {
+      const id = `${entry.from}:${dr.id}`;
+      live.add(id);
+      if (consumed.has(id) || drops.some((x) => x.id === id)) continue;
+      addDrop({ id, kind: dr.kind === 'decoy' ? 'decoy' : 'banana', d: Number(dr.d) || 0, x: Number(dr.x) || 0, y: Number(dr.y) || 0, from: entry.from, mine: false });
+    }
+    for (const dr of drops.slice()) if (!dr.mine && !live.has(dr.id)) removeDrop(dr);
+  }
+  function updateGadgets(r, dt, rivals, prevD) {
+    // Goo: bumping a rival while it's active slows them for 3 s.
+    if (r.time < (r.gooUntil || 0)) {
+      for (const o of foes(opponents(r, rivals))) {
+        if (gooed.has(o.id) || Math.abs(o.d - (r.distance + 2.4)) > 3 || Math.abs(o.x - r.x) > 1.9 || Math.abs(o.y - r.y) > 1.7) continue;
+        gooed.add(o.id);
+        if (o.kind === 'bot') o.ref.slowUntil = r.time + 3;
+        else if (o.kind === 'human') { sendFx(o.id, 'goo'); o.ref.slowUntil = r.time + 3; }
+        comic(worldPos(r, o.d, o.x, o.y), 'SLOOOW!', '#c77dff', 2.6);
+        sfx.zapped?.();
+        toast(`GOOED ${o.name}!`, 'THEY CRAWL FOR 3 S');
+      }
+    }
+    // Drops: anyone flying through a banana spins out; a decoy zaps whoever grabs it. Expire after 15 s.
+    const nowMs = performance.now();
+    for (const dr of drops.slice()) {
+      if (nowMs - dr.born > 15000) { if (!dr.mine) consumed.add(dr.id); removeDrop(dr); continue; }
+      let hit = false;
+      if (!dr.mine && prevD < dr.d && r.distance >= dr.d && Math.abs(r.x - dr.x) < 1.5 && Math.abs(r.y - dr.y) < 1.5 && r.time > (r.rollUntil || -9)) {
+        hit = true;
+        r.stunUntil = r.time + (dr.kind === 'banana' ? 1.4 : 1.2);
+        r.combo = 0;
+        if (dr.kind === 'decoy') { const lost = Math.min(Math.max(100, Math.round(r.score * 0.05)), Math.floor(r.score)); r.zapPoints -= lost; r.score = Math.max(0, r.score - lost); r.lostPts = (r.lostPts || 0) + lost; toast('IT WAS A DECOY!', `−${lost} · NICE TRY`); }
+        else toast('SPLAT!', 'YOU HIT A SPACE BANANA');
+        comic(worldPos(r, r.distance + 2.4, r.x, r.y), dr.kind === 'banana' ? 'SPLAT!' : 'GOTCHA!', '#ffe14d', 2.6);
+        sfx.zapped?.();
+      }
+      for (const b of racers) {
+        if (hit || b.dropHit === dr.id || Math.abs(b.d - dr.d) > 1.2 || Math.abs(b.x - dr.x) > 1.5 || Math.abs(b.y - dr.y) > 1.5) continue;
+        b.dropHit = dr.id; b.stunUntil = r.time + 1.3; hit = true;
+        if (dr.mine) { comic(worldPos(r, b.d, b.x, b.y), dr.kind === 'banana' ? 'SPLAT!' : 'GOTCHA!', '#ffe14d', 2.4); toast(`${b.name} ${dr.kind === 'banana' ? 'SLIPPED!' : 'FELL FOR IT!'}`, 'YOUR TRAP WORKED'); }
+      }
+      if (hit) { if (!dr.mine) consumed.add(dr.id); removeDrop(dr); continue; }
+      dr.mesh.position.copy(worldPos(r, dr.d, dr.x, dr.y));
+      dr.mesh.visible = dr.d - r.distance > -10 && dr.d - r.distance < 120;
+      dr.mesh.userData.animate?.(nowMs);
+    }
+    gooBubble.visible = r.time < (r.gooUntil || 0);
+  }
 
   function update(r, dt, rivals) {
     if (r.rolling) {
@@ -645,7 +809,7 @@ export function createCombat(THREE, { world, getRoute, routeAt, makeShipMesh, sh
       const stunned = r.time < b.stunUntil;
       // Rubber band: sim pilots close up when far behind you and ease off far ahead, so the pack stays a fight.
       const band = 1 + Math.max(-0.12, Math.min(0.14, (r.distance - b.d) / 140));
-      b.d += dt * r.rate * b.pace * band * (stunned ? 0.35 : 1);
+      b.d += dt * r.rate * b.pace * band * (stunned ? 0.35 : 1) * (r.time < (b.slowUntil || -9) ? 0.5 : 1) * (r.time < (b.inkUntil || -9) ? 0.8 : 1);
       // The coach's practice target keeps a lead on you until you zap it.
       if (b.holdAhead && !stunned) { const floor = r.distance + b.holdAhead; if (b.d < floor) b.d += Math.min(floor - b.d, dt * r.rate * 1.5); }
       if (r.time > b.nextWeave) { b.tx = (Math.random() - 0.5) * 8; b.ty = (Math.random() - 0.5) * 3.6; b.nextWeave = r.time + 1.4 + Math.random() * 2.2; }
@@ -671,6 +835,8 @@ export function createCombat(THREE, { world, getRoute, routeAt, makeShipMesh, sh
       b.cooldown -= dt * (frenzy ? 2 : 1);
       if (b.item === 'blaster' && b.cooldown <= 0 && !stunned) botShoot(r, b, rivals);
     }
+    updateGadgets(r, dt, rivals, r._prevD ?? r.distance);
+    r._prevD = r.distance;
     // Effects
     for (const e of effects) {
       e.age += dt;
@@ -832,6 +998,7 @@ export function createCombat(THREE, { world, getRoute, routeAt, makeShipMesh, sh
     shipModel.userData.tick?.(now, stunned);
     for (const h of rivals) rivalMeshes.get(h.id)?.userData.tick?.(now, r.time < (h.stunUntil || -9));
     tickStars(playerStars, now, stunned, shipModel.position.x, shipModel.position.y, shipModel.position.z);
+    if (gooBubble.visible) { gooBubble.position.copy(shipModel.position); gooBubble.scale.setScalar(1 + Math.sin(now * 0.012) * 0.06); }
     shield.visible = r.time < r.shieldUntil;
     if (shield.visible) {
       shield.position.copy(shipModel.position);
@@ -903,7 +1070,7 @@ export function createCombat(THREE, { world, getRoute, routeAt, makeShipMesh, sh
       b.nextPod = Math.floor(b.d / lap) * pods.length + pods.filter((p) => p < ((b.d % lap) + lap) % lap).length;
     }),
     start, dispose, addExternal, pickup, fire, update, render, currentLock,
-    outgoingZaps, receiveZaps, outgoingPaid, receiveCredits,
+    outgoingZaps, receiveZaps, outgoingPaid, receiveCredits, outgoingFx, receiveEffects, outgoingDrops, receiveDrops,
     /** Live scores of sim pilots for standings. */
     botScores: (r) => racers.map((b) => ({ id: b.id, name: b.name, score: liveBotScore(b, r) })),
     externalScores: (r) => externals.map((e) => ({ id: e.id, name: e.name, score: Math.max(0, Math.floor(e.score(r.time) + e.adj)) })),

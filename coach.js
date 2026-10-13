@@ -38,7 +38,7 @@ export function createCoach({ el, combat, touch }) {
       const b = combat.debugRacers()[0];
       // It stays at least 12 m ahead until zapped (sim pilots ease off when leading, so it would drift behind).
       if (b) { b.d = r.distance + 14; b.x = r.x; b.y = r.y; b.tx = r.x; b.ty = r.y; b.stunUntil = -9; b.noDodgeUntil = r.time + 30; b.nextWeave = r.time + 4; b.holdAhead = 12; }
-      if (!r.item || r.item === 'shield' || r.item === 'turbo') { r.item = 'blaster'; r.ammo = 3; r.rolling = 0; r.pendingItem = null; }
+      if (r.item !== 'blaster' || r.rolling) { r.item = 'blaster'; r.ammo = 3; r.rolling = 0; r.pendingItem = null; }
       say(`${touch ? 'Tap <em>FIRE</em>' : 'Press <em>F</em>'} to zap`, 'Your blaster locks onto the racer ahead. A zap steals 8% of their points.');
     } else if (step === 1 && (r.zapsLanded || 0) > 0) {
       combat.debugRacers().forEach((b) => { b.holdAhead = 0; });

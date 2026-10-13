@@ -69,4 +69,4 @@ Plays a full live season on a deploy: a laptop and a phone on throttled 4G with 
 
 ## Deploy (Netlify)
 
-`netlify.toml` builds with `npm run build`, publishes `dist/` and serves functions from `netlify/functions`. Set `OPENAI_API_KEY` (optionally `OPENAI_MODEL`, default `gpt-5-mini`, and `AI_DAILY_CAP`, default 800), redeploy, then run `npm run warm:ai https://<site>`.
+`netlify.toml` builds with `npm run build`, publishes `dist/` and serves functions from `netlify/functions`. Set `OPENAI_API_KEY` (optionally `OPENAI_MODEL`, default `gpt-5-mini`, and `AI_DAILY_CAP`, default 1500), redeploy, then run `npm run warm:ai https://<site>`.

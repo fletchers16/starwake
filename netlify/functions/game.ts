@@ -46,6 +46,8 @@ type Room = {
   public?: boolean;
   // Team Battle: red vs blue, alternating by seat; sim pilots fill the smaller side.
   teams?: boolean;
+  // Forge Party: who pitched the ideas behind the room's world.
+  partyBy?: string[];
   botTeams?: ("red" | "blue")[];
   scores: Array<{ playerId: string; score: number; heat: number; name?: string; kind?: "human" | "bot"; flightTime?: number; dnf?: boolean }>;
   updatedAt: number;
@@ -652,6 +654,7 @@ export default async (request: Request) => {
         draft.course = forged && courseId === forged.id ? forged : null;
         draft.coursePrompt = typeof body.coursePrompt === "string" ? body.coursePrompt.slice(0, 180) : "";
         draft.courseSeed = Number.isFinite(Number(body.courseSeed)) ? Number(body.courseSeed) >>> 0 : 0;
+        draft.partyBy = Array.isArray(body.partyBy) ? body.partyBy.slice(0, 8).map((n: unknown) => cleanName(n)) : [];
       } else if (action === "emote") {
         // Quick chat outside races (lobby / results); written after the room update below.
         if (!Number.isInteger(body.emote) || !EMOTES[body.emote]) throw new Error("Unknown emote.");

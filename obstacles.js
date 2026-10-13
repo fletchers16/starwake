@@ -240,6 +240,9 @@ export function makeBrokenRing(THREE, item, course) {
 /** Dispatch for every damaging obstacle type. */
 export function makeHazardObstacle(THREE, item, course, look) {
   HZ = hazardColor(course);
+  if (item.type === 'arch') return makeArch(THREE, item, course);
+  if (item.type === 'well') return makeWell(THREE, item, course);
+  if (item.motion) return makeMover(THREE, item, course);
   if (item.type === 'boost') return makeBoostGate(THREE, item, course);
   if (item.type === 'pillar') return makePillar(THREE, item, course);
   if (item.type === 'blocker') return makeFence(THREE, item, course);
@@ -327,4 +330,106 @@ export function makePillar(THREE, item, course) {
   }
   group.userData.animate = () => {};
   return group;
+}
+
+// ---------- Adventure set pieces: moving hazards and tunnel arches ----------
+// Movers carry a `motion` ('sweep' | 'geyser' | 'drop'); game.js updates their x/y/active each frame
+// (so collisions and visuals agree), and the meshes here read those values.
+function inked(THREE, group, geo, mat, s = 1.1) {
+  const m = new THREE.Mesh(geo, mat);
+  const ink = new THREE.Mesh(geo, new THREE.MeshBasicMaterial({ color: '#140f24', side: THREE.BackSide }));
+  ink.scale.setScalar(s);
+  m.add(ink);
+  group.add(m);
+  return m;
+}
+export function makeMover(THREE, item, course) {
+  const g = new THREE.Group(), kind = item.look;
+  if (item.motion === 'geyser') {
+    // Lava geyser: a crater that erupts a glowing column on a timer (warning glow just before).
+    const crater = inked(THREE, g, new THREE.CylinderGeometry(1.3, 1.6, 0.6, 12), toon(THREE, '#5a2a1c'));
+    crater.position.y = -3.9;
+    const column = new THREE.Mesh(new THREE.CylinderGeometry(0.85, 1.1, 8, 12, 1, true), new THREE.MeshBasicMaterial({ color: '#ffb02e', transparent: true, opacity: 0.92 }));
+    column.position.y = 0;
+    g.add(column);
+    const core = new THREE.Mesh(new THREE.CylinderGeometry(0.45, 0.6, 8.2, 10, 1, true), new THREE.MeshBasicMaterial({ color: '#fff3b0' }));
+    g.add(core);
+    const warn = new THREE.Mesh(new THREE.CircleGeometry(1.5, 20), glowMat(THREE, '#ff6a1a', 0.7));
+    warn.rotation.x = -Math.PI / 2; warn.position.y = -3.55;
+    g.add(warn);
+    g.userData.animate = (now) => {
+      const on = !!item.active, soon = !on && item.phaseNow > 0.78;
+      column.visible = core.visible = on;
+      column.scale.set(1 + Math.sin(now * 0.03) * 0.08, 1, 1 + Math.cos(now * 0.03) * 0.08);
+      warn.material.opacity = on ? 0.9 : soon ? 0.5 + 0.4 * Math.sin(now * 0.04) : 0.15;
+    };
+    return g;
+  }
+  if (item.motion === 'drop') {
+    // Falling icicle with a ring shadow on the floor of the corridor.
+    const spike = inked(THREE, g, new THREE.ConeGeometry(0.75, 2.8, 7), toon(THREE, '#bfe9ff'), 1.12);
+    spike.rotation.x = Math.PI;
+    g.userData.animate = () => { g.rotation.set(0, 0, 0); };
+    return g;
+  }
+  // Sweepers: a world-flavoured critter or object gliding side to side across the corridor.
+  if (kind === 'satellite') {
+    const body = inked(THREE, g, new THREE.BoxGeometry(1.1, 1.1, 1.1), toon(THREE, '#e8e8f0'));
+    for (const s of [-1, 1]) { const panel = inked(THREE, g, new THREE.BoxGeometry(1.6, 0.08, 0.9), toon(THREE, '#3f6dff'), 1.15); panel.position.x = s * 1.45; }
+    const dish = inked(THREE, g, new THREE.ConeGeometry(0.45, 0.4, 12, 1, true), toon(THREE, '#ffd23f'));
+    dish.position.y = 0.75;
+    g.userData.animate = (now) => { body.rotation.y = now * 0.001; };
+  } else if (kind === 'jelly') {
+    const dome = inked(THREE, g, new THREE.SphereGeometry(0.95, 16, 10, 0, Math.PI * 2, 0, Math.PI / 2), toon(THREE, '#ff7bd5', { transparent: true, opacity: 0.85 }), 1.08);
+    const legs = [];
+    for (let i = 0; i < 5; i++) { const a = (i / 5) * Math.PI * 2, leg = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.03, 1.4, 5), glowMat(THREE, '#ffb3ec')); leg.position.set(Math.cos(a) * 0.55, -0.7, Math.sin(a) * 0.55); g.add(leg); legs.push(leg); }
+    g.userData.animate = (now) => { dome.scale.y = 1 + Math.sin(now * 0.006) * 0.12; legs.forEach((l, i) => { l.rotation.z = Math.sin(now * 0.008 + i) * 0.4; }); };
+  } else if (kind === 'shard') {
+    const rock = inked(THREE, g, new THREE.DodecahedronGeometry(1.0, 0), toon(THREE, '#e09a5a'), 1.1);
+    g.userData.animate = (now) => { rock.rotation.set(now * 0.002, now * 0.0013, 0); };
+  } else {
+    // Security drone: round body, one big red eye, twin rotors.
+    const body = inked(THREE, g, new THREE.SphereGeometry(0.85, 16, 12), toon(THREE, '#5b6cff'));
+    const eye = new THREE.Mesh(new THREE.SphereGeometry(0.36, 12, 8), glowMat(THREE, HZ));
+    eye.position.set(0, 0, 0.72);
+    g.add(eye);
+    const rotor = new THREE.Mesh(new THREE.BoxGeometry(2.2, 0.06, 0.2), toon(THREE, '#ffd23f'));
+    rotor.position.y = 0.95;
+    g.add(rotor);
+    g.userData.animate = (now) => { rotor.rotation.y = now * 0.03; eye.scale.setScalar(Math.sin(now * 0.01) > 0 ? 1 : 0.8); };
+  }
+  return g;
+}
+
+/** Tunnel arch for a set piece: a chunky cel-shaded ring around the corridor (visual only). */
+const archGeometry = { ring: null, ink: null };
+export function makeArch(THREE, item, course) {
+  archGeometry.ring ||= new THREE.TorusGeometry(9, 0.7, 6, 18);
+  archGeometry.ink ||= new THREE.TorusGeometry(9, 0.88, 5, 18);
+  const g = new THREE.Group();
+  const tone = { volcanic: '#7a3a24', ice: '#9fd8ff', jupiter: '#c98a52', earth: '#4f7dff', nebula: '#8a5bff', relay: '#5b6cff' }[course?.kind] || '#7d6bff';
+  g.add(new THREE.Mesh(archGeometry.ring, toon(THREE, tone)));
+  g.add(new THREE.Mesh(archGeometry.ink, new THREE.MeshBasicMaterial({ color: '#140f24', side: THREE.BackSide })));
+  g.userData.animate = () => {};
+  return g;
+}
+
+/** Gravity well (Helix set piece): a spinning purple vortex disc; game.js pulls nearby pilots toward it. */
+let vortexTexture = null;
+export function makeWell(THREE, item, course) {
+  if (!vortexTexture) {
+    const c = document.createElement('canvas'); c.width = c.height = 256;
+    const g = c.getContext('2d');
+    g.translate(128, 128);
+    for (let arm = 0; arm < 4; arm++) { g.rotate(Math.PI / 2); g.beginPath(); for (let t = 0; t < 1; t += 0.01) { const r = t * 118, a = t * 5.5; g.lineTo(Math.cos(a) * r, Math.sin(a) * r); } g.lineWidth = 14; g.strokeStyle = 'rgba(255,255,255,.9)'; g.stroke(); }
+    vortexTexture = new THREE.CanvasTexture(c);
+    vortexTexture.userData.shared = true;
+  }
+  const g = new THREE.Group();
+  const disc = new THREE.Mesh(new THREE.CircleGeometry(4.5, 40), new THREE.MeshBasicMaterial({ map: vortexTexture, color: '#c77dff', transparent: true, opacity: 0.75, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide }));
+  g.add(disc);
+  const core = new THREE.Mesh(new THREE.SphereGeometry(0.7, 16, 12), new THREE.MeshBasicMaterial({ color: '#140f24' }));
+  g.add(core);
+  g.userData.animate = (now) => { disc.rotation.z = -now * 0.003; disc.scale.setScalar(1 + Math.sin(now * 0.004) * 0.06); };
+  return g;
 }

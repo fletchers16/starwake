@@ -33,7 +33,8 @@ export function toonGradient(THREE) {
   return gradientMap;
 }
 
-export const toon = (THREE, color, extra = {}) => new THREE.MeshToonMaterial({ color, gradientMap: toonGradient(THREE), ...extra });
+// MeshToonMaterial has no flatShading option (three.js warns), so drop it if a caller passes one.
+export const toon = (THREE, color, { flatShading, ...extra } = {}) => new THREE.MeshToonMaterial({ color, gradientMap: toonGradient(THREE), ...extra });
 
 /** Inverted-hull ink outline for a mesh (cartoon line art). */
 export function inkOutline(THREE, mesh, thickness = 1.08, color = '#140f24') {

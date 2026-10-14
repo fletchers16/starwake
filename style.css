@@ -767,3 +767,8 @@ body:has(#nl-badge-frame) #race-screen .hud2-boost{bottom:74px}
 #app.inked .scene:after{content:"";opacity:1!important;background:radial-gradient(circle at 32% 38%,#1b1033 0 13%,transparent 14%),radial-gradient(circle at 62% 52%,#241445 0 17%,transparent 18%),radial-gradient(circle at 46% 68%,#1b1033 0 10%,transparent 11%),radial-gradient(circle at 70% 30%,#2d1858 0 8%,transparent 9%),radial-gradient(circle at 25% 64%,#241445 0 9%,transparent 10%)!important;animation:ink-drip 2.2s ease-in forwards}
 @keyframes ink-drip{0%{transform:scale(.6);opacity:0}12%{transform:scale(1.05);opacity:1}80%{opacity:.95}100%{transform:translateY(6%) scale(1.08);opacity:.2}}
 #app.gooed .scene:before{background:radial-gradient(ellipse at center,transparent 45%,rgba(160,80,255,.38) 100%)!important}
+/* Touch laptops: same touch controls once the screen has been touched (game.js adds body.touched) */
+body.touched #app.racing .input-guide>b,body.touched #app.racing .input-guide>em,body.touched .kbd-only,body.touched .emote-bar kbd,body.touched .roll-chip kbd{display:none}
+body.touched #app.racing .touch-guide{display:inline!important}
+body.touched .hud2-boost{display:flex}
+body.touched .roll-chip span::after{content:' · TAP';font:600 8px 'DM Mono',monospace}

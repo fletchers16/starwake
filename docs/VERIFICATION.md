@@ -19,6 +19,8 @@ At race speed (~25 m/s), 7 m is about a quarter of a second. The phone joined th
 - `tests/battle.e2e.mjs` (35 checks): a laptop and a touch phone join through an invite link, zap each other (keyboard and the touch FIRE button), credits match what the victim lost, emotes, standings, security (wrong token rejected), the room survives the host finishing last, phone reloads mid-heat and between heats resume the seat without repairing hull or replaying hits, a barrel roll reflects a zap, and a rematch starts a clean season.
 - `tests/challenge.e2e.mjs` (11): a "beat my run" dare between two devices, the verdict matches the ladder, the sender sees the reply, TRY AGAIN races the reply.
 - `tests/coach.e2e.mjs` (8): the coached first race, including that quitting mid-lesson leaves nothing behind.
+- `tests/gadgets.e2e.mjs` (6): every gadget between two human players (Slow-Mo Goo, Decoy Crate, Magnet, Ink, Swap Ray, Banana).
+- `tests/crowd.e2e.mjs` (8): four humans plus two aliens in one live heat, all steering, firing and rolling; every screen sees the other three humans, ~60 zaps land in 20 seconds, and all four screens agree on the final standings with no page errors.
 
 ## Also verified
 
@@ -34,4 +36,4 @@ Draw calls sampled every 1.5 s over 40 s of racing (Oct 14): averages 160–200 
 
 - A match between two real physical devices on separate networks (the phone runs are emulated).
 - Touch steering feel on real hardware.
-- Rooms with more than two humans at once (the server supports 8; tests use 2 humans plus aliens).
+- Rooms with five to eight humans at once (the crowd suite covers four humans plus two aliens locally; not yet on the deployed site).

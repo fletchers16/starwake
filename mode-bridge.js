@@ -41,7 +41,7 @@ try {
       if (eyebrow && !from && hostName) eyebrow.innerHTML = `<i></i> ⚔ ${hostName} CHALLENGES YOU TO A LIVE BATTLE`;
       const sub = document.querySelector('.launch-copy > p:not(.launch-eyebrow)');
       const n = room.players?.length || 0;
-      if (sub) sub.textContent = room.phase === 'lobby' ? `${n} pilot${n === 1 ? ' is' : 's are'} in the lobby. Grab pods, zap rivals, steal their points. No install, no account.`
+      if (sub) sub.textContent = room.phase === 'lobby' ? `${n} pilot${n === 1 ? ' is' : 's are'} in the lobby. Grab crates, zap rivals, steal their points. No install, no account.`
         : room.phase === 'results' ? `They're between heats. Join now and you'll fly from the next heat.`
         : room.phase === 'race' ? `A heat is in progress. You can join as soon as it ends (about a minute).`
         : `This season just ended. Ask your friend for a rematch invite.`;

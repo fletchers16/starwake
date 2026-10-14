@@ -378,10 +378,10 @@ Backlog, in order:
 12. `ready` [Polish] Small: dare landing shows party chips; alien Forge ideas differ per device; "You placed 3rd" vs table order; FORGE WORLD text clipped; frenzy timer low contrast.
 
 ## Priority list (user, Oct 11): build in this order, top first
-A. `ready` **Skill decides races** [Usefulness] (critic #1): alien scores follow your own performance, not the human field; a pilot who flies well beats the aliens; aliens excluded from Champion; lap times derived from score.
-B. `ready` **Hull has consequences** [Usefulness] (critic #2): at 0 hull you spin out / limp for ~3 s and lose a share of points; hull refills slowly or from stars.
-C. `ready` **Missable checkpoint gates** [Usefulness, Creativity] (user): gates are smaller and placed off-centre so you have to steer through them; missing one costs a 1.5 s slowdown and points ("MISSED GATE"); gate count shown in the HUD; aliens can miss too.
-D. `ready` **More gadgets** [Creativity, Usefulness] (user): new items from crates, each synced in PvP through the zap inbox with a `kind` field:
+A. `done` **Skill decides races** [Usefulness] (critic #1): alien scores follow your own performance, not the human field; a pilot who flies well beats the aliens; aliens excluded from Champion; lap times derived from score.
+B. `done` **Hull has consequences** [Usefulness] (critic #2): at 0 hull you spin out / limp for ~3 s and lose a share of points; hull refills slowly or from stars.
+C. `done` **Missable checkpoint gates** [Usefulness, Creativity] (user): gates are smaller and placed off-centre so you have to steer through them; missing one costs a 1.5 s slowdown and points ("MISSED GATE"); gate count shown in the HUD; aliens can miss too.
+D. `done` **More gadgets** [Creativity, Usefulness] (user): new items from crates, each synced in PvP through the zap inbox with a `kind` field:
    - **Slow-Mo Goo**: while active (6 s), bumping into a rival slows them to half speed for 3 s (purple goo trail, "SLOOOW" burst).
    - **Space Banana / Oil Slick**: drop behind you; whoever flies through spins out.
    - **Magnet**: yanks you toward the racer ahead and steals their held item.
@@ -389,7 +389,8 @@ D. `ready` **More gadgets** [Creativity, Usefulness] (user): new items from crat
    - **Ink Cloud**: splats the screens of racers right behind you for 2 s.
    - **Swap Ray**: trade places with the racer just ahead (rare, back of the pack only).
    Keep the item odds rubber-banded (better items further back) and add each to the coach/briefing and Flight School.
-E. `ready` **Adventure tracks** [Creativity, Polish] (user): each lap becomes a sequence of set pieces instead of one corridor: tunnels and caves, a dive, a corkscrew spiral, a split shortcut that needs a boost gate, moving hazards per world (Io lava geysers on a timer, Titan falling icicles, Jovian ring-plane weave, Earthfall satellite field, Helix gravity well that pulls you, Neon collapsing gantries). Landmark captions name each section.
-F. `ready` **Forge Party unmistakable** [Creativity] (critic #3): fused world name and "ideas by …" on HUD and results; offline remix generates a name and palette from the ideas; raise AI_DAILY_CAP for judging.
-G. `ready` **First impressions** [Polish] (critic #4, #5, #7, #8, #9): hub button above the fold, briefing/header reskin, one centre message slot, smaller phone bursts, readable results.
+E. `done` **Adventure tracks** [Creativity, Polish] (user): each lap becomes a sequence of set pieces instead of one corridor: tunnels and caves, a dive, a corkscrew spiral, a split shortcut that needs a boost gate, moving hazards per world (Io lava geysers on a timer, Titan falling icicles, Jovian ring-plane weave, Earthfall satellite field, Helix gravity well that pulls you, Neon collapsing gantries). Landmark captions name each section.
+F. `done` **Forge Party unmistakable** [Creativity] (critic #3): fused world name and "ideas by …" on HUD and results; offline remix generates a name and palette from the ideas; raise AI_DAILY_CAP for judging.
+G. `done` **First impressions** [Polish] (critic #4, #5, #7, #8, #9): hub button above the fold, briefing/header reskin, one centre message slot, smaller phone bursts, readable results.
 H. `ready` **Real phones**: the user plays a real match with friends before the final deploy.
+- Oct 13–14: built A–G in order (skill-based alien scoring; hull breach; missable off-centre gates; six gadgets synced in PvP with a new gadgets suite; two set-piece sections a lap with moving hazards; Forge Party offline remix + credits; first-impression polish), plus the season-end dare button and a telemetry score cap. All suites green (35 / 11 / 8 / 4). Blind re-grade launched on 41065a5.

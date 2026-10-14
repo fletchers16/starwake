@@ -14,8 +14,22 @@ const clean = (value: unknown, max: number) => String(value ?? "").replace(/[<>]
 const CAST_SCHEMA = {
   type: "object",
   additionalProperties: false,
-  required: ["aliens"],
+  required: ["aliens", "announcer"],
   properties: {
+    // Live race call-outs, written once per course with the taunts (so the AI speaks mid-race at no extra cost).
+    announcer: {
+      type: "object",
+      additionalProperties: false,
+      required: ["frenzy", "lead", "breach", "setpiece", "reflect", "cleanLap"],
+      properties: {
+        frenzy: { type: "string", description: "Zap Frenzy starts: the final 15 seconds double every steal. Max 48 characters." },
+        lead: { type: "string", description: "The player just took 1st place. Max 48 characters." },
+        breach: { type: "string", description: "The player's hull just broke and they spun out. Max 48 characters." },
+        setpiece: { type: "string", description: "The player enters a hazard section of this course. Max 48 characters." },
+        reflect: { type: "string", description: "The player barrel-rolled a laser straight back at its shooter. Max 48 characters." },
+        cleanLap: { type: "string", description: "The player flew through all five checkpoint gates in a lap. Max 48 characters." },
+      },
+    },
     aliens: {
       type: "array",
       minItems: 5,
@@ -37,7 +51,8 @@ const CAST_SCHEMA = {
 
 const CAST_INSTRUCTIONS = `You write trash talk for five cartoon alien racers in Starwake, a family-friendly cartoon space battle racer where players zap each other with laser blasters and steal points.
 Personalities: ZORP (one-eyed, overconfident show-off), BLIX (three-eyed, dizzy and dramatic), MUNGO (grumpy, hates losing), QUEEP (tiny, hyper, squeaky), GLORB (laid-back, weird space philosopher).
-Write one short line for each situation per alien, playful and PG, max 42 characters each, no emojis, and work in the course's world when it's funny.`;
+Write one short line for each situation per alien, playful and PG, max 42 characters each, no emojis, and work in the course's world when it's funny.
+Also write the race announcer's live call-outs: an excitable sportscaster talking to the player as "you", one line per moment, max 48 characters, PG, no emojis, flavoured by the course.`;
 
 const RECAP_SCHEMA = {
   type: "object",
@@ -75,17 +90,18 @@ export default async (request: Request) => {
     if (body.kind === "cast") {
       if (!course.id) return json({ error: "Missing course." }, 400);
       const store = getStore({ name: "starwake-ai", consistency: "strong" });
-      const key = known ? `cast/v1/${course.id}` : `cast/v1/forged-${hash(`${course.name}|${course.planet}|${course.world}`)}`;
+      const key = known ? `cast/v2/${course.id}` : `cast/v2/forged-${hash(`${course.name}|${course.planet}|${course.world}`)}`;
       const cached = await store.get(key, { type: "json" }).catch(() => null);
       if (cached) return json({ cast: cached, model: MODEL, cached: true });
       if (!(await underDailyLimit(request, "cast", 20))) return json({ fallback: true, error: "Daily AI limit reached.", code: "limited" });
-      const result = await structured<{ aliens: { name: string; zap: string; zapped: string; lead: string }[] }>({
+      const result = await structured<{ aliens: { name: string; zap: string; zapped: string; lead: string }[]; announcer: Record<string, string> }>({
         instructions: CAST_INSTRUCTIONS,
         input: `Course: ${course.name} on ${course.planet} (${course.world}).`,
         name: "starwake_cast",
         schema: CAST_SCHEMA,
       });
-      const cast = Object.fromEntries(result.aliens.filter((a) => ALIENS.includes(a.name)).map((a) => [a.name, { zap: clean(a.zap, 48), zapped: clean(a.zapped, 48), lead: clean(a.lead, 48) }]));
+      const cast: Record<string, Record<string, string>> = Object.fromEntries(result.aliens.filter((a) => ALIENS.includes(a.name)).map((a) => [a.name, { zap: clean(a.zap, 48), zapped: clean(a.zapped, 48), lead: clean(a.lead, 48) }]));
+      cast.ANNOUNCER = Object.fromEntries(["frenzy", "lead", "breach", "setpiece", "reflect", "cleanLap"].map((k) => [k, clean(result.announcer?.[k], 56)]));
       await store.setJSON(key, cast).catch(() => {});
       return json({ cast, model: MODEL });
     }

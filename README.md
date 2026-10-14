@@ -34,7 +34,7 @@ Built for the Handshake AI Skills Studio × OpenAI Multiplayer Game Challenge. S
 ## Built with OpenAI
 
 - **Alien rivals:** ZORP, BLIX, MUNGO, QUEEP and GLORB taunt you when they zap you, get zapped, or take the lead, in lines written per world (`netlify/functions/banter.ts`, cached per course).
-- **Announcer:** a two-sentence recap of every heat and a three-sentence season story, written from the real standings and stats.
+- **Announcer:** live call-outs mid-race (Zap Frenzy, taking the lead, a hull breach, entering a set piece, a perfect reflect, a clean lap of gates) written per world alongside the taunts, so they cost nothing per race; plus a two-sentence recap of every heat and a three-sentence season story, written from the real standings and stats.
 - **World Forge and Forge Party:** a sentence (or everyone's fused ideas) becomes a raceable world: track shape, palette, gravity, crosswind and hazards, via structured outputs. `course-forge.js` clamps every value so AI tracks are fair and flyable.
 - **Limits and fallbacks:** per-IP daily limits, a site-wide daily cap (`AI_DAILY_CAP`) and caching. Without a key or credit, the game uses canned lines, template recaps and remixed built-in worlds, so nothing breaks.
 

@@ -110,6 +110,15 @@ export function makeAlienPilot(THREE, alien = ALIENS[0]) {
  * deployment). With a key, netlify/functions/banter.ts writes per-course lines.
  */
 export const CANNED_LINES = {
+  // The race announcer's live call-outs (OpenAI writes per-course versions in the cast when a key is set).
+  ANNOUNCER: {
+    frenzy: ['ZAP FRENZY! Every steal counts double!', 'Fifteen seconds left and the lasers are hot!', 'Frenzy time: shoot first, ask never!'],
+    lead: ['And you take the lead! Wear that crown!', 'New leader! Everyone is aiming at you now!', 'You are in first. Do not look back!'],
+    breach: ['Hull breach! That is going to leave a mark!', 'Ouch! Patch it up and get back out there!', 'Kaboom! Mind the rocks, pilot!'],
+    setpiece: ['Here comes the hard part. Stay sharp!', 'Hazard zone ahead. Threading time!', 'Welcome to the danger section!'],
+    reflect: ['WHAT A ROLL! Right back at them!', 'Return to sender! Beautiful!', 'They will think twice about that one!'],
+    cleanLap: ['All five gates! Textbook lap!', 'A perfect lap of gates. Gorgeous flying!', 'Clean lap! The judges love it!'],
+  },
   ZORP: { zap: ['Zorp sees all. Zorp zaps all.', 'One eye, zero mercy!', 'Smile for the laser!'], zapped: ['My beautiful eye!', 'Lucky shot, earthling.', 'Zorp will remember this.'], lead: ['Behold: first place. As usual.', 'Bow before the eye!', 'See you at the finish. Not.'] },
   BLIX: { zap: ['Pew pew pew! Three times!', 'All three eyes saw that!', 'Ha! Dizzy now, aren\'t you?'], zapped: ['The room is spinning!', 'Which way is forward?!', 'Ouch, ouch, and ouch.'], lead: ['Blix is in front! Wheee!', 'Triple-eyed and first!', 'Catch me if you can! You can\'t.'] },
   MUNGO: { zap: ['Mungo is not sorry.', 'Out of my lane!', 'That is for last week.'], zapped: ['Mungo is mad now.', 'You will regret that.', 'Grrrrrr.'], lead: ['Mungo first. Finally.', 'Move. Mungo is winning.', 'Hmph. As it should be.'] },

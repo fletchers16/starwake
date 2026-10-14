@@ -232,3 +232,8 @@ body.coaching #race-screen .taunt{display:none!important}
 #mode-hub-root .sw-map-art img ~ svg{display:none}
 #mode-hub-root .sw-hub-map:not(.is-selected) .sw-map-art img{filter:saturate(.8) brightness(.85)}
 @media(min-width:761px){#mode-hub-root .sw-hub-map{height:136px!important;min-height:0!important}#mode-hub-root .sw-hub-maps{gap:10px!important}}
+
+/* Race announcer call-outs share the taunt bubble, in sportscaster yellow */
+#app .taunt.announcer{background:#ffd23f}
+#app .taunt.announcer::after{background:#ffd23f}
+#app .taunt.announcer i{display:none}

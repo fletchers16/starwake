@@ -397,14 +397,15 @@ H. `ready` **Real phones**: the user plays a real match with friends before the 
 
 ## Blind re-grade, Oct 14 (commit 41065a5): Execution 5, Creativity 3, Usefulness 4, Polish 4 (~16/20, "credible top-20, not yet a top-3 lock")
 Backlog from it, in build order:
-1. `ready` [Polish] Race-screen text collisions: toast over LOCKED ON, speech bubble over the team bar, plain white pop-up numbers. Separate lanes, cartoon font.
-2. `ready` [Polish] Mobile results: see-through pinned button over content. Make it opaque with padding.
-3. `ready` [Execution] Neon Rift draw calls reach 255 about 12 s in (merge the Relay Tunnel landmark and other multi-mesh props).
-4. `ready` [Polish] Fastest Lap award and lap PB stickers aren't skill-based. Use best heat score / most gates; PB on score.
-5. `ready` [Polish] Headlines contradict the table ("Heat won." while 3rd overall); dare verdict should lead; TOP PILOT only with 2+ humans; number formatting in recaps; "Grab pods" on the invite page; bigger heat-chart tiles; "GATES 0 / 0".
-6. `ready` [Polish/Usefulness] Briefing is a wall of text. Three lines plus a collapsible "all the rules".
-7. `ready` [Polish] Invited guests can't pick a name. Add a callsign field on the invite landing.
-8. `ready` [Usefulness] Zap losses can swamp a trailing player. Cap a pilot's total steal losses per heat (~30% of gross).
-9. `ready` [Creativity] Forge Party offline ignores the ideas' theme. Keyword-driven palette/sky/hazard skin; feature Forge Party on the landing.
-10. `ready` [Polish] Hub: line-chart track art, sticky bar over ship stats at 1440×900, 4 px phone overflow; set-piece arches look the same on every world.
+1. `done` [Polish] Race-screen text collisions: toast over LOCKED ON, speech bubble over the team bar, plain white pop-up numbers. Separate lanes, cartoon font.
+2. `done` [Polish] Mobile results: see-through pinned button over content. Make it opaque with padding.
+3. `done` [Execution] Neon Rift draw calls reach 255 about 12 s in (merge the Relay Tunnel landmark and other multi-mesh props).
+4. `done` [Polish] Fastest Lap award and lap PB stickers aren't skill-based. Use best heat score / most gates; PB on score.
+5. `done` [Polish] Headlines contradict the table ("Heat won." while 3rd overall); dare verdict should lead; TOP PILOT only with 2+ humans; number formatting in recaps; "Grab pods" on the invite page; bigger heat-chart tiles; "GATES 0 / 0".
+6. `done` [Polish/Usefulness] Briefing is a wall of text. Three lines plus a collapsible "all the rules".
+7. `done` [Polish] Invited guests can't pick a name. Add a callsign field on the invite landing.
+8. `done` [Usefulness] Zap losses can swamp a trailing player. Cap a pilot's total steal losses per heat (~30% of gross).
+9. `done` [Creativity] Forge Party offline ignores the ideas' theme. Keyword-driven palette/sky/hazard skin; feature Forge Party on the landing.
+10. `done` [Polish] Hub: line-chart track art, sticky bar over ship stats at 1440×900, 4 px phone overflow; set-piece arches look the same on every world.
 11. `later` [Execution] Client-reported scores and botAdjust; untested 3+ human load.
+12. `done` [Creativity] AI in the moment-to-moment game: OpenAI writes live announcer call-outs per world (frenzy, lead, breach, set piece, reflect, clean lap of gates), cached with the taunts (cast/v2, so re-run warm:ai after deploy); canned fallbacks without a key.

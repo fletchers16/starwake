@@ -6,7 +6,7 @@ import { COURSE_CATALOG } from "../../course-catalog.js";
 // - "cast": trash talk for the alien racers, written for a specific course. Generated once
 //   per course and cached, so every race shows AI lines at almost no cost.
 // - "recap": a two-sentence sportscaster recap of the heat you just flew.
-// Without OPENAI_API_KEY this returns 503 "unconfigured" and the game uses canned lines.
+// Without OPENAI_API_KEY (or past the daily cap) this answers 200 { fallback: true } and the game uses canned lines.
 
 const ALIENS = ["ZORP", "BLIX", "MUNGO", "QUEEP", "GLORB"];
 const clean = (value: unknown, max: number) => String(value ?? "").replace(/[<>]/g, "").replace(/\s+/g, " ").trim().slice(0, max);
@@ -61,7 +61,7 @@ A three-heat season just ended. Write a three-sentence season story for the play
 
 export default async (request: Request) => {
   if (request.method !== "POST") return json({ error: "Use POST." }, 405);
-  if (!hasKey()) return json({ error: "AI rivals are not configured on this deployment.", code: "unconfigured" }, 503);
+  if (!hasKey()) return json({ fallback: true, error: "AI rivals are not configured on this deployment.", code: "unconfigured" });
   let body: any = {};
   try { body = await request.json(); } catch {}
   // Built-in courses come from the server's own catalog (clients can't rename them); forged ones are
@@ -78,7 +78,7 @@ export default async (request: Request) => {
       const key = known ? `cast/v1/${course.id}` : `cast/v1/forged-${hash(`${course.name}|${course.planet}|${course.world}`)}`;
       const cached = await store.get(key, { type: "json" }).catch(() => null);
       if (cached) return json({ cast: cached, model: MODEL, cached: true });
-      if (!(await underDailyLimit(request, "cast", 20))) return json({ error: "Daily AI limit reached.", code: "limited" }, 429);
+      if (!(await underDailyLimit(request, "cast", 20))) return json({ fallback: true, error: "Daily AI limit reached.", code: "limited" });
       const result = await structured<{ aliens: { name: string; zap: string; zapped: string; lead: string }[] }>({
         instructions: CAST_INSTRUCTIONS,
         input: `Course: ${course.name} on ${course.planet} (${course.world}).`,
@@ -90,7 +90,7 @@ export default async (request: Request) => {
       return json({ cast, model: MODEL });
     }
     if (body.kind === "recap") {
-      if (!(await underDailyLimit(request, "recap", 40))) return json({ error: "Daily AI limit reached.", code: "limited" }, 429);
+      if (!(await underDailyLimit(request, "recap", 40))) return json({ fallback: true, error: "Daily AI limit reached.", code: "limited" });
       const standings = (Array.isArray(body.standings) ? body.standings : []).slice(0, 8).map((s: any) => `${clean(s.name, 18)}${s.you ? " (the player)" : ""}: ${Math.floor(Number(s.score) || 0)}`);
       const st = body.stats || {};
       const input = `Course: ${course.name} on ${course.planet}. Final standings: ${standings.join("; ")}. Player stats: place ${Math.floor(Number(st.place) || 0)}, rings ${Math.floor(Number(st.rings) || 0)}, best combo x${Math.floor(Number(st.bestCombo) || 0)}, zaps landed ${Math.floor(Number(st.zapsLanded) || 0)}, points stolen ${Math.floor(Number(st.stolen) || 0)}, points lost to zaps ${Math.floor(Number(st.lost) || 0)}, space cows rescued ${Math.floor(Number(st.cows) || 0)}.${body.challenge ? ` This was a head-to-head challenge against ${clean(body.challenge.name, 18)}'s recorded run: player ${Math.floor(Number(body.challenge.you) || 0)} vs ${Math.floor(Number(body.challenge.them) || 0)}. Mention who won the duel.` : ''}`;
@@ -98,7 +98,7 @@ export default async (request: Request) => {
       return json({ recap: clean(result.recap, 280), model: MODEL });
     }
     if (body.kind === "season") {
-      if (!(await underDailyLimit(request, "recap", 40))) return json({ error: "Daily AI limit reached.", code: "limited" }, 429);
+      if (!(await underDailyLimit(request, "recap", 40))) return json({ fallback: true, error: "Daily AI limit reached.", code: "limited" });
       const table = (Array.isArray(body.table) ? body.table : []).slice(0, 8).map((s: any) => `${clean(s.name, 18)}${s.you ? " (the player)" : ""}: ${Math.floor(Number(s.total) || 0)} total, heats ${(Array.isArray(s.heats) ? s.heats : []).slice(0, 3).map((h: any) => Math.floor(Number(h) || 0)).join("/")}`);
       const st = body.stats || {};
       const input = `Course: ${course.name} on ${course.planet}. Season table: ${table.join("; ")}. Player season stats: zaps landed ${Math.floor(Number(st.zapsLanded) || 0)}, points stolen ${Math.floor(Number(st.stolen) || 0)}, points lost to zaps ${Math.floor(Number(st.lost) || 0)}, space cows ${Math.floor(Number(st.cows) || 0)}.`;

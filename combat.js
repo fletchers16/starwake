@@ -477,6 +477,8 @@ export function createCombat(THREE, { world, getRoute, routeAt, makeShipMesh, sh
     return t;
   }
   function comic(at, word, fill = '#ffd23f', size = 2.6) {
+    // Smaller on phones, so a burst never swallows the screen or the touch buttons.
+    if (window.innerWidth < 760) size *= 0.62;
     const mesh = new THREE.Sprite(new THREE.SpriteMaterial({ map: comicTex(word, fill), transparent: true, depthWrite: false, depthTest: false }));
     mesh.position.copy(at).add(new THREE.Vector3(0, 0.9, 0));
     mesh.material.rotation = (Math.random() - 0.5) * 0.5;

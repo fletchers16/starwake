@@ -47,6 +47,7 @@ try {
         : `This season just ended. Ask your friend for a rematch invite.`;
     }).catch(() => {});
   } else if (/^[a-z0-9]{8}$/.test(challenge)) {
+    document.querySelector('#launch-intro')?.classList.add('dare');
     if (label) label.textContent = 'ACCEPT CHALLENGE';
     if (eyebrow) eyebrow.innerHTML = `<i></i> ★ A FRIEND DARES YOU`;
     // Placeholder dare until the details load, so the generic slogan never flashes.

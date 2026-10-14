@@ -25,7 +25,7 @@ function outputText(response: any): string {
 export default async (request: Request) => {
   if (request.method !== "POST") return json({ error: "Use POST to forge a world." }, 405);
   const key = process.env.OPENAI_API_KEY;
-  if (!key) return json({ error: "World Forge AI is not configured on this deployment.", code: "unconfigured" }, 503);
+  if (!key) return json({ fallback: true, error: "World Forge AI is not configured on this deployment.", code: "unconfigured" });
 
   let prompt = "";
   try {
@@ -38,7 +38,7 @@ export default async (request: Request) => {
   const cache = getStore({ name: "starwake-ai", consistency: "strong" });
   const cached = await cache.get(cacheKey, { type: "json" }).catch(() => null);
   if (cached) return json({ course: cached, model: MODEL, cached: true });
-  if (!(await underDailyLimit(request, "forge", 15))) return json({ error: "You've forged a lot of worlds today. Try again tomorrow, or race one you've made.", code: "limited" }, 429);
+  if (!(await underDailyLimit(request, "forge", 15))) return json({ fallback: true, error: "You've forged a lot of worlds today. Try again tomorrow, or race one you've made.", code: "limited" });
 
   try {
     const response = await fetch("https://api.openai.com/v1/responses", {

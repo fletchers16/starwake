@@ -155,3 +155,43 @@ body,#app{background:radial-gradient(ellipse at 70% -10%,#3a2370 0,transparent 5
 .join-watch>em{font-style:normal;font-size:12px;color:var(--cz-lilac)}
 .party-credit{margin:6px 0 12px;padding:8px 12px;border:3px solid var(--cz-ink);border-radius:14px;background:linear-gradient(90deg,rgba(255,123,213,.25),rgba(126,245,226,.15)),var(--cz-panel);font-size:13px;color:#fff;box-shadow:0 3px 0 var(--cz-ink)}
 .party-credit b{font:400 15px var(--display);letter-spacing:.04em;color:var(--cz-yellow)}
+
+/* ===== First-impression pass (critic, Oct 11) ===== */
+/* Header bar in the cartoon style; on phones it drops the league block so nothing clips. */
+.topbar{background:rgba(26,17,52,.92);border-bottom:3px solid var(--cz-ink)!important;box-shadow:0 4px 0 rgba(20,15,36,.6)}
+.top-rank span,.top-rank strong,.top-rank small,.top-wallet,.top-wallet small,.top-meta,#connection-label{font-family:var(--display)!important;font-weight:400!important;letter-spacing:.05em!important}
+.top-wallet{border:3px solid var(--cz-ink)!important;border-radius:12px!important;background:var(--cz-panel)!important;box-shadow:0 3px 0 var(--cz-ink)}
+.icon-button{border:3px solid var(--cz-ink)!important;background:var(--cz-panel)!important;color:var(--cz-yellow)!important;box-shadow:0 3px 0 var(--cz-ink)}
+@media(max-width:560px){.top-rank,#connection-label{display:none!important}}
+/* Pre-race briefing */
+#briefing .brief-panel{background:var(--cz-panel)!important;border:3px solid var(--cz-ink)!important;border-radius:20px!important;box-shadow:0 6px 0 var(--cz-ink)!important}
+#briefing .brief-head small,#briefing small,#briefing .brief-hint{font-family:var(--display)!important;font-weight:400!important;letter-spacing:.06em!important;color:var(--cz-cyan)}
+#briefing h2{font-family:var(--display);font-weight:400;color:#fff;text-shadow:0 4px 0 var(--cz-ink)}
+#briefing h3,#briefing b,#briefing strong{font-family:var(--display);font-weight:400;letter-spacing:.03em}
+/* Countdown */
+#race-screen .race-start small,#race-screen .race-start span{font-family:var(--display)!important;font-weight:400!important;letter-spacing:.08em!important;color:#fff;-webkit-text-stroke:4px var(--cz-ink);paint-order:stroke fill}
+/* Hub: the launch bar is always on screen; the hub's hero no longer repeats the landing's pitch. */
+@media(min-width:761px){
+  #mode-hub-root:not([hidden]) .sw-hub-launch{position:fixed;left:50%;bottom:20px;width:min(560px,calc(100vw - 40px));margin-left:calc(min(560px,calc(100vw - 40px)) / -2);z-index:30;box-shadow:0 6px 0 var(--cz-ink),0 18px 40px rgba(0,0,0,.45)!important}
+  #mode-hub-root .sw-hub{padding-bottom:120px}
+  #mode-hub-root .sw-hub-intro h1{font-size:clamp(38px,3.6vw,54px)!important}
+  #mode-hub-root .sw-hub-intro>p:not(.sw-hub-kicker){display:none}
+}
+#mode-hub-root .sw-forge-foot button{white-space:nowrap;padding:6px 12px!important}
+/* One message at a time in the centre: no toast under a lock-on warning, no banter while the coach talks. */
+#race-screen:has(#lock-warn:not([hidden])) .race-toast{opacity:0!important}
+body.coaching #race-screen .taunt{display:none!important}
+/* Zap Frenzy: the clock turns red-hot instead of low-contrast purple. */
+#app.frenzy #race-screen .hud2-time strong{background:#ff4d6a!important;color:#fff!important}
+/* Dare links are a solo heat: no party chips. */
+#launch-intro.dare .launch-chips{display:none}
+/* Results: readable labels, values on the heat chart, CONTINUE always reachable. */
+.result-breakdown,.result-breakdown *,.result-row,.result-row strong{font-size:13px!important}
+#result-rows>div:first-child{font-size:12px!important;color:var(--cz-lilac)}
+.hh-row i{height:46px}
+.hh-row i b{position:absolute;left:0;right:0;bottom:2px;text-align:center;font:400 10px var(--display);color:#fff;-webkit-text-stroke:3px var(--cz-ink);paint-order:stroke fill}
+@media(max-width:760px),(max-height:860px){
+  #results-screen #continue-button{position:fixed;z-index:12;margin:0;width:auto;left:max(16px,calc(50% - 240px));right:max(16px,calc(50% - 240px));bottom:max(14px,env(safe-area-inset-bottom))}
+  body:has(#nl-badge-frame) #results-screen #continue-button{bottom:62px}
+  #results-screen .result-wrap{padding-bottom:96px}
+}

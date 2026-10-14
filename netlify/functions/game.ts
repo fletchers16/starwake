@@ -594,6 +594,8 @@ export default async (request: Request) => {
       return json({ ok: true });
     }
 
+    // A finishing pilot's claim is checked against the live score they streamed during the heat (multiplayer only).
+    const streamed = action === "complete" ? ((await store().get(liveKey(code, playerId), { type: "json" }).catch(() => null)) as Live | null) : null;
     const { room } = await mutateRoom(code, (draft) => {
       const pilot = draft.players.find((candidate) => candidate.id === playerId);
       if (!pilot) throw new Error("Your pilot is no longer in this lobby.");
@@ -613,7 +615,10 @@ export default async (request: Request) => {
         const result = body.result || {};
         // A heat can't out-score the time actually flown: ~240 pts/s is a flawless run; allow headroom.
         const flown = Math.max(0, Math.min(HEAT_MS, Date.now() - (draft.startsAt || 0))) / 1000;
-        const score = Math.floor(finite(result.score, 0, Math.min(MAX_HEAT_SCORE, 1500 + flown * 640)));
+        const timeCap = Math.min(MAX_HEAT_SCORE, 1500 + flown * 640);
+        // Room for the last few seconds of play after the final telemetry, but not for a made-up number.
+        const streamCap = streamed && streamed.score > 0 && Date.now() - streamed.at < 20000 ? streamed.score * 1.3 + 2000 : Infinity;
+        const score = Math.floor(finite(result.score, 0, Math.min(timeCap, streamCap)));
         pilot.progress = 1;
         pilot.score = score;
         pilot.finished = true;

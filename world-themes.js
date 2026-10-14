@@ -150,6 +150,38 @@ function inkShell(THREE, g, t) {
  * Sky shaders, sprites, particles, glows and see-through pieces are left as they are.
  */
 const INK_MATERIAL = { value: null };
+/**
+ * Merge a landmark's static parts by material (a Relay Tunnel was 24 meshes, now ~3). Parts that animate on their
+ * own (userData.tick/animate on a child) or are instanced/sprites/points are left alone; the group keeps its transform.
+ */
+function mergeStatic(THREE, group) {
+  group.updateMatrixWorld(true);
+  const inv = new THREE.Matrix4().copy(group.matrixWorld).invert();
+  const byMat = new Map();
+  group.traverse((o) => {
+    if (o === group || !o.isMesh || o.isInstancedMesh || o.userData.tick || o.userData.animate || Array.isArray(o.material)) return;
+    let p = o.parent, animated = false;
+    while (p && p !== group) { if (p.userData.tick || p.userData.animate) animated = true; p = p.parent; }
+    if (animated) return;
+    const list = byMat.get(o.material) || []; list.push(o); byMat.set(o.material, list);
+  });
+  for (const [mat, meshes] of byMat) {
+    if (meshes.length < 2) continue;
+    const geos = meshes.map((m) => {
+      const g = (m.geometry.index ? m.geometry.toNonIndexed() : m.geometry.clone());
+      for (const k of Object.keys(g.attributes)) if (!['position', 'normal', 'uv', 'color'].includes(k)) g.deleteAttribute(k);
+      return g.applyMatrix4(new THREE.Matrix4().multiplyMatrices(inv, m.matrixWorld));
+    });
+    const keys = Object.keys(geos[0].attributes).filter((k) => geos.every((g) => g.attributes[k]));
+    for (const g of geos) for (const k of Object.keys(g.attributes)) if (!keys.includes(k)) g.deleteAttribute(k);
+    let merged = null;
+    try { merged = mergeGeometries(geos); } catch { merged = null; }
+    if (!merged) continue;
+    for (const m of meshes) { m.parent.remove(m); m.geometry.dispose(); }
+    group.add(new THREE.Mesh(merged, mat));
+  }
+  return group;
+}
 function cartoonize(THREE, root) {
   const swaps = new Map(), white = new THREE.Color('#ffffff');
   const ink = INK_MATERIAL.value ||= new THREE.MeshBasicMaterial({ color: '#140f24', side: THREE.BackSide });
@@ -650,7 +682,7 @@ export function createWorldEnvironment(THREE, scene) {
       ctx.pieces.forEach((piece) => { root.add(piece); cartoonize(THREE, piece); });
       // Named attractions the route flies through (see landmarks.js).
       ctx.landmarks = buildLandmarks(THREE, course, ctx);
-      ctx.landmarks.objects.forEach((object) => { root.add(object); ctx.pieces.push(object); cartoonize(THREE, object); });
+      ctx.landmarks.objects.forEach((object) => { root.add(object); ctx.pieces.push(object); mergeStatic(THREE, object); cartoonize(THREE, object); });
       const [top, mid, bottom] = theme.sky;
       // Forged courses keep the world's look but take their own palette.
       sky.material.uniforms.top.value.set(course?.forged ? course.sky : top);

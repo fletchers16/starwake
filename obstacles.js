@@ -191,12 +191,10 @@ export function makeRock(THREE, item, course, look) {
   const jitter = 0.85 + ((seed % 100) / 100) * 0.35;
   body.scale.set(stretch[0] * r * jitter, stretch[1] * r * (0.9 + ((seed >> 3) % 20) / 100), stretch[2] * r * jitter);
   spinner.add(body);
-  const ink = new THREE.Mesh(geometry, new THREE.MeshBasicMaterial({ color: '#140f24', side: THREE.BackSide }));
-  ink.scale.copy(body.scale).multiplyScalar(1.07);
-  spinner.add(ink);
+  // One outline: the pulsing danger rim doubles as the ink line (saves a draw call per rock).
   // Danger rim just outside the ink, so "red hurts" still reads on every world.
   const outline = new THREE.Mesh(geometry, new THREE.MeshBasicMaterial({ color: HZ, side: THREE.BackSide, transparent: true, opacity: 0.85, depthWrite: false, fog: false }));
-  outline.scale.copy(body.scale).multiplyScalar(1.14);
+  outline.scale.copy(body.scale).multiplyScalar(1.1);
   spinner.add(outline);
   group.add(spinner);
   // Two in three rocks glare at you as you fly in (the face stays upright; only the rock tumbles).
@@ -278,9 +276,7 @@ export function makeBoostGate(THREE, item, course) {
   map.needsUpdate = true;
   const arrows = new THREE.Mesh(new THREE.CircleGeometry(1.36, 32), new THREE.MeshBasicMaterial({ map, color: '#ffe14d', transparent: true, opacity: 0.9, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide }));
   group.add(arrows);
-  const glow = new THREE.Mesh(new THREE.CircleGeometry(1.4, 32), new THREE.MeshBasicMaterial({ color: '#ff9a1a', transparent: true, opacity: 0.18, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide }));
-  glow.position.z = -0.02;
-  group.add(glow);
+
   group.userData.animate = (now) => {
     map.offset.y = -(now * 0.0025) % 1;
     hoop.scale.setScalar(1 + Math.sin(now * 0.01) * 0.03);
@@ -314,15 +310,18 @@ export function makePillar(THREE, item, course) {
     pillarGeometry.computeVertexNormals();
   }
   const look = new THREE.Color(course?.secondary || '#8a7a92').lerp(new THREE.Color('#d9c8b4'), 0.55);
-  const body = new THREE.Mesh(pillarGeometry, toon(THREE, look));
+  // Hazard bands painted into the column with vertex colours (one mesh instead of two).
+  if (!pillarGeometry.attributes.color) {
+    const pos = pillarGeometry.attributes.position, col = new Float32Array(pos.count * 3);
+    for (let i = 0; i < pos.count; i++) { const y = pos.getY(i), band = [-2.6, 0, 2.6].some((b) => Math.abs(y - b) < 0.28); col.set(band ? [1, 0.3, 0.37] : [1, 1, 1], i * 3); }
+    pillarGeometry.setAttribute('color', new THREE.BufferAttribute(col, 3));
+  }
+  const body = new THREE.Mesh(pillarGeometry, toon(THREE, look, { vertexColors: true }));
   group.add(body);
   const ink = new THREE.Mesh(pillarGeometry, new THREE.MeshBasicMaterial({ color: '#140f24', side: THREE.BackSide }));
   ink.scale.set(1.09, 1.01, 1.09);
   group.add(ink);
-  pillarBands ||= mergeGeometries([-2.6, 0, 2.6].map((y) => new THREE.CylinderGeometry(1.24, 1.24, 0.34, 14, 1, true).translate(0, y, 0)));
-  const bands = new THREE.Mesh(pillarBands, glowMat(THREE, HZ, 0.9));
-  bands.material.side = THREE.DoubleSide;
-  group.add(bands);
+
   if (item.sign) {
     const sign = new THREE.Mesh(new THREE.PlaneGeometry(4.4, 1.38), new THREE.MeshBasicMaterial({ map: laneSign(THREE), transparent: true }));
     sign.position.set(0, 4.2, 1.4);

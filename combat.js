@@ -972,7 +972,7 @@ export function createCombat(THREE, { world, getRoute, routeAt, makeShipMesh, sh
       b.ship.rotation.z = -(b.tx - b.x) * 0.06 + b.spin;
       { const route = getRoute(), pre = routeAt(b.d - 3, route), post = routeAt(b.d + 6, route); b.ship.rotation.y = -Math.atan2(post.x - pre.x, 9); b.ship.rotation.x = Math.atan2(post.y - pre.y, 9); }
       // Level of detail: past ~45 m the pilot and fishbowl are a few pixels, so skip their draw calls.
-      const near = gap < 45;
+      const near = gap < 26;
       b.pilot.visible = near;
       if (b.ship.userData.bowl) b.ship.userData.bowl.visible = near;
       b.tag.visible = gap > 4 && gap < 70 && r.started;

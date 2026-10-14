@@ -26,6 +26,10 @@ At race speed (~25 m/s), 7 m is about a quarter of a second. The phone joined th
 - AI fallbacks: with no key or no credit the game keeps working (canned lines, template recaps, remixed built-in worlds), and `npm run warm:ai` reports OpenAI's status code if a call fails.
 - Phone layouts (landing, hub, lobby, race HUD) checked in an emulated iPhone 13, including Netlify's hosted badge.
 
+## Rendering cost
+
+Draw calls sampled every 1.5 s over 40 s of racing (Oct 14): averages 160–200 per world, brief peaks of 200–265 where a fork, crates and a set piece overlap. Frame rate stayed at ~58–60 fps on an emulated iPhone 13 with a 4× slower CPU during the live seasons.
+
 ## Not yet verified
 
 - A match between two real physical devices on separate networks (the phone runs are emulated).

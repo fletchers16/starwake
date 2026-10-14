@@ -401,14 +401,22 @@ export function makeMover(THREE, item, course) {
 }
 
 /** Tunnel arch for a set piece: a chunky cel-shaded ring around the corridor (visual only). */
-const archGeometry = { ring: null, ink: null };
+// Each world gets its own arch silhouette: chunky rock, faceted crystal, smooth orbital hoop or a hex gantry.
+const ARCH_SHAPES = { volcanic: [0.95, 4, 9], ice: [0.6, 3, 12], jupiter: [0.85, 5, 10], earth: [0.55, 10, 28], nebula: [0.5, 8, 24], relay: [0.65, 4, 6] };
+const archGeometry = {};
 export function makeArch(THREE, item, course) {
-  archGeometry.ring ||= new THREE.TorusGeometry(9, 0.7, 6, 18);
-  archGeometry.ink ||= new THREE.TorusGeometry(9, 0.88, 5, 18);
+  const [tube, radial, seg] = ARCH_SHAPES[course?.kind] || [0.7, 6, 18];
+  const key = `${tube}:${radial}:${seg}`;
+  archGeometry[key] ||= { ring: new THREE.TorusGeometry(9, tube, radial, seg), ink: new THREE.TorusGeometry(9, tube * 1.28, radial, seg) };
+  const geo = archGeometry[key];
   const g = new THREE.Group();
   const tone = { volcanic: '#7a3a24', ice: '#9fd8ff', jupiter: '#c98a52', earth: '#4f7dff', nebula: '#8a5bff', relay: '#5b6cff' }[course?.kind] || '#7d6bff';
-  g.add(new THREE.Mesh(archGeometry.ring, toon(THREE, tone)));
-  g.add(new THREE.Mesh(archGeometry.ink, new THREE.MeshBasicMaterial({ color: '#140f24', side: THREE.BackSide })));
+  const ring = new THREE.Mesh(geo.ring, toon(THREE, tone, { flatShading: radial <= 5 }));
+  if (course?.kind === 'relay') ring.rotation.z = Math.PI / 6;
+  g.add(ring);
+  const ink = new THREE.Mesh(geo.ink, new THREE.MeshBasicMaterial({ color: '#140f24', side: THREE.BackSide }));
+  ink.rotation.z = ring.rotation.z;
+  g.add(ink);
   g.userData.animate = () => {};
   return g;
 }

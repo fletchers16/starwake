@@ -27,10 +27,13 @@ import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.j
 
 // A zap steals STEAL_RATE of the target's points (minimum ZAP_STEAL).
 export const STEAL_RATE = 0.08;
-// A sim pilot's full-heat score at league skill 1 and pace 1 (mirrors BOT_PAR in game.ts).
-const BOT_PAR = 4000;
-// Keeps a sim pilot within reach of the best human: 0.7x to 1.2x by pace (mirrors botCap in game.ts).
-export const botCap = (best, pace, skill, k = 1) => best * (0.7 + 0.5 * Math.max(0, Math.min(1, (pace - 0.8) / 0.45))) * (0.85 + 0.15 * skill) + 300 * skill * k;
+// A sim pilot's heat score: its rung on this heat's ladder (lead alien 1.0x, then 0.88x, 0.8x...) times a blend of
+// the best human and the league par, so the lead alien shadows you within ~10% both ways: fly well and you win
+// narrowly, don't fly and you don't. The lead role rotates each heat. Mirrors game.ts.
+export const BOT_LEAGUE_PAR = 6000;
+const LADDER = [1.0, 0.88, 0.8, 0.74, 0.7, 0.67, 0.64];
+export const botRung = (heat, i, n) => LADDER[((i + heat) % Math.max(1, n)) % LADDER.length];
+export const botTarget = (best, rung, skill, k = 1) => rung * (0.8 * best + 0.2 * BOT_LEAGUE_PAR * skill * k);
 export const ZAP_STEAL = 40;
 // Sim pilots can zap a human at most this many times per heat.
 const BOT_HITS_PER_HEAT = 3;
@@ -411,7 +414,7 @@ export function createCombat(THREE, { world, getRoute, routeAt, makeShipMesh, sh
   // Rubber-banded to the human field (matches the server's scoreBots at the end of the heat).
   // Skill decides: a sim pilot's own level (league skill × pace, scaled through the heat), pulled 35% toward the
   // best human's live score. Mirrored server-side in game.ts scoreBots.
-  const liveBotScore = (b, r) => { const k = Math.min(1, r.time / r.duration), natural = BOT_PAR * (b.profile.skill ?? 1) * b.profile.pace * k, best = field(r); return Math.max(0, Math.floor(Math.min(natural + 0.35 * (best - natural), botCap(best, b.profile.pace, b.profile.skill ?? 1, k)) + b.adj)); };
+  const liveBotScore = (b, r) => { const k = Math.min(1, r.time / r.duration); return Math.max(0, Math.floor(botTarget(field(r), b.profile.rung ?? 0.8, b.profile.skill ?? 1, k) + b.adj)); };
 
   /** Everyone except the player, as targetable records with route distance d and lane x/y. */
   function opponents(r, rivals) {
@@ -804,7 +807,7 @@ export function createCombat(THREE, { world, getRoute, routeAt, makeShipMesh, sh
     // No crown (and no "you took 1st") until someone has actually scored.
     if (best.score <= 0) best = { id: null, score: 0 };
     if (best.id !== leaderId) {
-      if (best.id === 'player' && leaderId) toast('YOU TOOK 1ST ♛', 'YOU WEAR THE BOUNTY · ZAPS ON YOU STEAL ×2');
+      if (best.id === 'player' && leaderId) toast('YOU TOOK 1ST ♛', 'ZAPS ON YOU NOW STEAL ×2');
       if (leaderId === 'player' && best.kind === 'bot') say(best.name, 'lead');
       leaderId = best.id;
     }
@@ -885,7 +888,8 @@ export function createCombat(THREE, { world, getRoute, routeAt, makeShipMesh, sh
     if (!target && b.aimAt) { b.aimAt = 0; b.relockAt = r.time + ROLL_COOLDOWN; b.coachTarget = false; onLockOn(b.name, false); return; }
     if (!target) return;
     // Opening grace: sim pilots leave you alone for the first 8 seconds of a heat (the coach's pilot excepted).
-    if (target.kind === 'player' && !b.coachTarget && r.time < 8) return;
+    // Only the coach's pilot shoots at you during the first-flight lessons (and nobody in the first 8 s).
+    if (target.kind === 'player' && !b.coachTarget && (r.time < 8 || document.body.classList.contains('coaching'))) return;
     // After a lock is called off, give the player a full roll cooldown before the next one.
     if (target.kind === 'player' && !b.aimAt && r.time < (b.relockAt || 0)) return;
     // Fairness: you can be zapped by sim pilots at most once every 5 seconds.

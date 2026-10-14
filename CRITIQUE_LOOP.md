@@ -424,3 +424,17 @@ Biggest gap: balance. A judge's first race ends last, thousands behind three ali
 10. `done` [Polish/Creativity] README lists 4 items (9 exist); offline Forge Party should show a real AI-forged sample.
 Also: three.js warns flatShading on MeshToonMaterial; touch buttons rely only on (pointer:coarse).
 All 10 done (Oct 14). Balance: BOT_PAR 12000 → 4000 plus a per-alien cap of 0.7–1.2× the best human (+300·skill); casual and idle test heats now finish 2nd, within ~400 of 1st. Also fixed a flaky coach case (a crate replacing the lesson's blaster).
+
+## Blind re-grade, Oct 14 (commit ab25974): Execution 5, Creativity 4, Usefulness 4, Polish 4 (17/20)
+Biggest gap: no tension vs aliens. A pilot who never steers finished 2nd (3,042 vs 3,243); a skilled pilot won a season 22.5k vs 13.5k.
+1. `done` [Usefulness] Lead alien tracks ~0.95–1.1× the best human both ways; no free gates/rings on the default line.
+2. `done` [Polish] Hull meter draws 5 pips for a 4-hull ship.
+3. `done` [Polish] Coached race finishes all lessons in 8 s; hold each step ~4 s.
+4. `done` [Polish] Debris hits at launch: spawn grace.
+5. `done` [Polish] Overlapping centre messages; toast runs off a 390px screen.
+6. `done` [Creativity] Offline Forge Party: ship real AI fusions as course JSON, matched by keyword.
+7. `done` [Polish] Template season story repeats the same number three times.
+8. `done` [Polish] Phone HUD has no rival list; results sorted by total but HEAT column first; desktop name truncation.
+9. `done` [Polish] Alien scores jump at the buzzer.
+10. `done` [Polish] README "five alien rivals" (solo has 3); TIME BONUS row meaningless; sticky hub launch covers garage; hub defaults to BATTLE after solo. (flatShading already fixed in e43d12f.)
+Done Oct 14 (except: sticky hub launch bar left as is, by design). Balance now: lead alien = 1.0 × (0.8 × best human + 0.2 × 6000 × skill), the others step down 0.88/0.8…; the lead role rotates per heat. Autopilot tests: skilled won narrowly (by 14% and 2%), casual and idle placed 2nd–4th. Offline Forge Party serves pooled real OpenAI worlds, seeded by warm:ai. Coach test: one flake in 5 runs before the "aliens hold fire while coaching" fix; then 6 of 6 passed.

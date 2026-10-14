@@ -34,7 +34,8 @@ export function createCoach({ el, combat, touch }) {
     if (r.done) { finish(); return; }
     // Missed every crate for 10 s: hand over the blaster so the lesson keeps moving.
     if (step === 0 && !r.item && !r.rolling && r.time - stepAt > 10) { r.item = 'blaster'; r.ammo = 3; r.pendingItem = null; }
-    if (step === 0 && (r.item || r.rolling)) {
+    // Each card stays up long enough to read (~3 s) before the next lesson starts.
+    if (step === 0 && (r.item || r.rolling) && r.time - stepAt > 2.5) {
       step = 1; stepAt = r.time;
       // Guarantee a target: a sim pilot just ahead of you.
       const b = combat.debugRacers()[0];
@@ -45,13 +46,13 @@ export function createCoach({ el, combat, touch }) {
     } else if (step === 1 && !r.zapsLanded && !r.rolling && r.item !== 'blaster') {
       // A crate grabbed mid-lesson would replace the blaster: keep the zap lesson's tool in hand.
       r.item = 'blaster'; r.ammo = 3; r.pendingItem = null;
-    } else if (step === 1 && (r.zapsLanded || 0) > 0) {
+    } else if (step === 1 && (r.zapsLanded || 0) > 0 && r.time - stepAt > 3) {
       combat.debugRacers().forEach((b) => { b.holdAhead = 0; });
       step = 2; stepAt = r.time; armedAt = 0; retried = false; stunSeen = r.stunUntil;
       say('Incoming fire!', `When you see <em>LOCKED ON</em>, ${touch ? 'tap <em>ROLL</em>' : 'press <em>Q</em>'} to barrel-roll. The shot bounces back.`);
     } else if (step === 2) {
       // Arm a sim pilot behind you once, so a telegraphed shot really comes.
-      if (!armedAt && r.time - stepAt > 1.2) {
+      if (!armedAt && r.time - stepAt > 3) {
         if (combat.coachArm(r)) armedAt = r.time;
       }
       // The PERFECT REFLECT banner already celebrates; the card just hands over.

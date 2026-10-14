@@ -163,6 +163,7 @@ export function mountModeHub({ root, onAction = () => {}, initialCourse = 'neon-
     const modeButton = event.target.closest('[data-mode]');
     if (modeButton && root.contains(modeButton)) {
       selectedMode = modeButton.dataset.mode;
+      try { localStorage.setItem('starwake-hub-mode', selectedMode); } catch {}
       root.querySelectorAll('[data-mode]').forEach(b => b.setAttribute('aria-pressed', String(b === modeButton)));
       $('#sw-hub-launch-label').textContent = selectedMode === 'pve' ? 'RACE THE ALIENS' : 'OPEN A BATTLE ROOM';
       $('#sw-pvp-join').hidden = selectedMode !== 'pvp';
@@ -186,6 +187,8 @@ export function mountModeHub({ root, onAction = () => {}, initialCourse = 'neon-
     const response = await fetch(forgeEndpoint, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ prompt }) });
     const data = await response.json().catch(() => ({}));
     if (!response.ok || !data.course) throw Object.assign(new Error(data.error || 'World Forge is offline.'), { offline: response.status === 404 || data.code === 'unconfigured' });
+    // AI unavailable but the server had a real earlier OpenAI world to offer: say so.
+    requestForge.pooled = data.pooled ? data.pooledPrompt || 'another pilot' : null;
     return data.course;
   }
   async function buildFromPrompt() {
@@ -202,7 +205,7 @@ export function mountModeHub({ root, onAction = () => {}, initialCourse = 'neon-
       offlineMatch = null;
       renderForged();
       chooseCourse(forged.id);
-      status.textContent = `FORGED · ${forged.name} · READY TO RACE`;
+      status.textContent = requestForge.pooled ? `AI BUSY · RACING ${forged.name}, A REAL OPENAI WORLD FORGED FROM “${requestForge.pooled.toUpperCase().slice(0, 40)}”` : `FORGED · ${forged.name} · READY TO RACE`;
       emit({ action: 'designer', prompt, courseId: forged.id, seed, course: forged, generation: 'ai' });
     } catch (error) {
       // No AI available (local preview or missing key): fall back to the

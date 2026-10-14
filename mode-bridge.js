@@ -86,6 +86,8 @@ const hub = mountModeHub({
   deferReveal: true,
   initialCourse: selectedCourseId,
   initialForged: savedProfile.forgedCourse || null,
+  // Come back to the mode you last picked (solo after a solo season).
+  initialMode: (() => { try { return localStorage.getItem('starwake-hub-mode') || 'pvp'; } catch { return 'pvp'; } })(),
   onAction: handleHubAction,
 });
 

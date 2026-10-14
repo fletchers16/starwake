@@ -208,16 +208,14 @@ function botLapTime(pace: number, skill: number, seed: number) {
 }
 
 /**
- * Sim-pilot heat score (same formula as the client's botLiveScore): rubber-banded to
- * the human field, so races stay close and zaps swing the standings, plus a
- * rank-scaled base so stronger leagues field stronger pilots.
- *   score = min(natural + 0.35 * (bestHuman - natural), cap) + zap swings, natural = 4000 * skill * pace
- * The cap keeps each sim pilot within reach of the best human (0.7x to 1.2x by pace), so a rookie lands mid-pack
- * and a strong pilot still beats them outright. Mirrored in combat.js liveBotScore and game.js (offline rooms).
+ * Sim-pilot heat score (same formula as the client's liveBotScore in combat.js):
+ *   score = rung * (0.8 * bestHuman + 0.2 * 6000 * leagueSkill) + zap swings, rung = this heat's ladder (1.0, 0.88, 0.8...)
+ * The lead alien shadows the best human within ~10% both ways: fly well and you win narrowly, don't fly and you don't.
  */
-// A sim pilot's full-heat score at league skill 1 and pace 1 (a decent human run at race speed).
-const BOT_PAR = 4000;
-const botCap = (best: number, pace: number, skill: number) => best * (0.7 + 0.5 * Math.max(0, Math.min(1, (pace - 0.8) / 0.45))) * (0.85 + 0.15 * skill) + 300 * skill;
+const BOT_LEAGUE_PAR = 6000;
+const LADDER = [1.0, 0.88, 0.8, 0.74, 0.7, 0.67, 0.64];
+const botRung = (heat: number, i: number, n: number) => LADDER[((i + heat) % Math.max(1, n)) % LADDER.length];
+const botTarget = (best: number, rung: number, skill: number) => rung * (0.8 * best + 0.2 * BOT_LEAGUE_PAR * skill);
 
 function botProfile(code: string, heat: number, i: number, skill = 1) {
   const seed = botSeed(code, heat, i);
@@ -232,10 +230,7 @@ function scoreBots(room: Room) {
   for (let i = 0; i < room.bots; i++) {
     const botId = `bot-${i}`;
     const { seed, base, pace } = botProfile(room.code, room.heat, i, room.botSkill ?? 1);
-    // Skill decides: each sim pilot has its own level (league skill × its pace) and is pulled only 35% of the way
-    // toward the best human. Fly better than its level and you beat it; fly worse and it beats you. Mirrored in combat.js.
-    const natural = BOT_PAR * (room.botSkill ?? 1) * pace;
-    const score = Math.floor(finite(Math.round(Math.min(natural + 0.35 * (leader - natural), botCap(leader, pace, room.botSkill ?? 1))) + (adjust[i] || 0), 0, MAX_HEAT_SCORE));
+    const score = Math.floor(finite(Math.round(botTarget(leader, botRung(room.heat, i, room.bots), room.botSkill ?? 1)) + (adjust[i] || 0), 0, MAX_HEAT_SCORE));
     const entry = room.scores.find((e) => e.playerId === botId && e.heat === room.heat);
     if (entry) entry.score = score;
     else room.scores.push({ playerId: botId, name: BOT_NAMES[i % BOT_NAMES.length], kind: "bot", score, heat: room.heat, flightTime: botLapTime(pace, room.botSkill ?? 1, seed) });

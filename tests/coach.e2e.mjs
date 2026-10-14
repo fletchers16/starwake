@@ -39,10 +39,12 @@ try {
   await launch();
   check('coach opens with the crate lesson', /crate/i.test(await coach()), await coach());
   await page.evaluate(() => { const r = window.__starwake.state.race; r.item = 'blaster'; r.ammo = 3; }); // as if a pod was flown through
-  await wait(300);
+  // The crate card stays up ~2.5 s so it can be read, then the zap lesson starts.
+  await page.waitForFunction(() => /zap/i.test(document.querySelector('#coach b')?.innerText || ''), null, { timeout: 6000 }).catch(() => {});
+  await page.evaluate(() => { window.__coachLog = []; let last = ''; setInterval(() => { const t = document.querySelector('#coach b')?.innerText || '', r = window.__starwake.state.race; const lk = !document.querySelector('#lock-warn').hidden; const k = t + (lk ? ' [LOCK]' : '') + (r && r.time < r.stunUntil ? ' [STUN]' : ''); if (k !== last) { last = k; window.__coachLog.push(`${r?.time.toFixed(1)} ${k}`); } }, 50); });
   check('picking up an item moves to the zap lesson', /zap/i.test(await coach()), await coach());
-  for (let k = 0; k < 3 && !/Incoming/.test(await coach()); k++) { await until(() => window.__starwake.combat.currentLock(window.__starwake.state.race, []), 3000); await page.keyboard.press('f'); await wait(700); }
-  check('a landed zap moves to the roll lesson', /Incoming/.test(await coach()), await coach());
+  for (let k = 0; k < 3 && !/Incoming/.test(await coach()); k++) { await until(() => /Incoming/.test(document.querySelector('#coach b')?.innerText || '') || window.__starwake.combat.currentLock(window.__starwake.state.race, []), 3000); if (/Incoming/.test(await coach())) break; await page.keyboard.press('f'); await wait(700); }
+  { const ok = /Incoming/.test(await coach()); check('a landed zap moves to the roll lesson', ok, ok ? '' : `${await coach()}\n        ${(await page.evaluate(() => window.__coachLog)).join('\n        ')}`); }
   const lock = await until(() => !document.querySelector('#lock-warn').hidden && document.querySelector('#lock-warn').innerText, 6000);
   check('a sim pilot telegraphs its shot', lock, lock || 'no warning');
   await page.keyboard.press('q');

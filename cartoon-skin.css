@@ -242,3 +242,19 @@ body.coaching #race-screen .taunt{display:none!important}
 #lobby-screen #lobby-emotes{padding:0 20px;margin:10px 0 4px}
 #app .party-sample{display:block;margin-top:6px;font:500 11px/1.4 system-ui,sans-serif;color:var(--cz-lilac,#c9b8ff)}
 #app .party-sample b{display:inline;font:inherit;font-weight:800;color:#ffd84d}
+/* One message per spot (critic, Oct 14): toasts wrap inside the screen instead of running off it, the speech bubble
+   sizes to its text (left:50% alone caps it at half the screen), and the coach card keeps the centre on phones too. */
+#app #race-screen .race-toast{max-width:calc(100vw - 32px);text-align:center}
+#app #race-screen .race-toast span,#app #race-screen .race-toast b{white-space:normal;overflow-wrap:anywhere}
+#app .taunt{width:max-content;max-width:min(calc(100vw - 32px),460px)}
+@media(max-width:760px){body.coaching #app #race-screen .race-toast{top:66%!important}#app #race-screen .race-toast span{font-size:17px!important}}
+/* Phones: a compact top-3 (plus your row) under the clock, so you can see who to chase */
+@media(max-width:760px){
+  #app #race-screen .hud2 .standings-ticker:not([hidden]){display:grid;width:128px;margin-top:6px;font-size:9px}
+  #app #race-screen .hud2 .standings-ticker div:nth-child(n+4):not(.me){display:none}
+  #app #race-screen .hud2 .standings-ticker div{padding:3px 6px}
+}
+#result-rows .sort-col{color:#ffd84d!important}
+#result-rows>div:not(:first-child)>b:nth-of-type(2){color:#ffd84d}
+@media(min-width:761px){#result-rows span{overflow:visible!important;text-overflow:clip!important;white-space:nowrap}}
+@media(min-width:761px){#app #race-screen .hud2 .standings-ticker{width:212px}}

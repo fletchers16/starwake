@@ -219,3 +219,10 @@ body.coaching #race-screen .taunt{display:none!important}
 .brief-more[open] summary::after{content:' ▾'}
 .brief-more[open] .brief-cards{margin-top:10px}
 @media(max-width:760px){#briefing .brief-goal p{font-size:14px!important;line-height:1.45}#briefing .brief-foot span:last-child{display:none}#briefing .brief-quick{font-size:14px;gap:6px}#briefing h2{font-size:34px!important}}
+/* Invite/dare landing: name field (hidden on the plain landing; the hub has the callsign). */
+.launch-name{display:none;align-items:center;gap:10px;width:min(360px,100%);margin:0 0 12px;padding:6px 6px 6px 12px;border:3px solid var(--cz-ink);border-radius:14px;background:var(--cz-panel);box-shadow:0 4px 0 var(--cz-ink)}
+#launch-intro.invited .launch-name{display:flex}
+.launch-name span{font:400 12px var(--display);letter-spacing:.06em;color:var(--cz-cyan);white-space:nowrap}
+.launch-name input{flex:1;min-width:0;border:0;background:transparent;color:var(--cz-yellow);font:400 18px var(--display);letter-spacing:.06em;text-transform:uppercase;outline:none;padding:6px 4px}
+.launch-name input::placeholder{color:#9d92c4;text-transform:none;font-size:15px}
+@media(max-width:760px){.launch-name{width:100%}}

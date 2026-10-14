@@ -14,8 +14,18 @@ if (intro && launchButton && skipButton) {
 
   // intent: 'battle' (open a room), 'solo' (race the aliens), 'join' (with code), or none (browse the hub).
   let intent = null;
+  // Invite and dare links ask for a name first, so recaps, awards and credits don't show a random callsign.
+  const nameInput = document.querySelector('#launch-name');
+  try { if (nameInput) nameInput.value = localStorage.getItem('starwake-name') || ''; } catch {}
+  function saveName() {
+    const name = (nameInput?.value || '').trim().toUpperCase().replace(/[^A-Z0-9 _-]/g, '').slice(0, 18);
+    if (!name) return;
+    try { localStorage.setItem('starwake-name', name); } catch {}
+    for (const id of ['#pilot-name', '#sw-callsign']) { const el = document.querySelector(id); if (el) { el.value = name; el.dispatchEvent(new Event('input', { bubbles: true })); el.dispatchEvent(new Event('change', { bubbles: true })); } }
+  }
   function finishLaunch(skipped = false, next = null) {
     if (completed) return;
+    saveName();
     intent = next;
     completed = true;
     window.clearInterval(clock);
@@ -59,7 +69,7 @@ if (intro && launchButton && skipButton) {
   });
   window.addEventListener('keydown', (event) => {
     if (!intro.classList.contains('ready') || completed) return;
-    if (event.key === 'Enter' && document.activeElement === document.body) {
+    if (event.key === 'Enter' && (document.activeElement === document.body || document.activeElement === nameInput)) {
       event.preventDefault();
       finishLaunch(false, { kind: 'battle' });
     } else if (event.key === 'Escape') {

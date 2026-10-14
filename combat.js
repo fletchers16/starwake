@@ -510,7 +510,9 @@ export function createCombat(THREE, { world, getRoute, routeAt, makeShipMesh, sh
       return -1;
     }
     if (r.time < r.shieldUntil) { r.shieldUntil = -9; sfx.pop?.(); toast('SHIELD POPPED', `BLOCKED ${shooterName}`); return 0; }
-    const stolen = Math.min(steal('player', myScore(r)), Math.max(0, Math.floor(r.score)));
+    // Never lose more than 30% of everything you've earned this heat to zaps (a trailing pilot can't be wiped out).
+    const lossRoom = Math.max(0, Math.floor((Math.max(0, r.score) + (r.lostPts || 0)) * 0.3) - (r.lostPts || 0));
+    const stolen = Math.min(steal('player', myScore(r)), Math.max(0, Math.floor(r.score)), lossRoom);
     r.zapPoints -= stolen;
     r.score = Math.max(0, r.score - stolen); // so back-to-back hits steal from what's actually left
     r.lostPts = (r.lostPts || 0) + stolen;
@@ -548,7 +550,7 @@ export function createCombat(THREE, { world, getRoute, routeAt, makeShipMesh, sh
         botHitsOnPlayer++;
         sfx.shield?.();
         if (r.time < r.shieldUntil) { r.shieldUntil = -9; toast(`${t.name} DODGED!`, 'YOUR SHIELD ATE THE BOUNCE'); return 0; }
-        const lost = Math.min(steal('player', myScore(r)), Math.max(0, Math.floor(r.score)));
+        const lost = Math.min(steal('player', myScore(r)), Math.max(0, Math.floor(r.score)), Math.max(0, Math.floor((Math.max(0, r.score) + (r.lostPts || 0)) * 0.3) - (r.lostPts || 0)));
         r.zapPoints -= lost;
         r.score = Math.max(0, r.score - lost);
         r.lostPts = (r.lostPts || 0) + lost;

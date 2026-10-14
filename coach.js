@@ -32,6 +32,8 @@ export function createCoach({ el, combat, touch }) {
   function update(r) {
     if (!active || !r.started) return;
     if (r.done) { finish(); return; }
+    // Missed every crate for 10 s: hand over the blaster so the lesson keeps moving.
+    if (step === 0 && !r.item && !r.rolling && r.time - stepAt > 10) { r.item = 'blaster'; r.ammo = 3; r.pendingItem = null; }
     if (step === 0 && (r.item || r.rolling)) {
       step = 1; stepAt = r.time;
       // Guarantee a target: a sim pilot just ahead of you.
@@ -40,6 +42,9 @@ export function createCoach({ el, combat, touch }) {
       if (b) { b.d = r.distance + 14; b.x = r.x; b.y = r.y; b.tx = r.x; b.ty = r.y; b.stunUntil = -9; b.noDodgeUntil = r.time + 30; b.nextWeave = r.time + 4; b.holdAhead = 12; }
       if (r.item !== 'blaster' || r.rolling) { r.item = 'blaster'; r.ammo = 3; r.rolling = 0; r.pendingItem = null; }
       say(`${touch ? 'Tap <em>FIRE</em>' : 'Press <em>F</em>'} to zap`, 'Your blaster locks onto the racer ahead. A zap steals 8% of their points.');
+    } else if (step === 1 && !r.zapsLanded && !r.rolling && r.item !== 'blaster') {
+      // A crate grabbed mid-lesson would replace the blaster: keep the zap lesson's tool in hand.
+      r.item = 'blaster'; r.ammo = 3; r.pendingItem = null;
     } else if (step === 1 && (r.zapsLanded || 0) > 0) {
       combat.debugRacers().forEach((b) => { b.holdAhead = 0; });
       step = 2; stepAt = r.time; armedAt = 0; retried = false; stunSeen = r.stunUntil;

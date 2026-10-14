@@ -121,14 +121,15 @@
 @media (max-width: 720px) {
   .sw-hub-head { height: 62px; }
   .sw-hub-season { max-width: 180px; font-size: 7px; text-align: right; }
-  .sw-hub-content { width: calc(100% - 34px); grid-template-columns: 1fr; gap: 26px; padding: 25px 0 62px; }
+  .sw-hub-content { width: calc(100% - 34px); grid-template-columns: minmax(0, 1fr); gap: 26px; padding: 25px 0 62px; }
+  .sw-hub-content > * { min-width: 0; }
   .sw-hub-intro { padding-top: 0; }
   .sw-hub-intro h1 { margin: 18px 0 12px; font-size: clamp(48px, 13vw, 67px); }
   .sw-hub-intro>p:not(.sw-hub-kicker) { max-width: 420px; margin: 0; font-size: 12px; }
   .sw-hub-signal { margin-top: 14px; padding-top: 10px; }
   .sw-hub-section-head { min-height: auto; align-items: center; margin-bottom: 11px; }
   .sw-hub-section-head h2 { font-size: 23px; }
-  .sw-hub-side { grid-column: auto; grid-template-columns: 1fr; }
+  .sw-hub-side { grid-column: auto; grid-template-columns: minmax(0, 1fr); }
   .sw-freeflight { min-height: 0; }
   .sw-destination-copy { padding-top: 132px; }
   .sw-hub-map { min-height: 150px; }

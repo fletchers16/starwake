@@ -193,6 +193,7 @@ body.coaching #race-screen .taunt{display:none!important}
 @media(max-width:760px),(max-height:860px){
   #results-screen #continue-button{position:fixed;z-index:12;margin:0;width:auto;left:max(16px,calc(50% - 240px));right:max(16px,calc(50% - 240px));bottom:max(14px,env(safe-area-inset-bottom))}
   body:has(#nl-badge-frame) #results-screen #continue-button{bottom:62px}
+  #results-screen #continue-button[hidden]+#rematch-button.primary-button{position:fixed;z-index:12;margin:0;width:auto;left:max(16px,calc(50% - 240px));right:max(16px,calc(50% - 240px));bottom:max(14px,env(safe-area-inset-bottom))}
   #results-screen .result-wrap{padding-bottom:96px}
 }
 /* Race-screen lanes (critic, Oct 14): beat older #app.racing rules so pop-ups use the cartoon font,
@@ -203,7 +204,7 @@ body.coaching #race-screen .taunt{display:none!important}
 @media(max-width:760px){#app #race-screen .race-toast{top:44%!important}#app #race-screen .race-toast span{font-size:20px!important;-webkit-text-stroke-width:5px}#app #race-screen .race-toast b{font-size:13px!important}}
 #race-screen:has(#team-bar:not([hidden])) .taunt{top:168px!important}
 /* Pinned results / lobby buttons are solid, never see-through. */
-#results-screen #continue-button,#lobby-screen #start-button{opacity:1!important;background:var(--cz-yellow)!important}
+#results-screen #continue-button,#results-screen #rematch-button.primary-button,#lobby-screen #start-button{opacity:1!important;background:var(--cz-yellow)!important}
 #results-screen #continue-button:disabled{background:#5b4f7a!important;color:#fff!important}
 /* Phone hub: no sideways overflow. */
 @media(max-width:760px){#mode-hub-root .sw-hub,#mode-hub-root .sw-hub-content{overflow-x:hidden;max-width:100vw}}
@@ -237,3 +238,7 @@ body.coaching #race-screen .taunt{display:none!important}
 #app .taunt.announcer{background:#ffd23f}
 #app .taunt.announcer::after{background:#ffd23f}
 #app .taunt.announcer i{display:none}
+/* Lobby quick-chat row lines up with the cards above it */
+#lobby-screen #lobby-emotes{padding:0 20px;margin:10px 0 4px}
+#app .party-sample{display:block;margin-top:6px;font:500 11px/1.4 system-ui,sans-serif;color:var(--cz-lilac,#c9b8ff)}
+#app .party-sample b{display:inline;font:inherit;font-weight:800;color:#ffd84d}

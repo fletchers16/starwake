@@ -409,3 +409,18 @@ Backlog from it, in build order:
 10. `done` [Polish] Hub: line-chart track art, sticky bar over ship stats at 1440×900, 4 px phone overflow; set-piece arches look the same on every world.
 11. `later` [Execution] Client-reported scores and botAdjust; untested 3+ human load.
 12. `done` [Creativity] AI in the moment-to-moment game: OpenAI writes live announcer call-outs per world (frenzy, lead, breach, set piece, reflect, clean lap of gates), cached with the taunts (cast/v2, so re-run warm:ai after deploy); canned fallbacks without a key.
+
+## Blind re-grade, Oct 14 (commit 6049a54): Execution 4, Creativity 4, Usefulness 3, Polish 4
+Biggest gap: balance. A judge's first race ends last, thousands behind three aliens (coached 358 vs 5,872; active solo season 4,263 vs 15,458), with a negative "PERFECT LINES" row.
+1. `done` [Usefulness] Rubber band must hold: clamp alien scores near the human field (rookies can win by flying straight and firing). game.ts scoreBots + game.js botProfile/live score.
+2. `done` [Polish] "PERFECT LINES −1,150": split gates bonus from missed-gate penalties; soften the miss penalty.
+3. `done` [Polish] Phone hub clips on the right at 390px.
+4. `done` [Execution] Toasts, misses and announcer lines fire after 00:00.
+5. `done` [Usefulness] Coach step 1 ("fly through a crate") never times out: hand over the item after ~10 s.
+6. `done` [Polish] Solo season end: REMATCH should be primary; no "BACK TO LOBBY".
+7. `done` [Polish] Landing leftovers ("READY", "HOLD FAST", old hub copy in DOM).
+8. `done` [Execution] Guest lap time shows "—".
+9. `done` [Polish] Phone guest sees "SCAN TO JOIN" QR; desktop lobby emote row outside padding.
+10. `done` [Polish/Creativity] README lists 4 items (9 exist); offline Forge Party should show a real AI-forged sample.
+Also: three.js warns flatShading on MeshToonMaterial; touch buttons rely only on (pointer:coarse).
+All 10 done (Oct 14). Balance: BOT_PAR 12000 → 4000 plus a per-alien cap of 0.7–1.2× the best human (+300·skill); casual and idle test heats now finish 2nd, within ~400 of 1st. Also fixed a flaky coach case (a crate replacing the lesson's blaster).

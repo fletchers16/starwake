@@ -79,7 +79,7 @@ export function mountModeHub({ root, onAction = () => {}, initialCourse = 'neon-
       <div class="sw-hub-grid" aria-hidden="true"></div>
       <header class="sw-hub-head">
         <div class="sw-hub-brand"><span class="sw-hub-mark">✳</span><span>STARWAKE</span></div>
-        <span class="sw-hub-season"><i></i> FRONTIER FLIGHT LEAGUE · SEASON 01</span>
+        <span class="sw-hub-season"><i></i> CARTOON BATTLE RACING</span>
       </header>
       <div class="sw-hub-content">
         <section class="sw-hub-intro">

@@ -54,7 +54,7 @@ type Room = {
 };
 
 // rs/hull/item/ammo/ba are the pilot's own state, kept so a reloaded tab can continue exactly (raw score, hull, held item, sim-pilot swings).
-type Live = { id: string; name: string; ship: string; d: number; x: number; y: number; score: number; at: number; rs?: number; hull?: number; item?: string; ammo?: number; ba?: number[] };
+type Live = { id: string; name: string; ship: string; d: number; x: number; y: number; score: number; at: number; rs?: number; hull?: number; item?: string; ammo?: number; ba?: number[]; lt?: number };
 const ITEM_IDS = ["blaster", "seeker", "shield", "turbo", "goo", "banana", "magnet", "decoy", "ink", "swap"];
 // Gadget effects on human rivals, relayed like zaps (cumulative counts per kind).
 const FX_KINDS = ["goo", "ink", "magnet", "swap"];
@@ -211,10 +211,13 @@ function botLapTime(pace: number, skill: number, seed: number) {
  * Sim-pilot heat score (same formula as the client's botLiveScore): rubber-banded to
  * the human field, so races stay close and zaps swing the standings, plus a
  * rank-scaled base so stronger leagues field stronger pilots.
- *   score = natural + 0.35 * (bestHuman - natural) + zap swings, natural = 12000 * skill * pace
+ *   score = min(natural + 0.35 * (bestHuman - natural), cap) + zap swings, natural = 4000 * skill * pace
+ * The cap keeps each sim pilot within reach of the best human (0.7x to 1.2x by pace), so a rookie lands mid-pack
+ * and a strong pilot still beats them outright. Mirrored in combat.js liveBotScore and game.js (offline rooms).
  */
 // A sim pilot's full-heat score at league skill 1 and pace 1 (a decent human run at race speed).
-const BOT_PAR = 12000;
+const BOT_PAR = 4000;
+const botCap = (best: number, pace: number, skill: number) => best * (0.7 + 0.5 * Math.max(0, Math.min(1, (pace - 0.8) / 0.45))) * (0.85 + 0.15 * skill) + 300 * skill;
 
 function botProfile(code: string, heat: number, i: number, skill = 1) {
   const seed = botSeed(code, heat, i);
@@ -232,7 +235,7 @@ function scoreBots(room: Room) {
     // Skill decides: each sim pilot has its own level (league skill × its pace) and is pulled only 35% of the way
     // toward the best human. Fly better than its level and you beat it; fly worse and it beats you. Mirrored in combat.js.
     const natural = BOT_PAR * (room.botSkill ?? 1) * pace;
-    const score = Math.floor(finite(Math.round(natural + 0.35 * (leader - natural)) + (adjust[i] || 0), 0, MAX_HEAT_SCORE));
+    const score = Math.floor(finite(Math.round(Math.min(natural + 0.35 * (leader - natural), botCap(leader, pace, room.botSkill ?? 1))) + (adjust[i] || 0), 0, MAX_HEAT_SCORE));
     const entry = room.scores.find((e) => e.playerId === botId && e.heat === room.heat);
     if (entry) entry.score = score;
     else room.scores.push({ playerId: botId, name: BOT_NAMES[i % BOT_NAMES.length], kind: "bot", score, heat: room.heat, flightTime: botLapTime(pace, room.botSkill ?? 1, seed) });
@@ -290,7 +293,7 @@ function maintain(room: Room, live: Live[], now: number) {
       pilot.finished = true;
       pilot.score = score;
       if (!room.scores.some((entry) => entry.playerId === pilot.id && entry.heat === room.heat)) {
-        room.scores.push({ playerId: pilot.id, name: pilot.name, kind: "human", score, heat: room.heat, flightTime: HEAT_MS / 1000, dnf: true });
+        room.scores.push({ playerId: pilot.id, name: pilot.name, kind: "human", score, heat: room.heat, flightTime: last?.lt || HEAT_MS / 1000, dnf: true });
       }
     }
     scoreBots(room);
@@ -527,7 +530,9 @@ export default async (request: Request) => {
       const t = body.telemetry || {};
       const entry: Live = { id: pilot.id, name: pilot.name, ship: pilot.ship, d: finite(t.d, 0, 1e6), x: finite(t.x, -12, 12), y: finite(t.y, -12, 12), score: Math.floor(finite(t.score, 0, MAX_HEAT_SCORE)), at: Date.now(),
         rs: Math.floor(finite(t.rs, 0, MAX_HEAT_SCORE)), hull: Math.floor(finite(t.hull, 0, 12)), item: ITEM_IDS.includes(t.item) ? t.item : "", ammo: Math.floor(finite(t.ammo, 0, 3)),
-        ba: Array.isArray(t.ba) ? t.ba.slice(0, 8).map((v: unknown) => Math.round(finite(v, -3000, 3000))) : [] };
+        ba: Array.isArray(t.ba) ? t.ba.slice(0, 8).map((v: unknown) => Math.round(finite(v, -3000, 3000))) : [],
+        // First lap time so far (0 = none yet), used if this pilot's final report never arrives.
+        lt: finite(t.lt, 0, HEAT_MS / 1000) };
       await store().setJSON(liveKey(code, pilot.id), entry);
       // Outgoing zaps: cumulative counts per human target in this room.
       const zaps = Array.isArray(body.zaps) ? body.zaps.slice(0, 8) : [];

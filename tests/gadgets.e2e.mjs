@@ -33,7 +33,18 @@ await A.waitForTimeout(200); await A.keyboard.press('f');
 await B.evaluate(() => { const r = window.__starwake.state.race; r.stunUntil = -9; });
 const seenDrop = await B.waitForFunction(() => window.__starwake.combat && document.querySelectorAll && true, null, { timeout: 2000 }).then(() => true);
 const banana = await B.waitForFunction(() => { const r = window.__starwake.state.race; return r.stunUntil > r.time && /SPLAT/.test(document.querySelector('#race-toast').innerText); }, null, { timeout: 15000 }).then(() => true).catch(() => false);
-const checks = [["magnet takes the rival's item", mag && aGot === 'blaster'], ["ink splats the rival's screen", ink], ['swap ray trades places', swap], ['a dropped banana spins the rival out', banana]];
+// Goo: A activates it and bumps B (placed right on top of B).
+await B.evaluate(() => { const r = window.__starwake.state.race; r.slowUntil = -9; r.stunUntil = -9; });
+await A.evaluate(() => { const S = window.__starwake, r = S.state.race; r.item = 'goo'; r.ammo = 1; r.rolling = 0; r.stunUntil = -9; });
+await A.keyboard.press('f');
+await A.evaluate(async () => { const S = window.__starwake, r = S.state.race; for (let k = 0; k < 12; k++) { const g = Object.values(S.state.rivals)[0]; r.distance = (g.shown ?? g.d) - 2.4; r.x = g.x; r.y = g.y; await new Promise((res) => setTimeout(res, 60)); } });
+const goo = await B.waitForFunction(() => { const r = window.__starwake.state.race; return r.slowUntil > r.time; }, null, { timeout: 8000 }).then(() => true).catch(() => false);
+// Decoy: A drops a fake crate in B's path; B grabs it and loses points.
+await B.evaluate(() => { const r = window.__starwake.state.race; r.stunUntil = -9; r.ringPoints = (r.ringPoints || 0) + 3000; });
+await A.evaluate(() => { const S = window.__starwake, r = S.state.race, g = Object.values(S.state.rivals)[0]; r.distance = (g.shown ?? g.d) + 25; r.x = g.x; r.y = g.y; r.item = 'decoy'; r.ammo = 1; r.rolling = 0; });
+await A.waitForTimeout(200); await A.keyboard.press('f');
+const decoy = await B.waitForFunction(() => /DECOY/.test(document.querySelector('#race-toast').innerText), null, { timeout: 15000 }).then(() => true).catch(() => false);
+const checks = [["slow-mo goo slows the rival you bump", goo], ["a decoy crate fools the rival", decoy], ["magnet takes the rival's item", mag && aGot === 'blaster'], ["ink splats the rival's screen", ink], ['swap ray trades places', swap], ['a dropped banana spins the rival out', banana]];
 for (const [name, ok] of checks) console.log(`${ok ? 'PASS' : 'FAIL'}  ${name}`);
 const failed = checks.filter(([, ok]) => !ok).length;
 console.log(`\n${checks.length - failed}/${checks.length} checks passed`);

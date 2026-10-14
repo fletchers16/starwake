@@ -60,7 +60,7 @@ Serves http://127.0.0.1:5180 with the real Netlify functions and an in-memory Bl
 ```bash
 npm test
 ```
-Runs the battle (35 checks), challenge (11) and coach (8) suites against a local dev server.
+Runs the battle (35 checks), challenge (11), coach (8) and gadgets (6) suites against a local dev server.
 
 ```bash
 node tests/live-playtest.mjs https://starwakeracing.netlify.app

@@ -53,10 +53,11 @@ export const BOT_SPEED = 29; // m/s, about a boosting human's 60-second distance
  * @param template obstacles of one lap at race start: {type:'ring'|'gate'|'star', distance, trail, trailIndex}
  * @returns {events:[{d, pts}], speed} events sorted by route distance, for scoreAtDistance()
  */
-export function flyCourse(template, lapDistance, seed, difficulty, heat, i, n, laps = 3, courseId = '') {
+export function flyCourse(template, lapDistance, seed, difficulty, heat, i, n, laps = 3, courseId = '', mod = 1) {
   const ease = WORLD_EASE[courseId] ?? 1;
   const rand = mulberry(seed >>> 0), form = FORM[((i + heat) % Math.max(1, n)) % FORM.length];
-  const p = Math.min(0.985, DIFFICULTIES[normalDifficulty(difficulty)].hit * form * (0.97 + rand() * 0.06));
+  // mod: the Wish Comet's butterfingers (<1) or on-fire (>1) for this alien.
+  const p = Math.min(0.985, DIFFICULTIES[normalDifficulty(difficulty)].hit * form * mod * (0.97 + rand() * 0.06));
   const g = 0.4 + 0.55 * p; // gates and star cores are easier to line up than a whole ring trail
   const lap = template.filter((o) => ['ring', 'gate', 'star'].includes(o.type)).map((o) => ({ ...o, d: ((o.distance % lapDistance) + lapDistance) % lapDistance })).sort((a, b) => a.d - b.d);
   const events = []; let combo = 0;

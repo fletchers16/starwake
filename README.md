@@ -18,6 +18,7 @@ Built for the Handshake AI Skills Studio × OpenAI Multiplayer Game Challenge. S
 ## How to play
 
 - **Score the most points across three 60-second heats** (a dare is a single heat).
+- **The Wish Comet:** after heats 1 and 2, type a wish on the results screen. The Comet rules on everyone's wishes when the next heat launches, shows the verdicts as flipping cards, and the effects happen in that heat.
 - **Alien difficulty:** EASY (win by flying for rings and gates), MEDIUM (fly fairly well), EXPERT (few mistakes) or PRO (near-perfect). Each alien actually flies the heat's rings, gates and stars, lining up on whole ring trails (or fumbling them) like a human, at a rate set by the difficulty (with combos and bonuses scored exactly like yours), so no two heats total the same and ring-heavy worlds are worth more to everyone. There is no catch-up, and on the hard tiers you can only steal a small share of an alien's heat, so flying decides it. Pick it on the briefing (solo) or in the lobby (the host sets it for the room).
 - **"?" crates** give one of ten items, and racers further behind get better ones: **Laser Blaster** (3 shots that auto-aim at the racer ahead), **Comet Seeker** (hunts 1st place), **Bubble Shield** (blocks one zap), **Turbo Snack** (instant boost), **Slow-Mo Goo** (bump a rival and they crawl at half speed for 3 s), **Space Banana** (drops behind you and spins out whoever hits it), **Magnet** (yanks you ahead and steals their item), **Decoy Crate** (a fake crate that costs whoever grabs it), **Ink Cloud** (splats the screens of racers behind you) and **Swap Ray** (trade places with the racer ahead).
 - **Gates:** five checkpoint gates per lap sit off the racing line. Fly through for +100 and a small boost; all five in one lap is a PERFECT LAP (+500). A miss costs 25 and your streak.
@@ -35,6 +36,7 @@ Built for the Handshake AI Skills Studio × OpenAI Multiplayer Game Challenge. S
 
 ## Built with OpenAI
 
+- **The Wish Comet:** between heats every pilot, aliens included, makes one wish. OpenAI rules on each like a mischievous genie (GRANTED, TWISTED or DENIED) and turns it into real effects for the next heat from a fixed menu of the game's mechanics (goo, ink, backwards steering, shields, items, lucky crates, double gates, an early Zap Frenzy, aliens fumbling or on fire). The server rules once per heat with structured outputs, clamps the result (at most two bad effects per pilot), and every screen applies the same decree after a card-flip reveal. Without a key, a keyword rules engine judges instead (`wish.js`).
 - **Alien rivals:** ZORP, BLIX, MUNGO, QUEEP and GLORB taunt you when they zap you, get zapped, or take the lead, in lines written per world (`netlify/functions/banter.ts`, cached per course).
 - **Announcer:** live call-outs mid-race (Zap Frenzy, taking the lead, a hull breach, entering a set piece, a perfect reflect, a clean lap of gates) written per world alongside the taunts, so they cost nothing per race; plus a two-sentence recap of every heat and a three-sentence season story, written from the real standings and stats.
 - **World Forge and Forge Party:** a sentence (or everyone's fused ideas) becomes a raceable world: track shape, palette, gravity, crosswind and hazards, via structured outputs. `course-forge.js` clamps every value so AI tracks are fair and flyable.
@@ -62,7 +64,7 @@ Serves http://127.0.0.1:5180 with the real Netlify functions and an in-memory Bl
 ```bash
 npm test
 ```
-Runs the battle (35 checks), challenge (11), coach (8), gadgets (6) and crowd (8: four humans plus two aliens in one live heat, all four screens agree on the standings) suites against a local dev server.
+Runs the battle (35 checks), challenge (11), coach (8), gadgets (6), crowd (8: four humans plus two aliens in one live heat, all four screens agree on the standings) and wish (8: two players' wishes, one decree on both screens, effects land on the right pilot) suites against a local dev server.
 
 ```bash
 node tests/live-playtest.mjs https://starwakeracing.netlify.app

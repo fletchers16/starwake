@@ -8,9 +8,9 @@ Everything the Handshake "Create a Multiplayer Game" mission asks for. Deadline:
 ## 2. Project cover image
 `submission/cover-battle.png` (1600×900): a real frame from a live heat with the cartoon ships, a zap burst, crates and the HUD.
 
-## 3. Project description (paste this; the form allows at most 500 characters, this is 455)
+## 3. Project description (paste this; the form allows at most 500 characters, this is 449)
 
-> Starwake is a cartoon space battle racer for 2–8 friends on any phone or laptop: share a link or QR code, no install. Grab crates, blast whoever's ahead to steal their points, and barrel-roll their lasers back. The leader wears a crown worth double. OpenAI writes the alien rivals' trash talk, live race recaps, and whole new tracks from a sentence. Can't race live? Send a beat-my-run dare. Hardest part: keeping every screen in sync over phone networks.
+> Starwake is a cartoon space battle racer for 2–8 friends on any phone or laptop: share a link or QR code, no install. Grab crates, zap whoever's ahead to steal their points, and barrel-roll their lasers back. Between heats, everyone makes a wish and the OpenAI-powered Wish Comet grants it, twists it or denies it, changing the next heat. OpenAI also writes the aliens' trash talk and whole new tracks from your ideas. Solo? Pick Easy to Pro aliens.
 
 ## 4. Project link/URL
 https://starwakeracing.netlify.app
@@ -22,7 +22,9 @@ https://starwakeracing.netlify.app
 2. **Solo vs the aliens:** pick a world, then **RACE THE ALIENS**. Fly through a **?** crate, press **F** (or tap **FIRE**) to zap the racer ahead, and watch the steal feed and the crown.
 3. **Battle a friend:** select **⚔ BATTLE**, then **OPEN A BATTLE ROOM**, then scan the lobby's **QR code** with a phone (or use **COPY INVITE LINK**). The host presses Start. Zap each other, and press **1–3** (or tap the chips) for emotes. After heat 3, press **REMATCH**.
 4. **Dare a friend:** on any results screen, press **BEAT MY RUN** and open the link in another browser. Race the ghost, and see the verdict and the link's ladder.
-5. **World Forge:** describe a world, press **Forge**, then race it.
+5. **Wish Comet:** after heat 1, type a wish on the results screen ("slow-mo goo on BEN"). When the host continues, the Comet rules on every wish (yours and the aliens') and the effects hit the next heat.
+6. **World Forge:** describe a world, press **Forge**, then race it.
+7. **Difficulty:** on a solo briefing, pick EASY, MEDIUM, EXPERT or PRO aliens.
 
 ## Before you submit
 - [x] Deployed to Netlify with `OPENAI_API_KEY` set; AI lines warmed for all six worlds.

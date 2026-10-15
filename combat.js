@@ -32,7 +32,7 @@ export const STEAL_RATE = 0.08;
 export const ZAP_STEAL = 40;
 // Sim pilots can zap a human at most this many times per heat.
 const BOT_HITS_PER_HEAT = 3;
-const FRENZY_SECONDS = 15;
+let FRENZY_SECONDS = 15; // the Wish Comet can start it at 0:30
 const ROLL_TIME = 0.55, ROLL_COOLDOWN = 3.5;
 // How long a sim pilot holds its lock on you before firing.
 const AIM_TIME = 0.45;
@@ -357,8 +357,9 @@ export function createCombat(THREE, { world, getRoute, routeAt, makeShipMesh, sh
 
   let field = () => 0;
   let difficultyNow = 'easy';
-  function start(r, { botPaces = [], botFinals = [], podDistances = [], fieldScore = null, forks: forkList = [], teams = null, nemesis = {}, difficulty = 'easy' } = {}) {
+  function start(r, { botPaces = [], botFinals = [], podDistances = [], fieldScore = null, forks: forkList = [], teams = null, nemesis = {}, difficulty = 'easy', earlyFrenzy = false } = {}) {
     difficultyNow = difficulty;
+    FRENZY_SECONDS = earlyFrenzy ? 30 : 15;
     othersAdj = [];
     nemesisOf = nemesis || {};
     if (!nemesisTag) { nemesisTag = nameTag('◎ NEMESIS', '#ff4d6a'); nemesisTag.scale.multiplyScalar(1.15); world.add(nemesisTag); }
@@ -607,7 +608,8 @@ export function createCombat(THREE, { world, getRoute, routeAt, makeShipMesh, sh
   /** Player flew through a pod. placeFraction: 0 = leading, 1 = last. */
   function pickup(r, placeFraction) {
     if (r.item || r.rolling) return false;
-    const item = rollItem(placeFraction);
+    // Wish Comet: lucky crates roll like last place.
+    const item = rollItem(r.luckyCrates ? 1 : placeFraction);
     r.rolling = 0.75; // short slot-machine roll before the item lands
     r.pendingItem = item;
     return true;

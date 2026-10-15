@@ -1,6 +1,8 @@
 import { getStore } from "@netlify/blobs";
 import { normalizeCourseDefinition } from "../../course-forge.js";
 import { botNatural, botRung, botScoreAt, normalDifficulty } from "../../difficulty.js";
+import { alienWish, cleanWish, ruleOffline, sanitizeDecree, wishSchema, WISH_INSTRUCTIONS } from "../../wish.js";
+import { hasKey, structured, underDailyLimit } from "../lib/openai";
 
 type Pilot = {
   id: string;
@@ -17,6 +19,8 @@ type Pilot = {
   leftAt?: number;
   // Forge Party: this pilot's one-line world idea, fused with everyone's by the host.
   idea?: string;
+  // Wish Comet: this pilot's wish for the given heat.
+  wish?: { heat: number; text: string };
   // Team Battle side.
   team?: "red" | "blue";
 };
@@ -51,6 +55,8 @@ type Room = {
   teams?: boolean;
   // Forge Party: who pitched the ideas behind the room's world.
   partyBy?: string[];
+  // Wish Comet: the ruling for one heat (every screen applies the same effects).
+  decree?: { heat: number; headline: string; ai?: boolean; rulings: { byId: string; by: string; wish: string; verdict: string; line: string; effects: { kind: string; target: string; mag: number }[] }[] };
   botTeams?: ("red" | "blue")[];
   scores: Array<{ playerId: string; score: number; heat: number; name?: string; kind?: "human" | "bot"; flightTime?: number; dnf?: boolean }>;
   updatedAt: number;
@@ -250,9 +256,9 @@ function balanceTeams(room: Room) {
   room.botTeams = Array.from({ length: room.bots }, (_, j) => ((room.players.length + j) % 2 ? "blue" : "red"));
 }
 
-function startHeat(room: Room) {
+function startHeat(room: Room, extraMs = 0) {
   room.phase = "race";
-  room.startsAt = Date.now() + COUNTDOWN_MS;
+  room.startsAt = Date.now() + COUNTDOWN_MS + extraMs;
   room.endsAt = room.startsAt + HEAT_MS;
   room.players.forEach((p) => { p.progress = 0; p.score = 0; p.finished = false; });
   room.extendedMs = 0;
@@ -344,6 +350,29 @@ function seatPilot(draft: Room, body: Record<string, unknown>, id: string, token
 }
 
 const QUICK_INDEX = "quick/index";
+
+/** Wish Comet: rule on everyone's wishes for the next heat (OpenAI when available, the offline rules otherwise). */
+async function ruleWishes(room: Room, request: Request): Promise<Room["decree"] | null> {
+  const heat = room.heat + 1;
+  const pilots = [...room.players.map((p) => ({ id: p.id, name: p.name })), ...Array.from({ length: room.bots }, (_, i) => ({ id: `bot-${i}`, name: BOT_NAMES[i % BOT_NAMES.length] }))];
+  const wishes = [
+    ...room.players.filter((p) => p.wish?.heat === heat && p.wish.text).map((p) => ({ byId: p.id, by: p.name, wish: p.wish!.text })),
+    ...Array.from({ length: room.bots }, (_, i) => ({ byId: `bot-${i}`, by: BOT_NAMES[i % BOT_NAMES.length], wish: alienWish(BOT_NAMES[i % BOT_NAMES.length], heat) })),
+  ];
+  if (!wishes.length) return null;
+  const totals = pilots.map((p) => ({ ...p, total: room.scores.filter((s) => s.playerId === p.id).reduce((a, s) => a + s.score, 0) })).sort((a, b) => b.total - a.total);
+  const leaderId = totals[0]?.id || pilots[0].id;
+  if (hasKey() && (await underDailyLimit(request, "wish", 40))) {
+    try {
+      const input = JSON.stringify({ heat, standings: totals.map((p, i) => ({ id: p.id, name: p.name, place: i + 1, points: p.total, alien: p.id.startsWith("bot-") })), wishes: wishes.map((w) => ({ by: w.byId, name: w.by, wish: w.wish })) });
+      const raw = await structured<any>({ instructions: WISH_INSTRUCTIONS, input, name: "wish_comet", schema: wishSchema([...pilots.map((p) => p.id), "all"]), maxTokens: 1500, timeoutMs: 9000 });
+      return { ...sanitizeDecree(raw, wishes, pilots, heat), ai: true };
+    } catch (error) {
+      console.error("[wish] OpenAI failed", error instanceof Error ? error.message : error);
+    }
+  }
+  return ruleOffline(wishes, pilots, leaderId, heat);
+}
 
 export default async (request: Request) => {
   if (request.method === "OPTIONS") return new Response(null, { status: 204, headers: { "Access-Control-Allow-Origin": "*", "Access-Control-Allow-Headers": "Content-Type", "Access-Control-Allow-Methods": "GET, POST, OPTIONS" } });
@@ -598,6 +627,13 @@ export default async (request: Request) => {
 
     // A finishing pilot's claim is checked against the live score they streamed during the heat (multiplayer only).
     const streamed = action === "complete" ? ((await store().get(liveKey(code, playerId), { type: "json" }).catch(() => null)) as Live | null) : null;
+    // Wish Comet: rule before the (synchronous, retried) room update, so the AI call happens once.
+    let decree: Room["decree"] | null = null;
+    if (action === "next") {
+      const pre = await readRoom(code);
+      const host = pre?.room.players.find((p) => p.id === playerId);
+      if (pre && host && authorised(host, body) && pre.room.hostId === playerId && pre.room.phase === "results" && pre.room.heat < 3) decree = await ruleWishes(pre.room, request).catch(() => null);
+    }
     const { room } = await mutateRoom(code, (draft) => {
       const pilot = draft.players.find((candidate) => candidate.id === playerId);
       if (!pilot) throw new Error("Your pilot is no longer in this lobby.");
@@ -681,11 +717,20 @@ export default async (request: Request) => {
         draft.scores = [];
         draft.botAdjust = {};
         draft.botBase = {};
+        delete draft.decree;
+        draft.players.forEach((p) => delete p.wish);
         startHeat(draft);
+      } else if (action === "wish") {
+        // Wish Comet: one wish per pilot for the next heat, made on the results screen.
+        if (draft.phase !== "results" || draft.heat >= 3) throw new Error("Wishes are made between heats.");
+        const text = cleanWish(body.wish);
+        if (text) pilot.wish = { heat: draft.heat + 1, text }; else delete pilot.wish;
       } else if (action === "next") {
         if (draft.hostId !== playerId || draft.phase !== "results") throw new Error("The host can continue after every pilot finishes the heat.");
         draft.heat += 1;
-        startHeat(draft);
+        // The reveal plays over a longer countdown.
+        if (decree && decree.heat === draft.heat) draft.decree = decree; else delete draft.decree;
+        startHeat(draft, draft.decree ? 6500 : 0);
       } else {
         throw new Error("Unknown game action.");
       }

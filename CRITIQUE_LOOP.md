@@ -491,3 +491,6 @@ Biggest gap: live ticker and final results disagree by thousands (alien zap swin
 8. `done` [Polish] Results: compact podium above the breakdown.
 9. `done` [Polish] No gate penalties during the coached race.
 10. `done` [Polish] Contrast (QUICK MATCH card, RACE THIS WORLD), README "rubber-banded" line; Flight School shows the difficulty picker.
+
+## Built Oct 15 (user approved): the Wish Comet
+Between heats every pilot (aliens too) wishes; the server rules once per heat (OpenAI structured outputs with a per-call schema of this room's pilot ids, 9 s timeout, wish daily limit; offline keyword rules otherwise) and stores room.decree; every screen applies the same effects after a ~6.5 s card-flip reveal. Effect menu reuses existing mechanics (goo, ink, backwards steering, hull ±, shield, blaster/seeker, rocket start, lucky crates, gates ×2, frenzy at 0:30, alien fumble/hot); sanitizeDecree clamps (2 effects per wish, 2 debuffs per target). tests/wish.e2e.mjs (8 checks) covers two players.

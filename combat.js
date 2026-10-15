@@ -1103,6 +1103,8 @@ export function createCombat(THREE, { world, getRoute, routeAt, makeShipMesh, sh
     /** Per-bot point swings from zaps this heat (reported to the server on completion). */
     botAdjust: () => racers.map((b) => Math.round(b.adj)),
     setOthersAdj: (list) => { othersAdj = list || []; },
+    /** Re-point your own nemesis (solo: when the alien you were hunting falls far behind). */
+    setNemesis: (id) => { nemesisOf.player = id; },
     externalAdjust: () => externals.map((e) => Math.round(e.adj)),
     racerNames: () => racers.map((b) => b.name),
     isFrenzy: () => frenzy,

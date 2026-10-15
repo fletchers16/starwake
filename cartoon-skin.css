@@ -300,3 +300,10 @@ body.touched #app #race-screen .emote-bar button{padding:4px 9px;font-size:11px}
 .hh-row i small{z-index:1;color:#fff;-webkit-text-stroke:3px var(--cz-ink);paint-order:stroke fill}
 /* HUD panels are solid so world billboards behind them can't read through */
 #app #race-screen{--hud-panel:#241a40}
+/* Toasts get a solid backing so they read over busy scenes */
+#app #race-screen .race-toast{padding:8px 16px 9px;border-radius:16px;background:rgba(20,15,36,.86);border:3px solid #140f24;box-shadow:0 4px 0 #140f24}
+/* Phone quick-chat sits below the nemesis chip */
+@media (pointer:coarse){#app #race-screen .emote-bar{top:calc(204px + env(safe-area-inset-top))}}
+body.touched #app #race-screen .emote-bar{top:calc(204px + env(safe-area-inset-top))}
+#mode-hub-root .sw-quick-match,#mode-hub-root .sw-quick-match b,#mode-hub-root .sw-quick-match span{color:#140f24!important}
+#mode-hub-root .sw-forge-race{padding:8px 14px;border:3px solid #140f24!important;border-radius:12px;background:#ffd84d!important;color:#140f24!important;font:400 13px var(--display)!important;letter-spacing:.05em;box-shadow:0 3px 0 #140f24}

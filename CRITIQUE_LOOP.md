@@ -503,3 +503,7 @@ Live board now matches final; EASY and PRO meet the goal, MEDIUM/EXPERT noisy. B
 6. `done` Season story names the actual runner-up.  7. `done` Nemesis only re-picks someone ahead.
 8. `done` Standings above the score breakdown.  9. `done` Hub fits at 1280px.  10. `later` Billboard depth, coach copy when already 1st, PB stickers for weak runs.
 Also: SUBMISSION judge steps now match the landing (PLAY WITH FRIENDS / RACE THE ALIENS), and coach test timing loosened for loaded runs.
+
+## Blind judge, Oct 15 (commit c087a93, first with the Wish Comet): Execution 4, Creativity 4, Usefulness 4, Polish 3.5
+"A genuinely clever use of AI", but the reveal didn't read clearly. Fixed: ruling text shown on phones and made the hero (one column, display font) plus a plain "→ what happens" line when the AI's prose differs; a granted wish that ends up with no effect becomes a denial; frenzy wishes match before lasers, suggestions are all honourable, "fly perfectly" gives a pilot a rocket start; alien wishes vary by room (6 each, incl. self-buffs) and aliens can put at most one bad effect on a human per heat; effect chips appear after the reveal and one-shot chips fade; phone speech bubble moved off the thumb buttons; wish box below the standings; item card refreshed at race start.
+`later` (per token budget): wishes in recaps/awards, live chip countdowns, human-vs-human steal cap, wider HUD-centre queue, Flight School naming.

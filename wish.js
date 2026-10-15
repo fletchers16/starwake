@@ -23,17 +23,19 @@ export const WISH_EFFECTS = {
   hot: { label: 'ON FIRE', on: 'alien' },
 };
 export const WISH_KINDS = Object.keys(WISH_EFFECTS);
-export const WISH_SUGGESTIONS = ['Slow-mo goo on the leader', 'Give me lucky crates', 'Everyone steers backwards', 'Zap Frenzy all heat long'];
+const hash = (s) => [...s].reduce((h, c) => Math.imul(h ^ c.charCodeAt(0), 16777619) >>> 0, 2166136261);
+export const WISH_SUGGESTIONS = ['Slow-mo goo on the leader', 'Give me lucky crates', 'Backwards steering for the leader', 'Zap Frenzy from 0:30'];
 
 // Each alien wishes in character (rotating by heat). "the leader" resolves to whoever leads the season.
 export const ALIEN_WISHES = {
-  ZORP: ['Slow-mo goo on whoever is in first', 'Give ZORP a comet seeker'],
-  BLIX: ['Lasers everywhere, frenzy all heat', 'Ink on everyone behind me'],
-  MUNGO: ["Make the leader's controls go backwards", 'MUNGO wants extra hull'],
-  QUEEP: ['Lucky crates for QUEEP', 'Dent the leader'],
-  GLORB: ['Ink in the leader\'s eyes', 'GLORB flies perfectly'],
+  ZORP: ['Slow-mo goo on whoever is in first', 'Give ZORP a comet seeker', 'ZORP wants a shield', 'Frenzy! ZORP loves chaos', 'Lucky crates for ZORP', 'Dent the leader, please'],
+  BLIX: ['Frenzy from the start, lasers everywhere', 'BLIX wants a rocket start', 'Ink on the leader', 'Double gates for BLIX', 'A blaster for BLIX', 'BLIX flies perfectly'],
+  MUNGO: ["Make the leader's controls go backwards", 'MUNGO wants extra hull', 'Lucky crates for MUNGO', 'Goo on the leader', 'MUNGO wants a shield', 'A rocket start for MUNGO'],
+  QUEEP: ['Lucky crates for QUEEP', 'Dent the leader', 'QUEEP wants double gates', 'Ink in the leader\'s eyes', 'A comet seeker for QUEEP', 'Frenzy from 0:30'],
+  GLORB: ['Ink in the leader\'s eyes', 'GLORB flies perfectly', 'GLORB wants a shield', 'Backwards steering for the leader', 'Extra hull for GLORB', 'Lucky crates for GLORB'],
 };
-export const alienWish = (name, heat) => { const w = ALIEN_WISHES[name] || ['Make me win']; return w[(heat + name.length) % w.length]; };
+// Seeded by room and heat, so every season brings different alien wishes (and every screen sees the same ones).
+export const alienWish = (name, heat, code = '') => { const w = ALIEN_WISHES[name] || ['Make me win']; return w[hash(`${code}|${name}|${heat}`) % w.length]; };
 
 export const cleanWish = (t) => String(t ?? '').replace(/[<>&"\\`]/g, '').replace(/\s+/g, ' ').trim().slice(0, 60);
 
@@ -70,7 +72,7 @@ Rules: be fair and funny. Twist greedy self-buffs, especially from the season le
 
 /** Clamp a ruling to the menu and the room: valid targets only, at most 2 effects per wish and 2 debuffs per target. */
 export function sanitizeDecree(raw, wishes, pilots, heat) {
-  const ids = new Set(pilots.map((p) => p.id)), isAlien = (id) => String(id).startsWith('bot-'), bad = {};
+  const ids = new Set(pilots.map((p) => p.id)), isAlien = (id) => String(id).startsWith('bot-'), bad = {}, alienBad = {};
   const rulings = [];
   for (const w of wishes) {
     const r = (raw?.rulings || []).find((x) => x.by === w.byId) || { verdict: 'denied', line: 'The Comet lost your wish in the stardust.', effects: [] };
@@ -84,23 +86,24 @@ export function sanitizeDecree(raw, wishes, pilots, heat) {
       else if (target === 'all') continue;
       else if (isAlien(target) && def.on === 'pilot') kind = def.bad ? 'fumble' : 'hot';
       else if (!isAlien(target) && def.on === 'alien') continue;
-      if (WISH_EFFECTS[kind].bad) { if ((bad[target] || 0) >= 2) continue; bad[target] = (bad[target] || 0) + 1; }
+      if (WISH_EFFECTS[kind].bad) { if ((bad[target] || 0) >= 2) continue; const fromAlien = isAlien(w.byId) && !isAlien(target); if (fromAlien && alienBad[target]) continue; if (fromAlien) alienBad[target] = 1; bad[target] = (bad[target] || 0) + 1; }
       effects.push({ kind, target, mag: [1, 2, 3].includes(e?.mag) ? e.mag : 1 });
     }
-    rulings.push({ byId: w.byId, by: w.by, wish: w.wish, verdict, line: String(r.line || '').replace(/[<>]/g, '').slice(0, 90), effects });
+    const kept = verdict !== 'denied' && !effects.length ? 'denied' : verdict; // a granted wish that ended up doing nothing is a denial
+    rulings.push({ byId: w.byId, by: w.by, wish: w.wish, verdict: kept, line: kept !== verdict ? 'The Comet tried, but that wish fizzled in the stardust.' : String(r.line || '').replace(/[<>]/g, '').slice(0, 90), effects, does: describeEffects(effects, pilots) });
   }
   return { heat, headline: String(raw?.headline || 'The Wish Comet has spoken!').replace(/[<>]/g, '').slice(0, 80), rulings };
 }
 
 /* Offline ruling (no key, out of credit, or slow): keyword rules with a little genie mischief. */
 const RULES = [
+  [/frenzy|chaos|mayhem/, 'early_frenzy'],
   [/goo|slow|crawl|snail|sticky/, 'goo', true], [/ink|blind|dark|splat|eyes/, 'ink', true], [/backward|reverse|mirror|confus|upside/, 'mirror', true],
   [/dent|crash|break|explode|damage/, 'hull_minus', true], [/shield|safe|protect|bubble/, 'shield'], [/seeker|missile|homing/, 'seeker'],
   [/laser|blaster|gun|zap/, 'blaster'], [/hull|armou?r|tough|health/, 'hull_plus'], [/fast|speed|boost|rocket|turbo|zoom/, 'boost'],
-  [/crate|luck|item|loot/, 'lucky_crates'], [/gate|double|points|score/, 'double_gates'], [/frenzy|chaos|mayhem|everywhere/, 'early_frenzy'],
-  [/perfect|\bwin\b|crown|\bthe best\b|flies perfectly/, 'hot'],
+  [/crate|luck|item|loot/, 'lucky_crates'], [/gate|double|points|score/, 'double_gates'],
+  [/perfect|\bwin\b|crown|\bthe best\b|flies perfectly/, 'boost'],
 ];
-const hash = (s) => [...s].reduce((h, c) => Math.imul(h ^ c.charCodeAt(0), 16777619) >>> 0, 2166136261);
 const LABEL = (kind) => (kind === 'fumble' ? 'BUTTERFINGERS' : kind === 'hot' ? 'A HOT STREAK' : WISH_EFFECTS[kind].label);
 /** One readable sentence for what a ruling actually does (after aliens' effects are converted). */
 export function describeEffects(effects, pilots) {

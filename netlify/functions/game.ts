@@ -357,7 +357,7 @@ async function ruleWishes(room: Room, request: Request): Promise<Room["decree"] 
   const pilots = [...room.players.map((p) => ({ id: p.id, name: p.name })), ...Array.from({ length: room.bots }, (_, i) => ({ id: `bot-${i}`, name: BOT_NAMES[i % BOT_NAMES.length] }))];
   const wishes = [
     ...room.players.filter((p) => p.wish?.heat === heat && p.wish.text).map((p) => ({ byId: p.id, by: p.name, wish: p.wish!.text })),
-    ...Array.from({ length: room.bots }, (_, i) => ({ byId: `bot-${i}`, by: BOT_NAMES[i % BOT_NAMES.length], wish: alienWish(BOT_NAMES[i % BOT_NAMES.length], heat) })),
+    ...Array.from({ length: room.bots }, (_, i) => ({ byId: `bot-${i}`, by: BOT_NAMES[i % BOT_NAMES.length], wish: alienWish(BOT_NAMES[i % BOT_NAMES.length], heat, room.code) })),
   ];
   if (!wishes.length) return null;
   const totals = pilots.map((p) => ({ ...p, total: room.scores.filter((s) => s.playerId === p.id).reduce((a, s) => a + s.score, 0) })).sort((a, b) => b.total - a.total);

@@ -22,18 +22,13 @@
  */
 import { ALIENS, makeAlienPilot, toon, inkOutline } from './aliens.js';
 import { makeCrown } from './critters.js';
+import { botScoreAt, BOT_STEAL_CAP } from './difficulty.js';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
 
 // A zap steals STEAL_RATE of the target's points (minimum ZAP_STEAL).
 export const STEAL_RATE = 0.08;
-// A sim pilot's heat score: its rung on this heat's ladder (lead alien 1.0x, then 0.88x, 0.8x...) times a blend of
-// the best human and the league par, so the lead alien shadows you within ~10% both ways: fly well and you win
-// narrowly, don't fly and you don't. The lead role rotates each heat. Mirrors game.ts.
-export const BOT_LEAGUE_PAR = 6000;
-const LADDER = [1.0, 0.88, 0.8, 0.74, 0.7, 0.67, 0.64];
-export const botRung = (heat, i, n) => LADDER[((i + heat) % Math.max(1, n)) % LADDER.length];
-export const botTarget = (best, rung, skill, k = 1) => rung * (0.8 * best + 0.2 * BOT_LEAGUE_PAR * skill * k);
+// Sim-pilot scores come from difficulty.js (shared with the server): each alien's own level, ±6% catch-up.
 export const ZAP_STEAL = 40;
 // Sim pilots can zap a human at most this many times per heat.
 const BOT_HITS_PER_HEAT = 3;
@@ -420,7 +415,7 @@ export function createCombat(THREE, { world, getRoute, routeAt, makeShipMesh, sh
   // Rubber-banded to the human field (matches the server's scoreBots at the end of the heat).
   // Skill decides: a sim pilot's own level (league skill × pace, scaled through the heat), pulled 35% toward the
   // best human's live score. Mirrored server-side in game.ts scoreBots.
-  const liveBotScore = (b, r) => { const k = Math.min(1, r.time / r.duration); return Math.max(0, Math.floor(botTarget(field(r), b.profile.rung ?? 0.8, b.profile.skill ?? 1, k) + b.adj)); };
+  const liveBotScore = (b, r) => { const k = Math.min(1, r.time / r.duration); return Math.max(0, Math.floor(botScoreAt(b.profile.natural || 0, field(r), k) + b.adj)); };
 
   /** Everyone except the player, as targetable records with route distance d and lane x/y. */
   function opponents(r, rivals) {
@@ -572,7 +567,10 @@ export function createCombat(THREE, { world, getRoute, routeAt, makeShipMesh, sh
         if (lost) onSteal({ thief: t.name, victim: 'YOU', amount: lost, against: true });
         return 0;
       }
-      const live = liveBotScore(t, r), stolen = Math.min(steal(t.id, live), live);
+      // Your steals from one alien are capped at 25% of its heat, so zap spam can't replace flying.
+      const mine = shooter === 'player' || shooter === 'reflect', room = mine ? Math.max(0, Math.floor(BOT_STEAL_CAP * (t.profile?.natural || 0) - (t.lostToYou || 0))) : Infinity;
+      const live = liveBotScore(t, r), stolen = Math.min(steal(t.id, live), live, room);
+      if (mine) t.lostToYou = (t.lostToYou || 0) + stolen;
       t.adj -= stolen;
       t.stunUntil = r.time + STUN;
       // A reflected shot counts as yours (and can't be dodged back again).

@@ -1,5 +1,6 @@
 import { getStore } from "@netlify/blobs";
 import { normalizeCourseDefinition } from "../../course-forge.js";
+import { botNatural, botRung, botScoreAt, normalDifficulty } from "../../difficulty.js";
 
 type Pilot = {
   id: string;
@@ -34,6 +35,7 @@ type Room = {
   players: Pilot[];
   bots: number;
   botSkill?: number;
+  difficulty?: string;
   // Zap swings on sim pilots, summed over every human's report: heat -> per-bot points.
   botAdjust?: Record<number, number[]>;
   extendedMs?: number;
@@ -208,15 +210,9 @@ function botLapTime(pace: number, skill: number, seed: number) {
 }
 
 /**
- * Sim-pilot heat score (same formula as the client's liveBotScore in combat.js):
- *   score = rung * (0.8 * bestHuman + 0.2 * 6000 * leagueSkill) + zap swings, rung = this heat's ladder (1.0, 0.88, 0.8...)
- * The lead alien shadows the best human within ~10% both ways: fly well and you win narrowly, don't fly and you don't.
+ * Sim-pilot heat score: difficulty.js (shared with the client). Each alien flies its own level, a share of a strong run
+ * on this world set by the room's difficulty, nudged at most 6% toward the best human, plus zap swings.
  */
-const BOT_LEAGUE_PAR = 6000;
-const LADDER = [1.0, 0.88, 0.8, 0.74, 0.7, 0.67, 0.64];
-const botRung = (heat: number, i: number, n: number) => LADDER[((i + heat) % Math.max(1, n)) % LADDER.length];
-const botTarget = (best: number, rung: number, skill: number) => rung * (0.8 * best + 0.2 * BOT_LEAGUE_PAR * skill);
-
 function botProfile(code: string, heat: number, i: number, skill = 1) {
   const seed = botSeed(code, heat, i);
   return { seed, base: (1500 + (seed % 2500)) * skill, pace: 0.8 + (seed % 46) / 100 };
@@ -230,7 +226,8 @@ function scoreBots(room: Room) {
   for (let i = 0; i < room.bots; i++) {
     const botId = `bot-${i}`;
     const { seed, base, pace } = botProfile(room.code, room.heat, i, room.botSkill ?? 1);
-    const score = Math.floor(finite(Math.round(botTarget(leader, botRung(room.heat, i, room.bots), room.botSkill ?? 1)) + (adjust[i] || 0), 0, MAX_HEAT_SCORE));
+    const natural = botNatural(room.courseId, room.difficulty, botRung(room.heat, i, room.bots));
+    const score = Math.floor(finite(Math.round(botScoreAt(natural, leader)) + (adjust[i] || 0), 0, MAX_HEAT_SCORE));
     const entry = room.scores.find((e) => e.playerId === botId && e.heat === room.heat);
     if (entry) entry.score = score;
     else room.scores.push({ playerId: botId, name: BOT_NAMES[i % BOT_NAMES.length], kind: "bot", score, heat: room.heat, flightTime: botLapTime(pace, room.botSkill ?? 1, seed) });
@@ -383,7 +380,7 @@ export default async (request: Request) => {
           code, hostId, phase: "lobby", heat: 1, public: true,
           courseId: COURSES[Math.floor(Math.random() * COURSES.length)], course: null, coursePrompt: "", courseSeed: 0,
           players: [{ id: hostId, token, name: cleanName(body.name), ship: cleanShip(body.ship), kind: "human", progress: 0, score: 0, finished: false, lastSeen: now }],
-          bots: 2, botSkill: Math.max(0.45, Math.min(2, Number(body.botSkill) || 1)), scores: [], updatedAt: now,
+          bots: 2, botSkill: Math.max(0.45, Math.min(2, Number(body.botSkill) || 1)), difficulty: normalDifficulty(body.difficulty), scores: [], updatedAt: now,
         };
         const result = await store().setJSON(code, room, { onlyIfNew: true });
         if (!result.modified) continue;
@@ -412,7 +409,7 @@ export default async (request: Request) => {
           players: [{ id: hostId, token, name: cleanName(body.name), ship: cleanShip(body.ship), kind: "human", progress: 0, score: 0, finished: false, lastSeen: Date.now() }],
           bots: Math.max(0, Math.min(7, Number(body.bots) || 0)),
           // Sim-pilot strength picked by the host's rank: 0.45 for rookies up to 2 (competitive with clean runs).
-          botSkill: Math.max(0.45, Math.min(2, Number(body.botSkill) || 1)),
+          botSkill: Math.max(0.45, Math.min(2, Number(body.botSkill) || 1)), difficulty: normalDifficulty(body.difficulty),
           challengeId: validChallengeId(body.challengeId) ? body.challengeId : undefined,
           scores: [],
           updatedAt: Date.now(),
@@ -602,7 +599,10 @@ export default async (request: Request) => {
       if (!authorised(pilot, body)) throw new Error("This device isn't signed in as that pilot.");
       pilot.lastSeen = Date.now();
       delete pilot.leftAt; // any signed-in action means they're back
-      if (action === "bots") {
+      if (action === "difficulty") {
+        if (draft.hostId !== playerId || draft.phase !== "lobby") throw new Error("Only the lobby host can change the alien difficulty.");
+        draft.difficulty = normalDifficulty(body.difficulty);
+      } else if (action === "bots") {
         if (draft.hostId !== playerId || draft.phase !== "lobby") throw new Error("Only the lobby host can change sim pilots.");
         draft.bots = Math.max(0, Math.min(8 - draft.players.length, Number(body.count) || 0));
         balanceTeams(draft);

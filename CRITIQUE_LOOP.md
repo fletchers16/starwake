@@ -451,3 +451,16 @@ Proposals, ranked by impact per effort:
 7. `proposed` [S–M] Announcer voice (OpenAI TTS, cached per course).
 8. `proposed` [BOLD, L] Crew mode: pilot + phone gunner with a radar of hidden information.
 Top pick: Wish Comet, plus Nemesis and the gate change.
+
+## Blind judge, Oct 15 (commit 2a23be5): Execution 4, Creativity 4, Usefulness 3, Polish 3
+Biggest gap: solo was visibly rubber-banded (idle finished 2nd; skilled won every heat by ~10%). Then: stacked centre messages, camera clipping into pillars/beams, phone ROLL far from thumbs, zap spam outscoring flying, announcer "you take the lead" while 4th, sticky CTAs over season awards, no WebGL fallback, offline Forge Party button/scroll/caption issues, small HUD details.
+1. `done` [Usefulness] Alien difficulty (user's spec): EASY / MEDIUM / EXPERT / PRO, each alien at its own level (share of a measured strong run per world: easy .32, medium .6, expert .95, pro 1.2), ±6% catch-up, your steals from one alien capped at 25% of its heat. Shared difficulty.js used by client and server. Autopilot checks: idle last on easy, casual close 3rd on easy and last on medium, strong autopilot won 2 of 3 runs on each of expert and pro.
+2. `ready` [Polish] One centre message at a time (queue).
+3. `ready` [Execution] Camera clipping into geometry.
+4. `ready` [Usefulness] Phone: ROLL by the thumbs, emotes out of the drag zone, use the empty bottom, no tap highlight.
+5. `done` (via the 25% cap) [Usefulness] Zap spam outscoring flying.
+6. `ready` [Polish] Announcer "lead" only after ~1 s in 1st.
+7. `ready` [Polish] Season/results cleanup (CTA padding, HEAT 3 label, numbers once).
+8. `ready` [Execution] WebGL fallback message.
+9. `ready` [Polish] Forge Party: RE-FUSE state, scroll guests to the result, caption font.
+10. `ready` [Polish] Small HUD details.

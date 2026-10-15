@@ -259,3 +259,14 @@ body.coaching #race-screen .taunt{display:none!important}
 @media(min-width:761px){#result-rows span{overflow:visible!important;text-overflow:clip!important;white-space:nowrap}}
 @media(min-width:761px){#app #race-screen .hud2 .standings-ticker{width:212px}}
 #app .standings-ticker em.nem{font-style:normal;color:#ff4d6a}
+/* Alien difficulty picker (briefing + lobby) */
+#app .diff-pick{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
+#app .diff-pick button{padding:8px 4px;border-radius:12px;border:3px solid var(--cz-ink,#140f24);background:var(--cz-panel,#2a2146);color:#fff;font:400 14px var(--display);letter-spacing:.03em;cursor:pointer;box-shadow:0 3px 0 var(--cz-ink,#140f24)}
+#app .diff-pick button[aria-pressed=true]{background:#ffd84d;color:#140f24}
+#app .diff-pick button:disabled{cursor:default;opacity:.55}
+#app .diff-pick button[aria-pressed=true]:disabled{opacity:1}
+#app .diff-blurb{display:block;margin-top:5px;font:500 12px system-ui,sans-serif;color:var(--cz-lilac,#c9b8ff)}
+#app .brief-diff{margin:12px 0 4px}
+#app .brief-diff>small{display:block;margin-bottom:6px;font:400 12px var(--display);letter-spacing:.06em;color:#7ef5ff}
+#app .diff-control{display:grid;gap:8px;padding:12px 20px;border-top:1px solid rgba(201,189,242,.14)}
+#app .diff-control strong{font:400 14px var(--display)}#app .diff-control small{display:block;font:500 11px system-ui,sans-serif;color:var(--cz-lilac,#c9b8ff)}

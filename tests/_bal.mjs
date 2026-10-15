@@ -1,9 +1,10 @@
 import { chromium } from 'playwright-core';
-const mode = process.argv[2] || 'casual';
+const mode = process.argv[2] || 'casual', course = process.argv[3] || '';
 const b = await chromium.launch(); const c = await b.newContext({ viewport: { width: 1000, height: 640 } });
-await c.addInitScript(() => { localStorage.setItem('starwake-playtest', '1'); localStorage.setItem('starwake-coached', '1'); });
+await c.addInitScript((DIFF) => { localStorage.setItem('starwake-playtest', '1'); localStorage.setItem('starwake-coached', '1'); localStorage.setItem('starwake-difficulty', DIFF); }, process.env.DIFF || 'easy');
 const p = await c.newPage(); p.on('pageerror', e => console.log('ERR', e.message));
-await p.goto('http://127.0.0.1:5180'); await p.waitForTimeout(600); await p.click('#launch-solo');
+await p.goto('http://127.0.0.1:5180'); await p.waitForTimeout(600);
+if (course) { await p.click('#launch-skip'); await p.waitForTimeout(800); await p.click('[data-mode=pve]'); await p.click(`[data-course=${course}]`); await p.click('[data-action=launch]'); } else await p.click('#launch-solo');
 await p.waitForTimeout(1500); await p.keyboard.press('Enter').catch(()=>{});
 await p.waitForFunction(() => window.__starwake.state.race?.time > 1, null, { timeout: 30000 });
 if (mode === 'skilled') {
@@ -27,5 +28,5 @@ while (!(await p.evaluate(() => !!document.querySelector('#results-screen.active
   t++; if (t > 400) break;
 }
 await p.waitForTimeout(3000);
-console.log(mode.padEnd(8), await p.evaluate(() => document.querySelector('#result-rows')?.innerText.replace(/\s+/g, ' ').replace('PILOT HEAT TOTAL LAP ', '')));
+console.log((process.env.DIFF||'easy').padEnd(7), mode.padEnd(8), (course || 'default').padEnd(18), await p.evaluate(() => `[${window.__starwake.state.room?.difficulty}] ` + document.querySelector('#result-rows')?.innerText.replace(/\s+/g, ' ').replace('PILOT HEAT TOTAL ▾ LAP ', '').replace(/ \d+\.\ds/g, '')));
 await b.close();

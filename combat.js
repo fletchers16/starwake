@@ -793,7 +793,7 @@ export function createCombat(THREE, { world, getRoute, routeAt, makeShipMesh, sh
   }
 
   function update(r, dt, rivals) {
-    if (nemesisTag) { const n = nemesisOf.player && opponents(r, rivals).find((o) => o.id === nemesisOf.player), gap = n ? n.d - r.distance : 999; nemesisTag.visible = !!n && gap > -20 && gap < 110 && !r.done; if (nemesisTag.visible) { nemesisTag.position.copy(worldPos(r, n.d, n.x, n.y)); nemesisTag.position.y += 3.1; } }
+    if (nemesisTag) { const n = nemesisOf.player && opponents(r, rivals).find((o) => o.id === nemesisOf.player), gap = n ? n.d - r.distance : 999; nemesisTag.visible = !!n && gap > 4 && gap < 110 && !r.done; if (nemesisTag.visible) { nemesisTag.position.copy(worldPos(r, n.d, n.x, n.y)); nemesisTag.position.y += 3.1; } }
     if (r.rolling) {
       r.rolling -= dt;
       rollTimer += dt;
@@ -984,7 +984,8 @@ export function createCombat(THREE, { world, getRoute, routeAt, makeShipMesh, sh
       b.ship.position.copy(p);
       b.ship.position.y += Math.sin(now * 0.004 + b.index) * 0.14;
       // Racers just behind you stay visible beside the ship, but never between the camera and the ship.
-      b.ship.visible = gap > -1.5 && gap < 130;
+      // ...and not on top of your ship, where it would fill the screen.
+      b.ship.visible = gap > -1.5 && gap < 130 && !(gap < 1.2 && Math.abs(b.x - r.x) < 2.2 && Math.abs(b.y - r.y) < 1.8);
       b.ship.rotation.z = -(b.tx - b.x) * 0.06 + b.spin;
       { const route = getRoute(), pre = routeAt(b.d - 3, route), post = routeAt(b.d + 6, route); b.ship.rotation.y = -Math.atan2(post.x - pre.x, 9); b.ship.rotation.x = Math.atan2(post.y - pre.y, 9); }
       // Level of detail: past ~45 m the pilot and fishbowl are a few pixels, so skip their draw calls.
@@ -999,7 +1000,7 @@ export function createCombat(THREE, { world, getRoute, routeAt, makeShipMesh, sh
     for (const e of externals) {
       const s = e.sample(r.time), gap = s.d - r.distance, stunned = r.time < e.stunUntil;
       e.mesh.position.copy(worldPos(r, s.d, s.x, s.y));
-      e.mesh.visible = gap > -1.5 && gap < 140;
+      e.mesh.visible = gap > -1.5 && gap < 140 && !(gap < 1.2 && Math.abs(s.x - r.x) < 2.2 && Math.abs(s.y - r.y) < 1.8);
       e.mesh.rotation.z = stunned ? (1 - (e.stunUntil - r.time) / STUN) * Math.PI * 4 : 0;
       e.mesh.userData.tick?.(now, stunned);
       tickStars(e.stars, now, stunned && e.mesh.visible, e.mesh.position.x, e.mesh.position.y, e.mesh.position.z);

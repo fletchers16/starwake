@@ -270,3 +270,20 @@ body.coaching #race-screen .taunt{display:none!important}
 #app .brief-diff>small{display:block;margin-bottom:6px;font:400 12px var(--display);letter-spacing:.06em;color:#7ef5ff}
 #app .diff-control{display:grid;gap:8px;padding:12px 20px;border-top:1px solid rgba(201,189,242,.14)}
 #app .diff-control strong{font:400 14px var(--display)}#app .diff-control small{display:block;font:500 11px system-ui,sans-serif;color:var(--cz-lilac,#c9b8ff)}
+#app .reflect-banner span{font:400 16px var(--display);letter-spacing:.04em;color:#7ef5ff;-webkit-text-stroke:4px #140f24;paint-order:stroke fill}
+/* Phone race caption in the cartoon font, no mid-name wraps */
+#app #race-screen .landmark-caption small,#app #race-screen .landmark-caption b{font-family:var(--display);letter-spacing:.04em;white-space:nowrap}
+.no-webgl{position:fixed;inset:0;z-index:99;display:grid;place-items:center;padding:24px;background:rgba(10,7,22,.94)}
+.no-webgl div{max-width:420px;padding:22px;border-radius:18px;border:3px solid #140f24;background:#2a2146;box-shadow:0 6px 0 #140f24;text-align:center;color:#fff}
+.no-webgl b{display:block;margin-bottom:8px;font:400 24px var(--display,system-ui);color:#ffd84d}
+.no-webgl span{font:500 14px/1.45 system-ui,sans-serif}
+/* Phones: ROLL lives in the thumb cluster with FIRE and BOOST; the corner chip goes, and in-race quick-chat moves up under the item card, out of the thumbs' drag zone */
+button,[role=button],.roll-chip{-webkit-tap-highlight-color:transparent}
+#race-screen .roll-button{background:#7ef5e2!important;color:#140f24!important}
+@media (pointer:coarse){
+  #app #race-screen .roll-chip{display:none}
+  #app #race-screen .emote-bar{left:12px;right:auto;bottom:auto;top:calc(158px + env(safe-area-inset-top));flex-direction:column;align-items:flex-start;gap:4px}
+  #app #race-screen .emote-bar button{padding:4px 9px;font-size:11px}
+}
+body.touched #app #race-screen .roll-chip{display:none}
+

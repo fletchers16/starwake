@@ -22,7 +22,7 @@
  */
 import { ALIENS, makeAlienPilot, toon, inkOutline } from './aliens.js';
 import { makeCrown } from './critters.js';
-import { botScoreAt, BOT_STEAL_CAP } from './difficulty.js';
+import { botScoreAt, stealCapFor, scoreAtDistance } from './difficulty.js';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
 
@@ -356,7 +356,9 @@ export function createCombat(THREE, { world, getRoute, routeAt, makeShipMesh, sh
   // ---------- lifecycle ----------
 
   let field = () => 0;
-  function start(r, { botPaces = [], botFinals = [], podDistances = [], fieldScore = null, forks: forkList = [], teams = null, nemesis = {} } = {}) {
+  let difficultyNow = 'easy';
+  function start(r, { botPaces = [], botFinals = [], podDistances = [], fieldScore = null, forks: forkList = [], teams = null, nemesis = {}, difficulty = 'easy' } = {}) {
+    difficultyNow = difficulty;
     nemesisOf = nemesis || {};
     if (!nemesisTag) { nemesisTag = nameTag('◎ NEMESIS', '#ff4d6a'); nemesisTag.scale.multiplyScalar(1.15); world.add(nemesisTag); }
     nemesisTag.visible = false;
@@ -415,7 +417,8 @@ export function createCombat(THREE, { world, getRoute, routeAt, makeShipMesh, sh
   // Rubber-banded to the human field (matches the server's scoreBots at the end of the heat).
   // Skill decides: a sim pilot's own level (league skill × pace, scaled through the heat), pulled 35% toward the
   // best human's live score. Mirrored server-side in game.ts scoreBots.
-  const liveBotScore = (b, r) => { const k = Math.min(1, r.time / r.duration); return Math.max(0, Math.floor(botScoreAt(b.profile.natural || 0, field(r), k) + b.adj)); };
+  // An alien's score is its own flight through this heat's rings and gates (difficulty.js flyCourse), plus zap swings.
+  const liveBotScore = (b, r) => { const run = b.profile.run; if (run) { const t = Math.min(r.time, r.duration); return Math.max(0, Math.floor(scoreAtDistance(run, run.speed * t, t) + b.adj)); } const k = Math.min(1, r.time / r.duration); return Math.max(0, Math.floor(botScoreAt(b.profile.natural || 0, field(r), k) + b.adj)); };
 
   /** Everyone except the player, as targetable records with route distance d and lane x/y. */
   function opponents(r, rivals) {
@@ -568,7 +571,7 @@ export function createCombat(THREE, { world, getRoute, routeAt, makeShipMesh, sh
         return 0;
       }
       // Your steals from one alien are capped at 25% of its heat, so zap spam can't replace flying.
-      const mine = shooter === 'player' || shooter === 'reflect', room = mine ? Math.max(0, Math.floor(BOT_STEAL_CAP * (t.profile?.natural || 0) - (t.lostToYou || 0))) : Infinity;
+      const mine = shooter === 'player' || shooter === 'reflect', room = mine ? Math.max(0, Math.floor(stealCapFor(difficultyNow) * (t.profile?.full ?? t.profile?.natural ?? 0) - (t.lostToYou || 0))) : Infinity;
       const live = liveBotScore(t, r), stolen = Math.min(steal(t.id, live), live, room);
       if (mine) t.lostToYou = (t.lostToYou || 0) + stolen;
       t.adj -= stolen;

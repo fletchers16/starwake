@@ -28,5 +28,5 @@ while (!(await p.evaluate(() => !!document.querySelector('#results-screen.active
   t++; if (t > 400) break;
 }
 await p.waitForTimeout(3000);
-console.log((process.env.DIFF||'easy').padEnd(7), mode.padEnd(8), (course || 'default').padEnd(18), await p.evaluate(() => `[${window.__starwake.state.room?.difficulty}] ` + document.querySelector('#result-rows')?.innerText.replace(/\s+/g, ' ').replace('PILOT HEAT TOTAL ▾ LAP ', '').replace(/ \d+\.\ds/g, '')));
+console.log((process.env.DIFF||'easy').padEnd(7), mode.padEnd(8), (course || 'default').padEnd(18), await p.evaluate(() => `[${window.__starwake.state.room?.difficulty}] ` + document.querySelector('#result-rows')?.innerText.replace(/\s+/g, ' ').replace('PILOT HEAT TOTAL ▾ LAP ', '').replace(/ \d+\.\ds/g, '').replace(/ —/g, '')));
 await b.close();

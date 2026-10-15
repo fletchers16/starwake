@@ -10,11 +10,13 @@
  *   EXPERT  few mistakes
  *   PRO     near-perfect
  */
+// hit: chance an alien flies through each ring/gate it passes; stealCap: the most you can steal from one alien in a
+// heat (share of its score), so zaps can't replace flying on the hard tiers. share: legacy fallback for the server.
 export const DIFFICULTIES = {
-  easy: { label: 'EASY', share: 0.32, skill: 0.6, blurb: 'Win by flying for rings and gates' },
-  medium: { label: 'MEDIUM', share: 0.6, skill: 0.9, blurb: 'Fly fairly well to win' },
-  expert: { label: 'EXPERT', share: 0.95, skill: 1.25, blurb: 'Few mistakes allowed' },
-  pro: { label: 'PRO', share: 1.2, skill: 1.5, blurb: 'Near-perfect runs only' },
+  easy: { label: 'EASY', hit: 0.4, stealCap: 0.3, share: 0.32, skill: 0.6, blurb: 'Win by flying for rings and gates' },
+  medium: { label: 'MEDIUM', hit: 0.63, stealCap: 0.22, share: 0.6, skill: 0.9, blurb: 'Fly fairly well to win' },
+  expert: { label: 'EXPERT', hit: 0.81, stealCap: 0.14, share: 0.95, skill: 1.25, blurb: 'Few mistakes allowed' },
+  pro: { label: 'PRO', hit: 0.92, stealCap: 0.08, share: 1.2, skill: 1.5, blurb: 'Near-perfect runs only' },
 };
 export const DIFFICULTY_ORDER = ['easy', 'medium', 'expert', 'pro'];
 export const normalDifficulty = (d) => (DIFFICULTIES[d] ? d : 'easy');
@@ -37,4 +39,39 @@ export const botScoreAt = (natural, best, k = 1) => {
 };
 
 /** The most a pilot can steal from one alien in a heat, so zap spam can't buy a win. */
-export const BOT_STEAL_CAP = 0.25;
+export const stealCapFor = (difficulty) => DIFFICULTIES[normalDifficulty(difficulty)].stealCap;
+
+/* ---------- Aliens fly the course ----------
+   Each alien passes the same rings, gates and stars as you and hits or misses each one (seeded per room, heat and
+   alien, so every screen computes the same run). Ring combos, PERFECT LINE, PERFECT LAP and lap points score exactly
+   like yours, so a world with more rings is worth more to everyone and no two heats total the same. */
+const mulberry = (seed) => () => { seed |= 0; seed = (seed + 0x6d2b79f5) | 0; let t = Math.imul(seed ^ (seed >>> 15), 1 | seed); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
+// Personality: the lead alien flies cleanest, the pack a little looser.
+const FORM = [1.0, 0.94, 0.89, 0.85, 0.82, 0.8, 0.78];
+export const BOT_SPEED = 29; // m/s, about a boosting human's 60-second distance
+/**
+ * @param template obstacles of one lap at race start: {type:'ring'|'gate'|'star', distance, trail, trailIndex}
+ * @returns {events:[{d, pts}], speed} events sorted by route distance, for scoreAtDistance()
+ */
+export function flyCourse(template, lapDistance, seed, difficulty, heat, i, n, laps = 3) {
+  const rand = mulberry(seed >>> 0), form = FORM[((i + heat) % Math.max(1, n)) % FORM.length];
+  const p = Math.min(0.985, DIFFICULTIES[normalDifficulty(difficulty)].hit * form * (0.97 + rand() * 0.06));
+  const lap = template.filter((o) => ['ring', 'gate', 'star'].includes(o.type)).map((o) => ({ ...o, d: ((o.distance % lapDistance) + lapDistance) % lapDistance })).sort((a, b) => a.d - b.d);
+  const events = []; let combo = 0;
+  for (let L = 0; L < laps; L++) {
+    const trail = {}; let gatesHit = 0;
+    for (const o of lap) {
+      const d = o.d + L * lapDistance;
+      if (o.type === 'ring') {
+        if (rand() < p) { combo = Math.min(5, combo + 1); let pts = 100 * combo; trail[o.trail] = (trail[o.trail] || 0) + 1; if (o.trailIndex === 4 && trail[o.trail] === 5) pts += 300; events.push({ d, pts }); }
+        else combo = 0;
+      } else if (o.type === 'gate') {
+        if (rand() < p) { gatesHit++; events.push({ d, pts: 100 + (gatesHit === 5 ? 500 : 0) }); } else events.push({ d, pts: -25 });
+      } else if (rand() < p * 0.8) events.push({ d, pts: 250 }); // star core
+    }
+    events.push({ d: (L + 1) * lapDistance, pts: 300 }); // lap
+  }
+  return { events, speed: BOT_SPEED * (0.985 + form * 0.03) };
+}
+/** An alien's points after flying `dist` metres (plus 1 point a second, like yours). */
+export const scoreAtDistance = (run, dist, seconds = 0) => run.events.reduce((a, e) => (e.d <= dist ? a + e.pts : a), 0) + Math.floor(seconds);

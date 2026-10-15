@@ -464,3 +464,17 @@ Biggest gap: solo was visibly rubber-banded (idle finished 2nd; skilled won ever
 8. `done` [Execution] WebGL fallback message.
 9. `done` [Polish] Forge Party: RE-FUSE state, scroll guests to the result, caption font.
 10. `ready` [Polish] Small HUD details.
+
+## Blind judge, Oct 15 (commit 1b53be3): Execution 4, Creativity 3, Usefulness 4, Polish 4
+Tier order holds (lazy loses on EASY; EXPERT/PRO punish sloppy runs), races feel tense. Problems: calibration noisy by world (MEDIUM on Io won 2.4x; EASY on Neon lost by 1 point); PRO winnable through +3,000 in zaps; alien totals repeat exactly (formula tell); AI showpiece invisible offline.
+1. `done` [Usefulness] Difficulty from the heat's actual content, not a fixed course number; cap net zap gains on EXPERT/PRO.
+2. `done` [Creativity] Alien scores from events with per-heat noise and personality; no repeated totals.
+3. `ready` [Polish] Start-of-race stack (coach + NEMESIS + GO); toasts over the coach card.
+4. `ready` [Polish] World billboards behind HUD panels.
+5. `ready` [Polish] Phone: emotes over ROLL; truncated names in standings.
+6. `ready` [Usefulness] Hint for phone pilots who miss everything; softer drag.
+7. `ready` [Creativity/Polish] NEMESIS legible mid-race; top human given someone behind.
+8. `ready` [Creativity] Offline Forge Party: keyword-built remix, no apology, no mid-word cut, keep alien ideas.
+9. `ready` [Polish] Results: BEST LAP label; ALIENS row placement.
+10. `ready` [Polish] One pitch line across landing and hub; chart label hidden.
+Done (1–2): aliens fly the course (difficulty.js flyCourse): seeded hit/miss on every ring, gate and star with your scoring rules; hit rates easy .40 / medium .63 / expert .81 / pro .92; steal caps per alien .30 / .22 / .14 / .08; clients report the runs, the server takes the first. Checks: lazy and random lose on EASY; skilled wins MEDIUM easily, loses EXPERT narrowly, wins PRO by 2%.

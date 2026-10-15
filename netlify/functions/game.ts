@@ -36,6 +36,7 @@ type Room = {
   bots: number;
   botSkill?: number;
   difficulty?: string;
+  botBase?: Record<number, number[]>;
   // Zap swings on sim pilots, summed over every human's report: heat -> per-bot points.
   botAdjust?: Record<number, number[]>;
   extendedMs?: number;
@@ -226,8 +227,12 @@ function scoreBots(room: Room) {
   for (let i = 0; i < room.bots; i++) {
     const botId = `bot-${i}`;
     const { seed, base, pace } = botProfile(room.code, room.heat, i, room.botSkill ?? 1);
+    // Each alien's own flight through this heat's rings and gates (reported by the clients, which all compute the same
+    // seeded run); the formula is only a fallback if nobody reported one.
     const natural = botNatural(room.courseId, room.difficulty, botRung(room.heat, i, room.bots));
-    const score = Math.floor(finite(Math.round(botScoreAt(natural, leader)) + (adjust[i] || 0), 0, MAX_HEAT_SCORE));
+    const flown = room.botBase?.[room.heat]?.[i];
+    const flownBase = Number.isFinite(flown) ? (flown as number) : botScoreAt(natural, leader);
+    const score = Math.floor(finite(Math.round(flownBase) + (adjust[i] || 0), 0, MAX_HEAT_SCORE));
     const entry = room.scores.find((e) => e.playerId === botId && e.heat === room.heat);
     if (entry) entry.score = score;
     else room.scores.push({ playerId: botId, name: BOT_NAMES[i % BOT_NAMES.length], kind: "bot", score, heat: room.heat, flightTime: botLapTime(pace, room.botSkill ?? 1, seed) });
@@ -624,6 +629,8 @@ export default async (request: Request) => {
         pilot.finished = true;
         if (!draft.scores.some((entry) => entry.playerId === playerId && entry.heat === draft.heat)) {
           draft.scores.push({ playerId, score, heat: draft.heat, name: pilot.name, kind: "human", flightTime: finite(result.flightTime, 0, 600) });
+          // The aliens' flown scores for this heat: the first report wins (every client computes the same seeded runs).
+          if (Array.isArray(result.botBase) && !(draft.botBase ||= {})[draft.heat]) draft.botBase[draft.heat] = result.botBase.slice(0, 8).map((v: unknown) => (v == null ? NaN : Math.round(finite(v, 0, 40000))));
           // Zap swings on sim pilots: counted once per pilot per heat (retries and repeats are ignored).
           const adjust = Array.isArray(result.botAdjust) ? result.botAdjust : [];
           const totals = (draft.botAdjust ||= {})[draft.heat] ||= [];
@@ -673,6 +680,7 @@ export default async (request: Request) => {
         draft.heat = 1;
         draft.scores = [];
         draft.botAdjust = {};
+        draft.botBase = {};
         startHeat(draft);
       } else if (action === "next") {
         if (draft.hostId !== playerId || draft.phase !== "results") throw new Error("The host can continue after every pilot finishes the heat.");

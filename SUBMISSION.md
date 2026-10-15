@@ -18,13 +18,12 @@ https://starwakeracing.netlify.app
 ---
 
 ## How a judge should try it (about 5 minutes)
-1. Open the link and press **PLAY NOW** (or Skip intro). A brand-new player's first solo race is coached live.
-2. **Solo vs the aliens:** pick a world, then **RACE THE ALIENS**. Fly through a **?** crate, press **F** (or tap **FIRE**) to zap the racer ahead, and watch the steal feed and the crown.
-3. **Battle a friend:** select **⚔ BATTLE**, then **OPEN A BATTLE ROOM**, then scan the lobby's **QR code** with a phone (or use **COPY INVITE LINK**). The host presses Start. Zap each other, and press **1–3** (or tap the chips) for emotes. After heat 3, press **REMATCH**.
-4. **Dare a friend:** on any results screen, press **BEAT MY RUN** and open the link in another browser. Race the ghost, and see the verdict and the link's ladder.
-5. **Wish Comet:** after heat 1, type a wish on the results screen ("slow-mo goo on BEN"). When the host continues, the Comet rules on every wish (yours and the aliens') and the effects hit the next heat.
-6. **World Forge:** describe a world, press **Forge**, then race it.
-7. **Difficulty:** on a solo briefing, pick EASY, MEDIUM, EXPERT or PRO aliens.
+1. Open the link. A brand-new player's first solo race is coached live; press **RACE THE ALIENS** to start it.
+2. **Solo vs the aliens:** after the coached race, press **RACE THE ALIENS** again (or **BROWSE WORLDS & SHIPS** to pick a world) and choose **EASY / MEDIUM / EXPERT / PRO** on the briefing. Fly through a **?** crate, press **F** (or tap **FIRE**) to zap the racer ahead, and roll (**Q** / **ROLL**) when you see LOCKED ON.
+3. **Battle a friend:** press **PLAY WITH FRIENDS**, then scan the lobby's **QR code** with a phone (or copy the invite link). Pitch world ideas in **Forge Party**, then the host presses Start.
+4. **Wish Comet:** after heat 1, type a wish on the results screen ("slow-mo goo on BEN"). When the host continues, the Comet rules on every wish (yours and the aliens') and the effects hit heat 2.
+5. **Dare a friend:** on any results screen, press **BEAT MY RUN** and open the link in another browser. Race the ghost, and see the verdict and the link's ladder.
+6. **World Forge:** in **BROWSE WORLDS & SHIPS**, describe a world, press **Forge World**, then race it.
 
 ## Before you submit
 - [x] Deployed to Netlify with `OPENAI_API_KEY` set; AI lines warmed for all six worlds.

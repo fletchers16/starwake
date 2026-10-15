@@ -274,3 +274,4 @@
   body:has(#nl-badge-frame) #mode-hub-root:not([hidden]) .sw-hub-launch { bottom: 62px; }
   body:has(#nl-badge-frame) #mode-hub-root .sw-hub { padding-bottom: 140px; }
 }
+.sw-hub-content > *, .sw-hub-side > * { min-width: 0; }

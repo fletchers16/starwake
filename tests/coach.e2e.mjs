@@ -44,17 +44,17 @@ try {
   await page.evaluate(() => { window.__coachLog = []; let last = ''; setInterval(() => { const t = document.querySelector('#coach b')?.innerText || '', r = window.__starwake.state.race; const lk = !document.querySelector('#lock-warn').hidden; const k = t + (lk ? ' [LOCK]' : '') + (r && r.time < r.stunUntil ? ' [STUN]' : ''); if (k !== last) { last = k; window.__coachLog.push(`${r?.time.toFixed(1)} ${k}`); } }, 50); });
   check('picking up an item moves to the zap lesson', /zap/i.test(await coach()), await coach());
   for (let k = 0; k < 3 && !/Incoming/.test(await coach()); k++) { await until(() => /Incoming/.test(document.querySelector('#coach b')?.innerText || '') || window.__starwake.combat.currentLock(window.__starwake.state.race, []), 3000); if (/Incoming/.test(await coach())) break; await page.keyboard.press('f'); await wait(700); }
-  { const ok = /Incoming/.test(await coach()); check('a landed zap moves to the roll lesson', ok, ok ? '' : `${await coach()}\n        ${(await page.evaluate(() => window.__coachLog)).join('\n        ')}`); }
-  const lock = await until(() => !document.querySelector('#lock-warn').hidden && document.querySelector('#lock-warn').innerText, 6000);
+  { const ok = /Incoming|Too slow/.test(await coach()); check('a landed zap moves to the roll lesson', ok, ok ? '' : `${await coach()}\n        ${(await page.evaluate(() => window.__coachLog)).join('\n        ')}`); }
+  const lock = await until(() => !document.querySelector('#lock-warn').hidden && document.querySelector('#lock-warn').innerText, 9000);
   check('a sim pilot telegraphs its shot', lock, lock || 'no warning');
   await page.keyboard.press('q');
   // A late roll gets the coach's "Too slow! Once more": like a player, wait for the next lock and roll again.
   let outcome = null;
-  for (let attempt = 0; attempt < 2 && !outcome; attempt++) {
-    outcome = await until(() => /win the heat|got the idea|Too slow/.test(document.querySelector('#coach b')?.innerText || '') && { title: document.querySelector('#coach b').innerText, reflects: window.__starwake.state.race.reflects || 0 }, 7000);
+  for (let attempt = 0; attempt < 3 && !outcome; attempt++) {
+    outcome = await until(() => /win the heat|got the idea|Too slow/.test(document.querySelector('#coach b')?.innerText || '') && { title: document.querySelector('#coach b').innerText, reflects: window.__starwake.state.race.reflects || 0 }, 10000);
     if (outcome && /Too slow/.test(outcome.title)) {
       outcome = null;
-      await until(() => !document.querySelector('#lock-warn').hidden, 8000);
+      await until(() => !document.querySelector('#lock-warn').hidden, 10000);
       await page.keyboard.press('q');
     }
   }

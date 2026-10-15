@@ -53,7 +53,7 @@ export const BOT_SPEED = 29; // m/s, about a boosting human's 60-second distance
  * @param template obstacles of one lap at race start: {type:'ring'|'gate'|'star', distance, trail, trailIndex}
  * @returns {events:[{d, pts}], speed} events sorted by route distance, for scoreAtDistance()
  */
-export function flyCourse(template, lapDistance, seed, difficulty, heat, i, n, laps = 3, courseId = '', mod = 1) {
+function flyOnce(template, lapDistance, seed, difficulty, heat, i, n, laps, courseId, mod) {
   const ease = WORLD_EASE[courseId] ?? 1;
   const rand = mulberry(seed >>> 0), form = FORM[((i + heat) % Math.max(1, n)) % FORM.length];
   // mod: the Wish Comet's butterfingers (<1) or on-fire (>1) for this alien.
@@ -78,7 +78,14 @@ export function flyCourse(template, lapDistance, seed, difficulty, heat, i, n, l
   }
   return { events, speed: BOT_SPEED * (0.985 + form * 0.03) };
 }
+/** Fly three seeded attempts and keep the middle one: still deterministic on every screen, but one lucky or
+    unlucky trail roll no longer swings an alien's heat by thousands. */
+export function flyCourse(template, lapDistance, seed, difficulty, heat, i, n, laps = 3, courseId = '', mod = 1) {
+  const runs = [0, 1, 2].map((k) => flyOnce(template, lapDistance, (seed + k * 7477) >>> 0, difficulty, heat, i, n, laps, courseId, mod));
+  const total = (r) => r.events.reduce((a, e) => a + e.pts, 0);
+  return runs.sort((a, b) => total(a) - total(b))[1];
+}
 // How hard each world's ring lines are for a human (measured), so aliens find the same worlds hard.
-const WORLD_EASE = { 'neon-rift': 1, 'io-storm': 0.92, 'titan-veil': 1.05, 'helix-deep': 0.86, 'jovian-shear': 0.88, 'earthfall-circuit': 1.05 };
+const WORLD_EASE = { 'neon-rift': 1, 'io-storm': 0.92, 'titan-veil': 1.05, 'helix-deep': 0.86, 'jovian-shear': 0.85, 'earthfall-circuit': 0.95 };
 /** An alien's points after flying `dist` metres (plus 1 point a second, like yours). */
 export const scoreAtDistance = (run, dist, seconds = 0) => run.events.reduce((a, e) => (e.d <= dist ? a + e.pts : a), 0) + Math.floor(seconds);

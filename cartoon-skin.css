@@ -336,3 +336,13 @@ body.touched #app #race-screen .emote-bar{top:calc(204px + env(safe-area-inset-t
 #app .decree-chips span{padding:3px 8px 2px;border-radius:999px;border:2px solid #140f24;background:#7dff6a;color:#140f24;font:400 11px var(--display);letter-spacing:.04em}
 #app .decree-chips span.bad{background:#ff9a52}
 @media(max-width:760px){#app .wr-panel h3{font-size:19px}#app .wr-cards{grid-template-columns:1fr 1fr;gap:6px}#app .wr-card{padding:8px}#app .wr-card span{display:none}}
+/* Thumb cluster hugs the right edge (ROLL above BOOST, FIRE beside it) so drags in the lower middle steer */
+#app #race-screen .hud2-boost{grid-template-areas:". roll" "fire boost";grid-template-columns:auto auto;gap:8px;align-items:end;justify-items:center}
+@media (pointer:coarse){#app #race-screen .hud2-boost{display:grid}}
+body.touched #app #race-screen .hud2-boost{display:grid}
+#app #race-screen .hud2-boost #roll-button{grid-area:roll;width:64px;height:64px}
+#app #race-screen .hud2-boost #fire-button{grid-area:fire}
+#app #race-screen .hud2-boost #boost-button{grid-area:boost}
+#app .brief-panel{position:relative}
+#app .brief-x{position:absolute;top:10px;right:12px;width:34px;height:34px;border-radius:50%;border:3px solid #140f24;background:#2a2146;color:#fff;font:400 20px/1 var(--display);cursor:pointer;box-shadow:0 3px 0 #140f24}
+#app .result-rows{border-top:0;margin-bottom:14px;padding-bottom:12px;border-bottom:1px solid rgba(201,189,242,.14)}

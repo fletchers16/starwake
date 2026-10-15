@@ -494,3 +494,12 @@ Biggest gap: live ticker and final results disagree by thousands (alien zap swin
 
 ## Built Oct 15 (user approved): the Wish Comet
 Between heats every pilot (aliens too) wishes; the server rules once per heat (OpenAI structured outputs with a per-call schema of this room's pilot ids, 9 s timeout, wish daily limit; offline keyword rules otherwise) and stores room.decree; every screen applies the same effects after a ~6.5 s card-flip reveal. Effect menu reuses existing mechanics (goo, ink, backwards steering, hull ±, shield, blaster/seeker, rocket start, lucky crates, gates ×2, frenzy at 0:30, alien fumble/hot); sanitizeDecree clamps (2 effects per wish, 2 debuffs per target). tests/wish.e2e.mjs (8 checks) covers two players.
+
+## Blind judge, Oct 15 (commit 763eef0, before the Wish Comet): Execution 4, Creativity 4, Usefulness 4, Polish 3
+Live board now matches final; EASY and PRO meet the goal, MEDIUM/EXPERT noisy. Biggest gap: phone controls (steering lingers after the finger stops, ROLL catches drags, HUD clutter).
+1. `done` Resting finger stops steering (80 ms decay).  2. `done` Thumb cluster on the right edge (ROLL above BOOST).
+3. `done` Alien variance: median of three seeded attempts (p10–p90 now about ±25%); Earthfall/Jovian ease lowered.
+4. `done` Esc/× on the solo briefing return to the hub.  5. `later` Phone HUD further decluttering.
+6. `done` Season story names the actual runner-up.  7. `done` Nemesis only re-picks someone ahead.
+8. `done` Standings above the score breakdown.  9. `done` Hub fits at 1280px.  10. `later` Billboard depth, coach copy when already 1st, PB stickers for weak runs.
+Also: SUBMISSION judge steps now match the landing (PLAY WITH FRIENDS / RACE THE ALIENS), and coach test timing loosened for loaded runs.

@@ -10,13 +10,13 @@
  *   EXPERT  few mistakes
  *   PRO     near-perfect
  */
-// hit: chance an alien flies through each ring/gate it passes; stealCap: the most you can steal from one alien in a
+// hit: chance an alien lines up on each ring trail (then threads it at 93%; a fumbled trail still catches 32%) and hits each gate; stealCap: the most you can steal from one alien in a
 // heat (share of its score), so zaps can't replace flying on the hard tiers. share: legacy fallback for the server.
 export const DIFFICULTIES = {
-  easy: { label: 'EASY', hit: 0.4, stealCap: 0.3, share: 0.32, skill: 0.6, blurb: 'Win by flying for rings and gates' },
-  medium: { label: 'MEDIUM', hit: 0.63, stealCap: 0.22, share: 0.6, skill: 0.9, blurb: 'Fly fairly well to win' },
-  expert: { label: 'EXPERT', hit: 0.81, stealCap: 0.14, share: 0.95, skill: 1.25, blurb: 'Few mistakes allowed' },
-  pro: { label: 'PRO', hit: 0.92, stealCap: 0.08, share: 1.2, skill: 1.5, blurb: 'Near-perfect runs only' },
+  easy: { label: 'EASY', hit: 0.17, stealCap: 0.3, share: 0.32, skill: 0.6, blurb: 'Win by flying for rings and gates' },
+  medium: { label: 'MEDIUM', hit: 0.37, stealCap: 0.22, share: 0.6, skill: 0.9, blurb: 'Fly fairly well to win' },
+  expert: { label: 'EXPERT', hit: 0.57, stealCap: 0.14, share: 0.95, skill: 1.25, blurb: 'Few mistakes allowed' },
+  pro: { label: 'PRO', hit: 0.77, stealCap: 0.08, share: 1.2, skill: 1.5, blurb: 'Near-perfect runs only' },
 };
 export const DIFFICULTY_ORDER = ['easy', 'medium', 'expert', 'pro'];
 export const normalDifficulty = (d) => (DIFFICULTIES[d] ? d : 'easy');
@@ -53,25 +53,31 @@ export const BOT_SPEED = 29; // m/s, about a boosting human's 60-second distance
  * @param template obstacles of one lap at race start: {type:'ring'|'gate'|'star', distance, trail, trailIndex}
  * @returns {events:[{d, pts}], speed} events sorted by route distance, for scoreAtDistance()
  */
-export function flyCourse(template, lapDistance, seed, difficulty, heat, i, n, laps = 3) {
+export function flyCourse(template, lapDistance, seed, difficulty, heat, i, n, laps = 3, courseId = '') {
+  const ease = WORLD_EASE[courseId] ?? 1;
   const rand = mulberry(seed >>> 0), form = FORM[((i + heat) % Math.max(1, n)) % FORM.length];
   const p = Math.min(0.985, DIFFICULTIES[normalDifficulty(difficulty)].hit * form * (0.97 + rand() * 0.06));
+  const g = 0.4 + 0.55 * p; // gates and star cores are easier to line up than a whole ring trail
   const lap = template.filter((o) => ['ring', 'gate', 'star'].includes(o.type)).map((o) => ({ ...o, d: ((o.distance % lapDistance) + lapDistance) % lapDistance })).sort((a, b) => a.d - b.d);
   const events = []; let combo = 0;
   for (let L = 0; L < laps; L++) {
-    const trail = {}; let gatesHit = 0;
+    const trail = {}, commit = {}; let gatesHit = 0;
     for (const o of lap) {
       const d = o.d + L * lapDistance;
       if (o.type === 'ring') {
-        if (rand() < p) { combo = Math.min(5, combo + 1); let pts = 100 * combo; trail[o.trail] = (trail[o.trail] || 0) + 1; if (o.trailIndex === 4 && trail[o.trail] === 5) pts += 300; events.push({ d, pts }); }
+        // Like a human, an alien either lines up on a whole trail (and threads it, chaining combos) or fumbles it.
+        if (!(o.trail in commit)) commit[o.trail] = rand() < p * ease;
+        if (rand() < (commit[o.trail] ? 0.93 : 0.32)) { combo = Math.min(5, combo + 1); let pts = 100 * combo; trail[o.trail] = (trail[o.trail] || 0) + 1; if (o.trailIndex === 4 && trail[o.trail] === 5) pts += 300; events.push({ d, pts }); }
         else combo = 0;
       } else if (o.type === 'gate') {
-        if (rand() < p) { gatesHit++; events.push({ d, pts: 100 + (gatesHit === 5 ? 500 : 0) }); } else events.push({ d, pts: -25 });
-      } else if (rand() < p * 0.8) events.push({ d, pts: 250 }); // star core
+        if (rand() < g) { gatesHit++; events.push({ d, pts: 100 + (gatesHit === 5 ? 500 : 0) }); } else events.push({ d, pts: -25 });
+      } else if (rand() < g * 0.8) events.push({ d, pts: 250 }); // star core
     }
     events.push({ d: (L + 1) * lapDistance, pts: 300 }); // lap
   }
   return { events, speed: BOT_SPEED * (0.985 + form * 0.03) };
 }
+// How hard each world's ring lines are for a human (measured), so aliens find the same worlds hard.
+const WORLD_EASE = { 'neon-rift': 1, 'io-storm': 0.92, 'titan-veil': 1.05, 'helix-deep': 0.86, 'jovian-shear': 0.88, 'earthfall-circuit': 1.05 };
 /** An alien's points after flying `dist` metres (plus 1 point a second, like yours). */
 export const scoreAtDistance = (run, dist, seconds = 0) => run.events.reduce((a, e) => (e.d <= dist ? a + e.pts : a), 0) + Math.floor(seconds);

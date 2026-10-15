@@ -359,6 +359,7 @@ export function createCombat(THREE, { world, getRoute, routeAt, makeShipMesh, sh
   let difficultyNow = 'easy';
   function start(r, { botPaces = [], botFinals = [], podDistances = [], fieldScore = null, forks: forkList = [], teams = null, nemesis = {}, difficulty = 'easy' } = {}) {
     difficultyNow = difficulty;
+    othersAdj = [];
     nemesisOf = nemesis || {};
     if (!nemesisTag) { nemesisTag = nameTag('◎ NEMESIS', '#ff4d6a'); nemesisTag.scale.multiplyScalar(1.15); world.add(nemesisTag); }
     nemesisTag.visible = false;
@@ -414,11 +415,13 @@ export function createCombat(THREE, { world, getRoute, routeAt, makeShipMesh, sh
 
   // ---------- helpers ----------
 
-  // Rubber-banded to the human field (matches the server's scoreBots at the end of the heat).
+  // Sim-pilot scores: their own flight through the course (difficulty.js), matching the server at the end of the heat.
   // Skill decides: a sim pilot's own level (league skill × pace, scaled through the heat), pulled 35% toward the
   // best human's live score. Mirrored server-side in game.ts scoreBots.
   // An alien's score is its own flight through this heat's rings and gates (difficulty.js flyCourse), plus zap swings.
-  const liveBotScore = (b, r) => { const run = b.profile.run; if (run) { const t = Math.min(r.time, r.duration); return Math.max(0, Math.floor(scoreAtDistance(run, run.speed * t, t) + b.adj)); } const k = Math.min(1, r.time / r.duration); return Math.max(0, Math.floor(botScoreAt(b.profile.natural || 0, field(r), k) + b.adj)); };
+  // othersAdj: the other humans' reported swings on each alien (live telemetry), so every screen shows the same board.
+  let othersAdj = [];
+  const liveBotScore = (b, r) => { const run = b.profile.run, adj = Math.max(-6000, Math.min(6000, b.adj)) + (othersAdj[b.index] || 0); if (run) { const t = Math.min(r.time, r.duration); return Math.max(0, Math.floor(scoreAtDistance(run, run.speed * t, t) + adj)); } const k = Math.min(1, r.time / r.duration); return Math.max(0, Math.floor(botScoreAt(b.profile.natural || 0, field(r), k) + adj)); };
 
   /** Everyone except the player, as targetable records with route distance d and lane x/y. */
   function opponents(r, rivals) {
@@ -572,6 +575,9 @@ export function createCombat(THREE, { world, getRoute, routeAt, makeShipMesh, sh
       }
       // Your steals from one alien are capped at 25% of its heat, so zap spam can't replace flying.
       const mine = shooter === 'player' || shooter === 'reflect', room = mine ? Math.max(0, Math.floor(stealCapFor(difficultyNow) * (t.profile?.full ?? t.profile?.natural ?? 0) - (t.lostToYou || 0))) : Infinity;
+      // Aliens zapping each other is a show only: it stuns but moves no points, because every screen simulates it
+      // separately (only swings involving a human are reported, so the live board and the final results agree).
+      if (!mine) { t.stunUntil = r.time + STUN; return 0; }
       const live = liveBotScore(t, r), stolen = Math.min(steal(t.id, live), live, room);
       if (mine) t.lostToYou = (t.lostToYou || 0) + stolen;
       t.adj -= stolen;
@@ -1099,6 +1105,7 @@ export function createCombat(THREE, { world, getRoute, routeAt, makeShipMesh, sh
     externalScores: (r) => externals.map((e) => ({ id: e.id, name: e.name, score: Math.max(0, Math.floor(e.score(r.time) + e.adj)) })),
     /** Per-bot point swings from zaps this heat (reported to the server on completion). */
     botAdjust: () => racers.map((b) => Math.round(b.adj)),
+    setOthersAdj: (list) => { othersAdj = list || []; },
     externalAdjust: () => externals.map((e) => Math.round(e.adj)),
     racerNames: () => racers.map((b) => b.name),
     isFrenzy: () => frenzy,

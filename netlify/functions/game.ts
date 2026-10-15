@@ -527,7 +527,7 @@ export default async (request: Request) => {
       const t = body.telemetry || {};
       const entry: Live = { id: pilot.id, name: pilot.name, ship: pilot.ship, d: finite(t.d, 0, 1e6), x: finite(t.x, -12, 12), y: finite(t.y, -12, 12), score: Math.floor(finite(t.score, 0, MAX_HEAT_SCORE)), at: Date.now(),
         rs: Math.floor(finite(t.rs, 0, MAX_HEAT_SCORE)), hull: Math.floor(finite(t.hull, 0, 12)), item: ITEM_IDS.includes(t.item) ? t.item : "", ammo: Math.floor(finite(t.ammo, 0, 3)),
-        ba: Array.isArray(t.ba) ? t.ba.slice(0, 8).map((v: unknown) => Math.round(finite(v, -3000, 3000))) : [],
+        ba: Array.isArray(t.ba) ? t.ba.slice(0, 8).map((v: unknown) => Math.round(finite(v, -6000, 6000))) : [],
         // First lap time so far (0 = none yet), used if this pilot's final report never arrives.
         lt: finite(t.lt, 0, HEAT_MS / 1000) };
       await store().setJSON(liveKey(code, pilot.id), entry);
@@ -634,7 +634,7 @@ export default async (request: Request) => {
           // Zap swings on sim pilots: counted once per pilot per heat (retries and repeats are ignored).
           const adjust = Array.isArray(result.botAdjust) ? result.botAdjust : [];
           const totals = (draft.botAdjust ||= {})[draft.heat] ||= [];
-          for (let i = 0; i < draft.bots; i++) totals[i] = (totals[i] || 0) + Math.round(finite(adjust[i], -1500, 1500));
+          for (let i = 0; i < draft.bots; i++) totals[i] = (totals[i] || 0) + Math.round(finite(adjust[i], -6000, 6000));
         }
         scoreBots(draft);
         settleHeat(draft);

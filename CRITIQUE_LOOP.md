@@ -478,3 +478,16 @@ Tier order holds (lazy loses on EASY; EXPERT/PRO punish sloppy runs), races feel
 9. `done` [Polish] Results: BEST LAP label; ALIENS row placement.
 10. `done` [Polish] One pitch line across landing and hub; chart label hidden.
 Done (1–2): aliens fly the course (difficulty.js flyCourse): seeded hit/miss on every ring, gate and star with your scoring rules; hit rates easy .40 / medium .63 / expert .81 / pro .92; steal caps per alien .30 / .22 / .14 / .08; clients report the runs, the server takes the first. Checks: lazy and random lose on EASY; skilled wins MEDIUM easily, loses EXPERT narrowly, wins PRO by 2%.
+
+## Blind judge, Oct 15 (commit c566568): Execution 4, Creativity 4, Usefulness 3, Polish 4
+Biggest gap: live ticker and final results disagree by thousands (alien zap swings live vs recomputed); tiers swing by world (ring combos reward human streaks far more than a flat alien hit rate) so most heats are blowouts.
+1. `done` [Execution] Live ticker = final results (server clamp ±1500 vs unclamped live adj, and alien-vs-alien swings simulated per screen; now alien-vs-alien zaps are show-only, each screen adds others' reported swings, clamp ±6000; live@60s = final ±1).
+2. `done` [Usefulness] Tier calibration per world: aliens commit to whole ring trails like humans (thread at 93%, fumble at 32%), commit rate easy .17 / medium .37 / expert .57 / pro .77, gates/stars 0.4+0.55p, per-world ease table (aliens need streaks like humans).
+3. `ready` [Usefulness] Tension without catch-up (pace vs leader).
+4. `ready` [Polish] Phone: GG! chip over the NEMESIS chip.
+5. `ready` [Polish] Translucent captions unreadable (nemesis intro, item tips).
+6. `ready` [Polish] Nemesis: re-pick when far behind; hide while coaching.
+7. `ready` [Execution] Rematch carries old nemesis chip and banners.
+8. `ready` [Polish] Results: compact podium above the breakdown.
+9. `ready` [Polish] No gate penalties during the coached race.
+10. `ready` [Polish] Contrast (QUICK MATCH card, RACE THIS WORLD), README "rubber-banded" line; Flight School shows the difficulty picker.

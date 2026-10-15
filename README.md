@@ -18,7 +18,7 @@ Built for the Handshake AI Skills Studio × OpenAI Multiplayer Game Challenge. S
 ## How to play
 
 - **Score the most points across three 60-second heats** (a dare is a single heat).
-- **Alien difficulty:** EASY (win by flying for rings and gates), MEDIUM (fly fairly well), EXPERT (few mistakes) or PRO (near-perfect). Each alien actually flies the heat's rings, gates and stars, hitting or missing each one at a rate set by the difficulty (with combos and bonuses scored exactly like yours), so no two heats total the same and ring-heavy worlds are worth more to everyone. There is no catch-up, and on the hard tiers you can only steal a small share of an alien's heat, so flying decides it. Pick it on the briefing (solo) or in the lobby (the host sets it for the room).
+- **Alien difficulty:** EASY (win by flying for rings and gates), MEDIUM (fly fairly well), EXPERT (few mistakes) or PRO (near-perfect). Each alien actually flies the heat's rings, gates and stars, lining up on whole ring trails (or fumbling them) like a human, at a rate set by the difficulty (with combos and bonuses scored exactly like yours), so no two heats total the same and ring-heavy worlds are worth more to everyone. There is no catch-up, and on the hard tiers you can only steal a small share of an alien's heat, so flying decides it. Pick it on the briefing (solo) or in the lobby (the host sets it for the room).
 - **"?" crates** give one of ten items, and racers further behind get better ones: **Laser Blaster** (3 shots that auto-aim at the racer ahead), **Comet Seeker** (hunts 1st place), **Bubble Shield** (blocks one zap), **Turbo Snack** (instant boost), **Slow-Mo Goo** (bump a rival and they crawl at half speed for 3 s), **Space Banana** (drops behind you and spins out whoever hits it), **Magnet** (yanks you ahead and steals their item), **Decoy Crate** (a fake crate that costs whoever grabs it), **Ink Cloud** (splats the screens of racers behind you) and **Swap Ray** (trade places with the racer ahead).
 - **Gates:** five checkpoint gates per lap sit off the racing line. Fly through for +100 and a small boost; all five in one lap is a PERFECT LAP (+500). A miss costs 25 and your streak.
 - **Zaps** spin the target out and **steal 8% of their points** (never more than half, and nobody loses more than 30% of a heat to zaps). The leader wears a **crown** worth double, and in the final 15 seconds **Zap Frenzy** doubles every steal again.
@@ -49,7 +49,7 @@ Built for the Handshake AI Skills Studio × OpenAI Multiplayer Game Challenge. S
 | Game shell | `game.js` (race loop, HUD, lobby, Forge Party, results, awards), `mode-hub.js` / `mode-bridge.js` (landing, hub, invite and dare links), `cartoon-skin.css` |
 | Server | `netlify/functions/game.ts` (rooms on Netlify Blobs with strong consistency and conditional writes), `forge.ts`, `banter.ts`, `netlify/lib/openai.ts` |
 
-The server is authoritative for heat clocks, alien racer scores (rubber-banded to the human field), score caps and room state. Each pilot has a private token that authorises its actions; zap and steal records are scoped by room, season and heat.
+The server is authoritative for heat clocks, alien racer scores (each alien's own seeded flight through the heat's rings and gates, plus reported zap swings), score caps and room state. Each pilot has a private token that authorises its actions; zap and steal records are scoped by room, season and heat.
 
 ## Development
 

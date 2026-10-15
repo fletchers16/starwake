@@ -20,13 +20,14 @@ if (mode === 'skilled') {
       if (!document.getElementById('lock-warn').hidden) { dispatchEvent(new KeyboardEvent('keydown', { key: 'q' })); dispatchEvent(new KeyboardEvent('keyup', { key: 'q' })); }
     }, 60); });
 }
-let t = 0;
+let t = 0; let live59 = null;
+const grab = setInterval(async () => { try { const v = await p.evaluate(() => { const S = window.__starwake, r = S.state.race; return r && r.time > 58.5 && !r.done ? JSON.stringify({ t: r.time.toFixed(1), bots: S.combat.botScores(r).map(b => `${b.name} ${b.score}`), adj: S.combat.botAdjust(), me: Math.floor(r.score) }) : null; }); if (v) live59 = v; } catch {} }, 150);
 while (!(await p.evaluate(() => !!document.querySelector('#results-screen.active')))) {
   if (mode === 'casual') { const k = ['ArrowLeft','ArrowRight','ArrowUp','ArrowDown'][t % 4]; await p.keyboard.down(k); if (t % 2) await p.keyboard.down('Space'); await p.keyboard.press('f'); await p.waitForTimeout(400); await p.keyboard.up(k); await p.keyboard.up('Space'); }
   else if (mode === 'idle') { await p.keyboard.down('Space'); await p.keyboard.press('f'); await p.waitForTimeout(500); await p.keyboard.up('Space'); }
   else await p.waitForTimeout(500);
   t++; if (t > 400) break;
 }
-await p.waitForTimeout(3000);
+await p.waitForTimeout(3000); clearInterval(grab); console.log('LIVE@59', live59);
 console.log((process.env.DIFF||'easy').padEnd(7), mode.padEnd(8), (course || 'default').padEnd(18), await p.evaluate(() => `[${window.__starwake.state.room?.difficulty}] ` + document.querySelector('#result-rows')?.innerText.replace(/\s+/g, ' ').replace('PILOT HEAT TOTAL ▾ LAP ', '').replace(/ \d+\.\ds/g, '').replace(/ —/g, '')));
 await b.close();

@@ -287,3 +287,16 @@ button,[role=button],.roll-chip{-webkit-tap-highlight-color:transparent}
 }
 body.touched #app #race-screen .roll-chip{display:none}
 
+/* While the coach card is up (top of the screen), race toasts sit lower so they never cover its text */
+body.coaching #app #race-screen .race-toast{top:62%!important}
+#app .nemesis-chip{display:inline-flex;gap:6px;align-items:center;margin-top:6px;padding:4px 10px 3px;border-radius:999px;border:3px solid #140f24;background:#2a1830;box-shadow:0 3px 0 #140f24;color:#fff;font:400 12px var(--display);letter-spacing:.04em;white-space:nowrap}
+#app .nemesis-chip[hidden]{display:none}
+#app .nemesis-chip b{color:#ff4d6a;font-weight:400}#app .nemesis-chip i{font-style:normal;color:#ffd84d}
+@media(max-width:760px){#app .nemesis-chip{font-size:10px;padding:3px 8px 2px}}
+body.touched #app #race-screen .emote-bar{left:12px;right:auto;bottom:auto;top:calc(158px + env(safe-area-inset-top));flex-direction:column;align-items:flex-start;gap:4px}
+body.touched #app #race-screen .emote-bar button{padding:4px 9px;font-size:11px}
+@media(max-width:760px){#app #race-screen .hud2 .standings-ticker:not([hidden]){width:156px}#app #race-screen .hud2 .standings-ticker span{overflow:visible;text-overflow:clip}}
+/* Heat chart: the H label stays readable on top of a full (yellow) bar */
+.hh-row i small{z-index:1;color:#fff;-webkit-text-stroke:3px var(--cz-ink);paint-order:stroke fill}
+/* HUD panels are solid so world billboards behind them can't read through */
+#app #race-screen{--hud-panel:#241a40}

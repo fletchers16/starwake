@@ -579,6 +579,7 @@ export function createCombat(THREE, { world, getRoute, routeAt, makeShipMesh, sh
       // A reflected shot counts as yours (and can't be dodged back again).
       const yours = shooter === 'player' || shooter === 'reflect';
       if (yours && stolen) say(t.name, 'zapped');
+      if (yours && stolen && t.id === nemesisOf.player) comic(worldPos(r, t.d, t.x, t.y + 1.4), 'NEMESIS ×1.5', '#ff4d6a', 3);
       if (stolen) onSteal({ thief: yours ? 'YOU' : racers.find((b) => b.id === shooter)?.name || 'RIVAL', victim: t.name, amount: stolen, mine: yours });
       return stolen;
     }

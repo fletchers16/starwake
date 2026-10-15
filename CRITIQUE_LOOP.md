@@ -372,7 +372,7 @@ Backlog, in order:
 6. `ready` [Value] No BEAT MY RUN / share after a multiplayer season.
 7. `ready` [Polish] Centre-screen message pile-up early in a race (coach, banter, toasts, lock-on): one prioritised slot.
 8. `ready` [Polish] Phone: comic bursts too big (cover FIRE); header clips the music button.
-9. `ready` [Polish] Results: ~8 px labels, unreadable heat chart, CTA below fold, vague "VIEW FLIGHT DECK".
+9. `done` [Polish] Results: ~8 px labels, unreadable heat chart, CTA below fold, vague "VIEW FLIGHT DECK".
 10. `ready` [Execution] Client-reported scores: validate against server telemetry, tighten the cap.
 11. `ready` [Polish] Return 200 {fallback:true} instead of 503 when AI is unconfigured/capped (no red console errors).
 12. `ready` [Polish] Small: dare landing shows party chips; alien Forge ideas differ per device; "You placed 3rd" vs table order; FORGE WORLD text clipped; frenzy timer low contrast.
@@ -469,12 +469,12 @@ Biggest gap: solo was visibly rubber-banded (idle finished 2nd; skilled won ever
 Tier order holds (lazy loses on EASY; EXPERT/PRO punish sloppy runs), races feel tense. Problems: calibration noisy by world (MEDIUM on Io won 2.4x; EASY on Neon lost by 1 point); PRO winnable through +3,000 in zaps; alien totals repeat exactly (formula tell); AI showpiece invisible offline.
 1. `done` [Usefulness] Difficulty from the heat's actual content, not a fixed course number; cap net zap gains on EXPERT/PRO.
 2. `done` [Creativity] Alien scores from events with per-heat noise and personality; no repeated totals.
-3. `ready` [Polish] Start-of-race stack (coach + NEMESIS + GO); toasts over the coach card.
-4. `ready` [Polish] World billboards behind HUD panels.
-5. `ready` [Polish] Phone: emotes over ROLL; truncated names in standings.
-6. `ready` [Usefulness] Hint for phone pilots who miss everything; softer drag.
-7. `ready` [Creativity/Polish] NEMESIS legible mid-race; top human given someone behind.
-8. `ready` [Creativity] Offline Forge Party: keyword-built remix, no apology, no mid-word cut, keep alien ideas.
-9. `ready` [Polish] Results: BEST LAP label; ALIENS row placement.
-10. `ready` [Polish] One pitch line across landing and hub; chart label hidden.
+3. `done` [Polish] Start-of-race stack (coach + NEMESIS + GO); toasts over the coach card.
+4. `done` [Polish] World billboards behind HUD panels.
+5. `done` [Polish] Phone: emotes over ROLL; truncated names in standings.
+6. `done` [Usefulness] Hint for phone pilots who miss everything; softer drag.
+7. `done` [Creativity/Polish] NEMESIS legible mid-race; top human given someone behind.
+8. `done` [Creativity] Offline Forge Party: keyword-built remix, no apology, no mid-word cut, keep alien ideas.
+9. `done` [Polish] Results: BEST LAP label; ALIENS row placement.
+10. `done` [Polish] One pitch line across landing and hub; chart label hidden.
 Done (1–2): aliens fly the course (difficulty.js flyCourse): seeded hit/miss on every ring, gate and star with your scoring rules; hit rates easy .40 / medium .63 / expert .81 / pro .92; steal caps per alien .30 / .22 / .14 / .08; clients report the runs, the server takes the first. Checks: lazy and random lose on EASY; skilled wins MEDIUM easily, loses EXPERT narrowly, wins PRO by 2%.

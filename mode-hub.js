@@ -84,7 +84,7 @@ export function mountModeHub({ root, onAction = () => {}, initialCourse = 'neon-
       <div class="sw-hub-content">
         <section class="sw-hub-intro">
           <p class="sw-hub-kicker">LIVE MULTIPLAYER <span></span> ANY DEVICE</p>
-          <h1 id="sw-hub-title">Every race<br>is a <em>dogfight.</em></h1>
+          <h1 id="sw-hub-title">First place<br>is a <em>target.</em></h1>
           <p>Snipe rivals with laser blasters, barrel-roll their shots straight back, and steal their points. Race friends live from one link, or send a dare to beat your run.</p>
           <div class="sw-hub-signal"><span>⚔</span><div><b>PLAY WITH FRIENDS</b><small>Open a room, share the link or QR code. Phones and laptops race together.</small></div></div>
         </section>

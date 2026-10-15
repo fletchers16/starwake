@@ -258,3 +258,4 @@ body.coaching #race-screen .taunt{display:none!important}
 #result-rows>div:not(:first-child)>b:nth-of-type(2){color:#ffd84d}
 @media(min-width:761px){#result-rows span{overflow:visible!important;text-overflow:clip!important;white-space:nowrap}}
 @media(min-width:761px){#app #race-screen .hud2 .standings-ticker{width:212px}}
+#app .standings-ticker em.nem{font-style:normal;color:#ff4d6a}

@@ -438,3 +438,16 @@ Biggest gap: no tension vs aliens. A pilot who never steers finished 2nd (3,042 
 9. `done` [Polish] Alien scores jump at the buzzer.
 10. `done` [Polish] README "five alien rivals" (solo has 3); TIME BONUS row meaningless; sticky hub launch covers garage; hub defaults to BATTLE after solo. (flatShading already fixed in e43d12f.)
 Done Oct 14 (except: sticky hub launch bar left as is, by design). Balance now: lead alien = 1.0 × (0.8 × best human + 0.2 × 6000 × skill), the others step down 0.88/0.8…; the lead role rotates per heat. Autopilot tests: skilled won narrowly (by 14% and 2%), casual and idle placed 2nd–4th. Offline Forge Party serves pooled real OpenAI worlds, seeded by warm:ai. Coach test: one flake in 5 runs before the "aliens hold fire while coaching" fix; then 6 of 6 passed.
+
+## Game-design critique, Oct 15 (commit 2a23be5): gameplay and concept proposals
+Diagnosis: track position barely matters (everyone flies about the same distance); alien scores are a formula with late jumps; humans rarely zap each other (auto-aim hits aliens); the most frequent feedback is "MISSED GATE"; firing is a no-brainer; the AI is decoration. The best beat: LOCKED ON, then roll it back.
+Proposals, ranked by impact per effort:
+1. `proposed` [BOLD, M] Wish Comet: between heats every pilot (aliens too) writes a wish; OpenAI rules GRANTED / TWISTED / DENIED and turns it into real effects for the next heat (goo, crown, frenzy timing, lucky crates, aliens hunt X...). Server-side ruling, clamped effect enum, offline keyword rules + a pooled set of real rulings.
+2. `done` [S] Nemesis: the human next to you in the standings (an alien solo); auto-aim prefers them, steals ×1.5, NEMESIS tag.
+3. `done` [S] Gates as a reward: miss = −25 and streak lost, no stall; guide to the next gate; 5 clean = PERFECT LAP ×2.
+4. `proposed` [S–M] Wake-riding: draft anyone's wake to charge boost and siphon points (generalise the Team Battle slipstream).
+5. `proposed` [M] Alien scouting report: OpenAI reads your telemetry and picks a real tactic per alien for the next heat.
+6. `ready` [S–M] Alien scores move only on visible events (no last-second jumps).
+7. `proposed` [S–M] Announcer voice (OpenAI TTS, cached per course).
+8. `proposed` [BOLD, L] Crew mode: pilot + phone gunner with a radar of hidden information.
+Top pick: Wish Comet, plus Nemesis and the gate change.

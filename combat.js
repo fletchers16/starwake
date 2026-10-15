@@ -313,7 +313,10 @@ export function createCombat(THREE, { world, getRoute, routeAt, makeShipMesh, sh
   /** Steal multiplier against a target: ×2 on the crowned leader, ×2 during the frenzy. */
   // Steal: 8% of the target's score (at least ZAP_STEAL), ×2 on the crowned leader, ×2 in the frenzy.
   // Never more than half of what they have, so one early zap can't wipe a new player back to zero.
-  const steal = (id, score = 0) => Math.min(Math.max(ZAP_STEAL, Math.round(score * STEAL_RATE)) * (id === leaderId ? 2 : 1) * (frenzy ? 2 : 1), Math.floor(Math.max(0, score) * 0.5));
+  // Nemesis: each heat every pilot has one rival (nemesisOf[shooterId] = targetId, 'player' = you). Steals between them pay x1.5.
+  let nemesisOf = {}, nemesisTag = null;
+  const NEMESIS_MULT = 1.5;
+  const steal = (id, score = 0, shooterId = 'player') => Math.min(Math.round(Math.max(ZAP_STEAL, Math.round(score * STEAL_RATE)) * (id === leaderId ? 2 : 1) * (frenzy ? 2 : 1) * (nemesisOf[shooterId] === id ? NEMESIS_MULT : 1)), Math.floor(Math.max(0, score) * 0.5));
 
   function dizzyStars() {
     const g = new THREE.Group();
@@ -358,7 +361,10 @@ export function createCombat(THREE, { world, getRoute, routeAt, makeShipMesh, sh
   // ---------- lifecycle ----------
 
   let field = () => 0;
-  function start(r, { botPaces = [], botFinals = [], podDistances = [], fieldScore = null, forks: forkList = [], teams = null } = {}) {
+  function start(r, { botPaces = [], botFinals = [], podDistances = [], fieldScore = null, forks: forkList = [], teams = null, nemesis = {} } = {}) {
+    nemesisOf = nemesis || {};
+    if (!nemesisTag) { nemesisTag = nameTag('◎ NEMESIS', '#ff4d6a'); nemesisTag.scale.multiplyScalar(1.15); world.add(nemesisTag); }
+    nemesisTag.visible = false;
     if (fieldScore) field = fieldScore;
     forks = forkList;
     teamOf = teams ? (id) => (id === 'player' ? teams.mine : teams.of(id)) : null;
@@ -503,7 +509,7 @@ export function createCombat(THREE, { world, getRoute, routeAt, makeShipMesh, sh
 
   // ---------- hits ----------
 
-  function hitPlayer(r, shooterName, color, shooter = null, bouncedBack = false) {
+  function hitPlayer(r, shooterName, color, shooter = null, bouncedBack = false, shooterId = shooter?.id ?? 'bot') {
     if (r.time < (r.rollUntil || -9)) {
       // Mid-roll: the shot bounces back at whoever fired it.
       sfx.shield?.();
@@ -517,12 +523,13 @@ export function createCombat(THREE, { world, getRoute, routeAt, makeShipMesh, sh
     if (r.time < r.shieldUntil) { r.shieldUntil = -9; sfx.pop?.(); toast('SHIELD POPPED', `BLOCKED ${shooterName}`); return 0; }
     // Never lose more than 30% of everything you've earned this heat to zaps (a trailing pilot can't be wiped out).
     const lossRoom = Math.max(0, Math.floor((Math.max(0, r.score) + (r.lostPts || 0)) * 0.3) - (r.lostPts || 0));
-    const stolen = Math.min(steal('player', myScore(r)), Math.max(0, Math.floor(r.score)), lossRoom);
+    const stolen = Math.min(steal('player', myScore(r), shooterId), Math.max(0, Math.floor(r.score)), lossRoom);
     r.zapPoints -= stolen;
     r.score = Math.max(0, r.score - stolen); // so back-to-back hits steal from what's actually left
     r.lostPts = (r.lostPts || 0) + stolen;
     if (stolen) onSteal({ thief: shooterName, victim: 'YOU', amount: stolen, against: true });
     r.stunUntil = r.time + STUN;
+    r.lastZappedBy = shooterId; // the coach checks that its own pilot landed the shot
     r.combo = 0;
     sfx.zapped?.();
     toast(bouncedBack ? `BOUNCED BACK BY ${shooterName}` : `ZAPPED BY ${shooterName}`, `${stolen ? `−${stolen} · ` : ''}${bouncedBack ? 'THEY ROLLED YOUR SHOT · ' : leaderId === 'player' ? 'BOUNTY · ' : ''}SPIN OUT`);
@@ -700,7 +707,9 @@ export function createCombat(THREE, { world, getRoute, routeAt, makeShipMesh, sh
   /** Blaster lock for the HUD reticle (null when nothing is in the cone). */
   function currentLock(r, rivals) {
     if (r.item !== 'blaster' || r.rolling) return null;
-    return lockTarget({ d: r.distance, x: r.x, y: r.y }, foes(opponents(r, rivals)));
+    const list = foes(opponents(r, rivals)), mine = nemesisOf.player && list.find((o) => o.id === nemesisOf.player);
+    // Auto-aim prefers your nemesis whenever it's in the cone.
+    return (mine && lockTarget({ d: r.distance, x: r.x, y: r.y }, [mine])) || lockTarget({ d: r.distance, x: r.x, y: r.y }, list);
   }
 
   // ---------- simulation ----------
@@ -786,6 +795,7 @@ export function createCombat(THREE, { world, getRoute, routeAt, makeShipMesh, sh
   }
 
   function update(r, dt, rivals) {
+    if (nemesisTag) { const n = nemesisOf.player && opponents(r, rivals).find((o) => o.id === nemesisOf.player), gap = n ? n.d - r.distance : 999; nemesisTag.visible = !!n && gap > -20 && gap < 110 && !r.done; if (nemesisTag.visible) { nemesisTag.position.copy(worldPos(r, n.d, n.x, n.y)); nemesisTag.position.y += 3.1; } }
     if (r.rolling) {
       r.rolling -= dt;
       rollTimer += dt;
@@ -937,7 +947,7 @@ export function createCombat(THREE, { world, getRoute, routeAt, makeShipMesh, sh
       reflectedSeen[z.from] = (reflectedSeen[z.from] || 0) + bounced;
       // Hits landing in the 2 s grace after the clock still count (the shooter is credited for them).
       if (r.started && (!r.done || Date.now() - (r.doneAt || 0) < 2500)) for (let k = 0; k < fresh; k++) {
-        const took = hitPlayer(r, String(z.name || 'RIVAL').toUpperCase(), '#ff7ca7', null, k < bounced);
+        const took = hitPlayer(r, String(z.name || 'RIVAL').toUpperCase(), '#ff7ca7', null, k < bounced, z.from);
         if (took > 0) paid[z.from] = (paid[z.from] || 0) + took;
         // Reflected mid-roll: the zap goes back to the shooter through the normal zap channel.
         else if (took < 0) { zapCounts[z.from] = (zapCounts[z.from] || 0) + 1; reflectedOut[z.from] = (reflectedOut[z.from] || 0) + 1; }
@@ -1072,7 +1082,7 @@ export function createCombat(THREE, { world, getRoute, routeAt, makeShipMesh, sh
       Object.assign(b, { item: 'blaster', ammo: 1, cooldown: 0, aimAt: 0, relockAt: 0, coachTarget: true, d: r.distance - 12, x: r.x, y: r.y, tx: r.x, ty: r.y, nextWeave: r.time + 3 });
       lastPlayerHitByBot = -9; // the fairness window shouldn't block the lesson
       botHitsOnPlayer = Math.min(botHitsOnPlayer, BOT_HITS_PER_HEAT - 1);
-      return true;
+      return b.id;
     },
     /** Put the sim pilots around distance d (used when a reloaded racer resumes mid-heat). */
     placeBots: (d, lap) => racers.forEach((b, i) => {

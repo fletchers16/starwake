@@ -10,7 +10,7 @@ export const coachDone = () => { try { return localStorage.getItem(DONE_KEY) ===
 const markDone = () => { try { localStorage.setItem(DONE_KEY, '1'); } catch {} };
 
 export function createCoach({ el, combat, touch }) {
-  let step = 0, stepAt = 0, armedAt = 0, active = false, retried = false, stunSeen = -9;
+  let step = 0, stepAt = 0, armedAt = 0, armedId = null, active = false, retried = false, stunSeen = -9;
   const say = (title, body, extra = '') => {
     el.innerHTML = `<small>FIRST FLIGHT · ${Math.min(step + 1, 3)}/3</small><b>${title}</b><span>${body}</span>${extra}<button type="button" class="coach-skip">SKIP</button>`;
     el.querySelector('.coach-skip').onclick = finish;
@@ -53,11 +53,12 @@ export function createCoach({ el, combat, touch }) {
     } else if (step === 2) {
       // Arm a sim pilot behind you once, so a telegraphed shot really comes.
       if (!armedAt && r.time - stepAt > 3) {
-        if (combat.coachArm(r)) armedAt = r.time;
+        armedId = combat.coachArm(r); if (armedId) armedAt = r.time;
       }
       // The PERFECT REFLECT banner already celebrates; the card just hands over.
       if ((r.reflects || 0) > 0) { step = 3; say('Now win the heat!', 'You know every move: crates, zaps and rolls.'); setTimeout(finish, 2600); }
-      else if (armedAt && r.stunUntil > stunSeen && !retried) {
+      // Only the coach's own pilot's shot counts as "too slow" (a banana or a stray zap isn't the lesson).
+      else if (armedAt && r.stunUntil > stunSeen && r.lastZappedBy === armedId && !retried) {
         // Hit before rolling: one more telegraphed shot.
         retried = true; stunSeen = r.stunUntil; armedAt = 0; stepAt = r.time + 0.8;
         say('Too slow! Once more', `Watch for <em>LOCKED ON</em>, then ${touch ? 'tap <em>ROLL</em>' : 'press <em>Q</em>'}.`);

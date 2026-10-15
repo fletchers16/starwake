@@ -415,9 +415,6 @@ export function createCombat(THREE, { world, getRoute, routeAt, makeShipMesh, sh
 
   // ---------- helpers ----------
 
-  // Sim-pilot scores: their own flight through the course (difficulty.js), matching the server at the end of the heat.
-  // Skill decides: a sim pilot's own level (league skill × pace, scaled through the heat), pulled 35% toward the
-  // best human's live score. Mirrored server-side in game.ts scoreBots.
   // An alien's score is its own flight through this heat's rings and gates (difficulty.js flyCourse), plus zap swings.
   // othersAdj: the other humans' reported swings on each alien (live telemetry), so every screen shows the same board.
   let othersAdj = [];

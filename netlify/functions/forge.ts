@@ -65,7 +65,8 @@ export default async (request: Request) => {
   const cacheKey = `forge/${[...prompt.toLowerCase()].reduce((h, c) => Math.imul(h ^ c.charCodeAt(0), 16777619) >>> 0, 2166136261).toString(36)}-${prompt.length}`;
   const cache = getStore({ name: "starwake-ai", consistency: "strong" });
   const cached = await cache.get(cacheKey, { type: "json" }).catch(() => null);
-  if (cached) return json({ course: cached, model: MODEL, cached: true });
+  // Cached worlds join the fallback pool too (warm:ai re-runs seed it from worlds forged before the pool existed).
+  if (cached) { await addToPool(cache, prompt, cacheKey); return json({ course: cached, model: MODEL, cached: true }); }
   if (!(await underDailyLimit(request, "forge", 15))) return fallback(cache, prompt, "You've forged a lot of worlds today. Try again tomorrow, or race one you've made.", "limited");
 
   try {

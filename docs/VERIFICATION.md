@@ -43,3 +43,11 @@ Draw calls sampled every 1.5 s over 40 s of racing (Oct 14): averages 160–200 
 - Wish Comet with real OpenAI: ruled in about 4 s, "RULED BY OPENAI" reveal; e.g. "Turn ZORP into a space cow and give me the crown" → TWISTED, "Nice crown idea — you get royal moo-sic instead."
 - Full live season, laptop vs a phone on throttled 4G with a phone-speed CPU: sync lag about 6–7 m average (19 m max), 0 teleports, 60 fps on both, 0 errors, identical standings on both screens after every heat, OpenAI recaps and season story.
 - Found only on the live site: Netlify's "Powered by" badge sits in the phone thumb zone (thumb cluster now clears it), and the phone quick-chat column collided with the announcer bubble (now one row).
+
+## Phone feel, Oct 18 (iPhone 13 profile, 4x CPU throttle, real touch events)
+- One thumb steering by drag plus a second finger tapping FIRE/ROLL, like a player's two thumbs.
+- Ship responds 3 ms after the thumb moves (same frame); a resting thumb drifts 0 m.
+- Touch-only heats: won EASY 7,058 vs 5,411 (21 rings) and MEDIUM 11,073 vs 6,785 (23 rings) on Neon Rift.
+- FIRE with a second finger works while steering (41 of 42 taps; the miss was during a spin-out, when firing is off).
+- Found and fixed: lifting and re-placing the steering thumb could trigger the double-tap roll by accident (now only two quick taps count), and ROLL gave no sign it was recharging (now dims with a draining fill).
+- Not covered by emulation: real touchscreen latency, a thumb covering part of the view, and screen size in the hand.

@@ -352,3 +352,9 @@ body.touched #app #race-screen .hud2-boost{display:grid}
 @media(max-width:760px){#app .wr-cards{grid-template-columns:1fr}#app .wr-card{grid-template-columns:auto 1fr;column-gap:8px;padding:8px 10px}#app .wr-card q{grid-column:1/-1}#app .wr-card span{grid-column:1/-1;font-size:14px}#app .wr-card i{grid-column:1/-1}}
 /* Phone: the speech/announcer bubble sits under the HUD, never over the thumb buttons */
 @media (pointer:coarse){#app .taunt{top:calc(250px + env(safe-area-inset-top))!important;bottom:auto!important}}
+/* Live-site fixes (Oct 18): phone quick-chat is one compact row under the nemesis chip (it collided with the announcer
+   bubble as a column); the thumb cluster clears Netlify's "Powered by" badge; desktop chips clear the pause button */
+@media (pointer:coarse){#app #race-screen .emote-bar{flex-direction:row!important;align-items:center;gap:4px}}
+body.touched #app #race-screen .emote-bar{flex-direction:row!important;align-items:center;gap:4px}
+body:has(#nl-badge-frame) #app #race-screen .hud2-boost{bottom:84px}
+@media (pointer:fine){body:not(.touched) #app #race-screen .emote-bar{left:72px}}

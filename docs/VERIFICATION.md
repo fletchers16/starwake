@@ -37,3 +37,9 @@ Draw calls sampled every 1.5 s over 40 s of racing (Oct 14): averages 160–200 
 - A match between two real physical devices on separate networks (the phone runs are emulated).
 - Touch steering feel on real hardware.
 - Rooms with five to eight humans at once (the crowd suite covers four humans plus two aliens locally; not yet on the deployed site).
+
+## Live check, Oct 18 (deploy 16f2e15)
+- `warm:ai` on the live site: AI announcer lines generated for all six worlds; six real AI-forged worlds (CANDY WRAITH, GLACID, PYROVINE, NEON CANYON, DEEPWRECK, SWEETROOT) cached and pooled for Forge Party fallbacks.
+- Wish Comet with real OpenAI: ruled in about 4 s, "RULED BY OPENAI" reveal; e.g. "Turn ZORP into a space cow and give me the crown" → TWISTED, "Nice crown idea — you get royal moo-sic instead."
+- Full live season, laptop vs a phone on throttled 4G with a phone-speed CPU: sync lag about 6–7 m average (19 m max), 0 teleports, 60 fps on both, 0 errors, identical standings on both screens after every heat, OpenAI recaps and season story.
+- Found only on the live site: Netlify's "Powered by" badge sits in the phone thumb zone (thumb cluster now clears it), and the phone quick-chat column collided with the announcer bubble (now one row).

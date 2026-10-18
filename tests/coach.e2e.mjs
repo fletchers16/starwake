@@ -51,7 +51,8 @@ try {
   // A late roll gets the coach's "Too slow! Once more": like a player, wait for the next lock and roll again.
   let outcome = null;
   for (let attempt = 0; attempt < 3 && !outcome; attempt++) {
-    outcome = await until(() => /win the heat|got the idea|Too slow/.test(document.querySelector('#coach b')?.innerText || '') && { title: document.querySelector('#coach b').innerText, reflects: window.__starwake.state.race.reflects || 0 }, 10000);
+    // After a retry the "Too slow" card is still showing, so only a real outcome (reflect or hand-off) ends the wait.
+    outcome = await page.waitForFunction((first) => { const t = document.querySelector('#coach b')?.innerText || '', r = window.__starwake.state.race; return ((r.reflects || 0) > 0 || /win the heat|got the idea/.test(t) || (first && /Too slow/.test(t))) && { title: t, reflects: r.reflects || 0 }; }, attempt === 0, { timeout: 12000 }).then((h) => h.jsonValue()).catch(() => null);
     if (outcome && /Too slow/.test(outcome.title)) {
       outcome = null;
       await until(() => !document.querySelector('#lock-warn').hidden, 10000);

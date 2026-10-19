@@ -507,3 +507,8 @@ Also: SUBMISSION judge steps now match the landing (PLAY WITH FRIENDS / RACE THE
 ## Blind judge, Oct 15 (commit c087a93, first with the Wish Comet): Execution 4, Creativity 4, Usefulness 4, Polish 3.5
 "A genuinely clever use of AI", but the reveal didn't read clearly. Fixed: ruling text shown on phones and made the hero (one column, display font) plus a plain "→ what happens" line when the AI's prose differs; a granted wish that ends up with no effect becomes a denial; frenzy wishes match before lasers, suggestions are all honourable, "fly perfectly" gives a pilot a rocket start; alien wishes vary by room (6 each, incl. self-buffs) and aliens can put at most one bad effect on a human per heat; effect chips appear after the reveal and one-shot chips fade; phone speech bubble moved off the thumb buttons; wish box below the standings; item card refreshed at race start.
 `later` (per token budget): wishes in recaps/awards, live chip countdowns, human-vs-human steal cap, wider HUD-centre queue, Flight School naming.
+
+## Oct 19 (no critic round, per token budget)
+- `done` Wish Comet in the story: heat recaps and season stories (OpenAI and offline) mention the rulings; COMET'S PET and CURSED season awards.
+- `done` Timed effect chips count down.
+- `skipped` Human-vs-human steal cap: zaps are the core interaction and humans already can't lose more than 30% of a heat to them.

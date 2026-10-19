@@ -74,6 +74,12 @@ const SEASON_SCHEMA = {
 const SEASON_INSTRUCTIONS = `You are the excitable announcer of Starwake, a cartoon space battle racer (laser zaps steal points, space cows, alien rivals ZORP, BLIX, MUNGO, QUEEP, GLORB).
 A three-heat season just ended. Write a three-sentence season story for the player. Speak as the announcer: call the player "you" and every other pilot by name, and never write "I" or "my" as if you raced. Crown the champion, name the rivalry or comeback, and end with a line daring the player to run it back. Playful, PG, no emojis, max 360 characters.`;
 
+// The Wish Comet's rulings, so recaps and season stories can tell the story of the wishes too.
+const wishText = (list: unknown, when: string) => {
+  const lines = (Array.isArray(list) ? list : []).slice(0, 8).map((w) => clean(w, 140)).filter(Boolean);
+  return lines.length ? ` Wish Comet rulings ${when}: ${lines.join('; ')}. Work the funniest ruling into the story in a few words.` : '';
+};
+
 export default async (request: Request) => {
   if (request.method !== "POST") return json({ error: "Use POST." }, 405);
   if (!hasKey()) return json({ fallback: true, error: "AI rivals are not configured on this deployment.", code: "unconfigured" });
@@ -109,7 +115,7 @@ export default async (request: Request) => {
       if (!(await underDailyLimit(request, "recap", 40))) return json({ fallback: true, error: "Daily AI limit reached.", code: "limited" });
       const standings = (Array.isArray(body.standings) ? body.standings : []).slice(0, 8).map((s: any) => `${clean(s.name, 18)}${s.you ? " (the player)" : ""}: ${Math.floor(Number(s.score) || 0)}`);
       const st = body.stats || {};
-      const input = `Course: ${course.name} on ${course.planet}. Final standings: ${standings.join("; ")}. Player stats: place ${Math.floor(Number(st.place) || 0).toLocaleString("en-US")}, rings ${Math.floor(Number(st.rings) || 0).toLocaleString("en-US")}, best combo x${Math.floor(Number(st.bestCombo) || 0).toLocaleString("en-US")}, zaps landed ${Math.floor(Number(st.zapsLanded) || 0).toLocaleString("en-US")}, points stolen ${Math.floor(Number(st.stolen) || 0).toLocaleString("en-US")}, points lost to zaps ${Math.floor(Number(st.lost) || 0).toLocaleString("en-US")}, space cows rescued ${Math.floor(Number(st.cows) || 0).toLocaleString("en-US")}.${body.challenge ? ` This was a head-to-head challenge against ${clean(body.challenge.name, 18)}'s recorded run: player ${Math.floor(Number(body.challenge.you) || 0)} vs ${Math.floor(Number(body.challenge.them) || 0)}. Mention who won the duel.` : ''}`;
+      const input = `Course: ${course.name} on ${course.planet}. Final standings: ${standings.join("; ")}. Player stats: place ${Math.floor(Number(st.place) || 0).toLocaleString("en-US")}, rings ${Math.floor(Number(st.rings) || 0).toLocaleString("en-US")}, best combo x${Math.floor(Number(st.bestCombo) || 0).toLocaleString("en-US")}, zaps landed ${Math.floor(Number(st.zapsLanded) || 0).toLocaleString("en-US")}, points stolen ${Math.floor(Number(st.stolen) || 0).toLocaleString("en-US")}, points lost to zaps ${Math.floor(Number(st.lost) || 0).toLocaleString("en-US")}, space cows rescued ${Math.floor(Number(st.cows) || 0).toLocaleString("en-US")}.${body.challenge ? ` This was a head-to-head challenge against ${clean(body.challenge.name, 18)}'s recorded run: player ${Math.floor(Number(body.challenge.you) || 0)} vs ${Math.floor(Number(body.challenge.them) || 0)}. Mention who won the duel.` : ''}${wishText(body.wishes, 'this heat')}`;
       const result = await structured<{ recap: string }>({ instructions: RECAP_INSTRUCTIONS, input, name: "starwake_recap", schema: RECAP_SCHEMA, maxTokens: 600 });
       return json({ recap: clean(result.recap, 280), model: MODEL });
     }
@@ -117,7 +123,7 @@ export default async (request: Request) => {
       if (!(await underDailyLimit(request, "recap", 40))) return json({ fallback: true, error: "Daily AI limit reached.", code: "limited" });
       const table = (Array.isArray(body.table) ? body.table : []).slice(0, 8).map((s: any) => `${clean(s.name, 18)}${s.you ? " (the player)" : ""}: ${Math.floor(Number(s.total) || 0)} total, heats ${(Array.isArray(s.heats) ? s.heats : []).slice(0, 3).map((h: any) => Math.floor(Number(h) || 0)).join("/")}`);
       const st = body.stats || {};
-      const input = `Course: ${course.name} on ${course.planet}. Season table: ${table.join("; ")}. Player season stats: zaps landed ${Math.floor(Number(st.zapsLanded) || 0).toLocaleString("en-US")}, points stolen ${Math.floor(Number(st.stolen) || 0).toLocaleString("en-US")}, points lost to zaps ${Math.floor(Number(st.lost) || 0).toLocaleString("en-US")}, space cows ${Math.floor(Number(st.cows) || 0).toLocaleString("en-US")}.`;
+      const input = `Course: ${course.name} on ${course.planet}. Season table: ${table.join("; ")}. Player season stats: zaps landed ${Math.floor(Number(st.zapsLanded) || 0).toLocaleString("en-US")}, points stolen ${Math.floor(Number(st.stolen) || 0).toLocaleString("en-US")}, points lost to zaps ${Math.floor(Number(st.lost) || 0).toLocaleString("en-US")}, space cows ${Math.floor(Number(st.cows) || 0).toLocaleString("en-US")}.${wishText(body.wishes, 'this season')}`;
       const result = await structured<{ story: string }>({ instructions: SEASON_INSTRUCTIONS, input, name: "starwake_season", schema: SEASON_SCHEMA, maxTokens: 700 });
       return json({ story: clean(result.story, 380), model: MODEL });
     }

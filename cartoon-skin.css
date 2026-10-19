@@ -363,3 +363,10 @@ body:has(#nl-badge-frame) #app #race-screen .hud2-boost{bottom:84px}
 #app #race-screen #roll-button.cooling{filter:saturate(.35) brightness(.75)}
 #app #race-screen #roll-button.cooling::after{content:'';position:absolute;left:0;right:0;top:0;height:calc(var(--cool,0)*100%);background:rgba(20,15,36,.55);pointer-events:none}
 #launch-intro .comet-word{color:#ffd84d;font-weight:800}
+/* Desktop lobby: a wider card (it was a 500px column in a sea of blur), crew in two columns, QR beside its caption */
+@media (min-width:1100px){
+  #lobby-screen .panel-wrap{max-width:820px!important;width:min(820px,calc(100vw - 96px))!important}
+  #lobby-screen .crew-list{display:grid;grid-template-columns:1fr 1fr;column-gap:18px}
+  #lobby-screen #start-button{max-width:none}
+}
+@media (min-width:1100px){#app #lobby-screen #start-button{left:max(16px,calc(50% - 410px))!important;right:max(16px,calc(50% - 410px))!important}#lobby-screen .panel-wrap{padding-bottom:110px}}

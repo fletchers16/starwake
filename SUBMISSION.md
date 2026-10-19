@@ -8,6 +8,8 @@ Everything the Handshake "Create a Multiplayer Game" mission asks for. Deadline:
 ## 2. Project cover image
 `submission/cover-battle.png` (1600×900): a real frame from a live heat with the cartoon ships, a zap burst, crates and the HUD.
 
+Key-screen preview (if the form asks for one): `submission/preview-wish-comet.png` (1600×900): the Wish Comet reveal on the live site with real OpenAI rulings.
+
 ## 3. Project description (paste this; the form allows at most 500 characters, this is 449)
 
 > Starwake is a cartoon space battle racer for 2–8 friends on any phone or laptop: share a link or QR code, no install. Grab crates, zap whoever's ahead to steal their points, and barrel-roll their lasers back. Between heats, everyone makes a wish and the OpenAI-powered Wish Comet grants it, twists it or denies it, changing the next heat. OpenAI also writes the aliens' trash talk and whole new tracks from your ideas. Solo? Pick Easy to Pro aliens.

@@ -362,3 +362,4 @@ body:has(#nl-badge-frame) #app #race-screen .hud2-boost{bottom:84px}
 #app #race-screen #roll-button{position:relative;overflow:hidden}
 #app #race-screen #roll-button.cooling{filter:saturate(.35) brightness(.75)}
 #app #race-screen #roll-button.cooling::after{content:'';position:absolute;left:0;right:0;top:0;height:calc(var(--cool,0)*100%);background:rgba(20,15,36,.55);pointer-events:none}
+#launch-intro .comet-word{color:#ffd84d;font-weight:800}

@@ -2,9 +2,9 @@
  * Alien difficulty, shared by the client (combat.js, game.js) and the server (netlify/functions/game.ts) so every
  * screen and the referee agree on sim-pilot scores.
  *
- * Each alien flies its own level: a fraction of what a strong, clean run scores on that world (measured with a
- * steering autopilot, zap swings excluded). The lead alien sets the bar; the others step down. Catch-up is only ±6%,
- * so the result comes from how you fly:
+ * Each alien flies the heat's rings, gates and stars itself (flyCourse below): it commits to whole ring trails at a
+ * rate set by the difficulty, scoring combos like you do. There is no catch-up toward your score (botScoreAt is only
+ * the server's fallback when no client reported a run), so the result comes from how you fly:
  *   EASY    win by actually playing (steer for rings and gates)
  *   MEDIUM  you need to fly fairly well
  *   EXPERT  few mistakes

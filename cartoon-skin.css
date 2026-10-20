@@ -370,3 +370,10 @@ body:has(#nl-badge-frame) #app #race-screen .hud2-boost{bottom:84px}
   #lobby-screen #start-button{max-width:none}
 }
 @media (min-width:1100px){#app #lobby-screen #start-button{left:max(16px,calc(50% - 410px))!important;right:max(16px,calc(50% - 410px))!important}#lobby-screen .panel-wrap{padding-bottom:110px}}
+#app .brief-school{display:block;margin-bottom:4px;color:#ffd84d!important}
+/* Phone HUD declutter (judge: ~40% of the track was HUD): top 2 + you in the standings; steals involving you already
+   pop up as toasts, so the steal feed is hidden on touch screens */
+@media (pointer:coarse) and (max-width:760px){
+  #app #race-screen .hud2 .standings-ticker div:nth-child(n+3):not(.me){display:none}
+  #app #race-screen .steal-feed{display:none}
+}

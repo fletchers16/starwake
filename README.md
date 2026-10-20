@@ -2,7 +2,7 @@
 
 **Play: https://starwakeracing.netlify.app**
 
-First place is a target. Starwake is a cartoon space battle racer for 2–8 friends on any phone or laptop. Share a link or QR code: no install, no account. Grab crates, blast whoever is ahead to steal their points, barrel-roll their lasers straight back, and fight for the crown. OpenAI writes the alien rivals' trash talk, recaps every race, and fuses everyone's ideas into a brand-new world.
+First place is a target. Starwake is a cartoon space battle racer for 2–8 friends on any phone or laptop. Share a link or QR code: no install, no account. Grab crates, blast whoever is ahead to steal their points, barrel-roll their lasers straight back, and fight for the crown. Between heats, everyone makes a wish and the OpenAI-powered Wish Comet grants it, twists it or denies it, changing the next heat. OpenAI also writes the alien rivals' trash talk, recaps every race, and fuses everyone's ideas into a brand-new world.
 
 Built for the Handshake AI Skills Studio × OpenAI Multiplayer Game Challenge. Submission copy: [SUBMISSION.md](SUBMISSION.md).
 
@@ -11,8 +11,8 @@ Built for the Handshake AI Skills Studio × OpenAI Multiplayer Game Challenge. S
 | Criterion | What Starwake does |
 |---|---|
 | **Execution** | Live multiplayer for 2–8 on separate devices, verified with full three-heat seasons on the deployed site (laptop vs a throttled-4G phone: 0 errors, both screens agree on every standing, each screen shows the other player within a second). Reloads mid-race resume your seat; the room survives the host leaving; rematches; server-side score caps and signed pilot tokens. Automated suites plus a live playtest. See [docs/VERIFICATION.md](docs/VERIFICATION.md). |
-| **Creativity** | Racing plus combat: steal points with zaps, reflect shots with a barrel roll, a crown worth double, a final-15-second Zap Frenzy, forks with a boost lane and a ring lane. **Forge Party** fuses every player's one-line idea into the track the room races. Async "beat my run" dares replay your flight as a ghost your friend can zap. |
-| **Usefulness / value** | A 3-minute session that works across phones and laptops with one link or a QR code. Solo races against alien rivals (a roster of five, three per race) when friends are busy; dares when they're in another time zone; a coached first race and Flight School so nobody needs the rules explained. |
+| **Creativity** | **The Wish Comet:** between heats every pilot (aliens too) makes a wish, and OpenAI grants, twists or denies each one, turning it into real effects for the next heat, so the AI shapes the race instead of decorating it. Racing plus combat: steal points with zaps, reflect shots with a barrel roll, a crown worth double, a final-15-second Zap Frenzy, forks with a boost lane and a ring lane. **Forge Party** fuses every player's one-line idea into the track the room races. Async "beat my run" dares replay your flight as a ghost your friend can zap. A **Nemesis** each heat gives friends a reason to hunt each other. |
+| **Usefulness / value** | A 3-minute session that works across phones and laptops with one link or a QR code. Solo races against alien rivals that actually fly the course, at **EASY / MEDIUM / EXPERT / PRO** (from "win by playing" to "near-perfect only"), when friends are busy; dares when they're in another time zone; a coached first race and Flight School so nobody needs the rules explained. |
 | **Polish** | Hand-built cartoon ships, crates and grumpy asteroids with ink outlines; comic ZAP!/POW!/BOING! bursts; six themed worlds; a cartoon HUD sized separately for phones; season awards and a heat-by-heat chart; graceful AI fallbacks; reduced-motion support. |
 
 ## How to play

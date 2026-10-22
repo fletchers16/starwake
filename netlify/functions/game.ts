@@ -371,7 +371,7 @@ async function ruleWishes(room: Room, request: Request): Promise<Room["decree"] 
       console.error("[wish] OpenAI failed", error instanceof Error ? error.message : error);
     }
   }
-  return ruleOffline(wishes, pilots, leaderId, heat);
+  return ruleOffline(wishes, pilots, leaderId, heat, totals.map((p) => p.id));
 }
 
 export default async (request: Request) => {

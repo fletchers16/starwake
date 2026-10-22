@@ -377,3 +377,10 @@ body:has(#nl-badge-frame) #app #race-screen .hud2-boost{bottom:84px}
   #app #race-screen .hud2 .standings-ticker div:nth-child(n+3):not(.me){display:none}
   #app #race-screen .steal-feed{display:none}
 }
+/* Final review: the wish box sits inside the result card under the standings */
+#app .result-card .wish-box{margin:0 0 14px}
+/* Phone: quick-chat below the Wish Comet effect chips, speech bubble below that */
+@media (pointer:coarse){#app #race-screen .emote-bar{top:calc(252px + env(safe-area-inset-top))!important}#app .taunt{top:calc(292px + env(safe-area-inset-top))!important}}
+body.touched #app #race-screen .emote-bar{top:calc(252px + env(safe-area-inset-top))!important}
+body.touched #app .taunt{top:calc(292px + env(safe-area-inset-top))!important}
+@media (max-width:760px){#app #race-screen .landmark-caption{top:36%!important}}

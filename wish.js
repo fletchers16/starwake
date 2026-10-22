@@ -106,7 +106,7 @@ const RULES = [
   [/crate|luck|item|loot/, 'lucky_crates'], [/gate|double|points|score/, 'double_gates'],
   [/perfect|\bwin\b|crown|\bthe best\b|flies perfectly/, 'boost'],
 ];
-const LABEL = (kind) => (kind === 'fumble' ? 'BUTTERFINGERS' : kind === 'hot' ? 'A HOT STREAK' : WISH_EFFECTS[kind].label);
+const LABEL = (kind) => (kind === 'fumble' ? 'BUTTERFINGERS (FUMBLES RINGS)' : kind === 'hot' ? 'A HOT STREAK (FLIES SHARPER)' : WISH_EFFECTS[kind].label);
 /** One readable sentence for what a ruling actually does (after aliens' effects are converted). */
 export function describeEffects(effects, pilots) {
   const name = (id) => (id === 'all' ? 'everyone' : pilots.find((p) => p.id === id)?.name || 'someone');
@@ -115,7 +115,7 @@ export function describeEffects(effects, pilots) {
   for (const [id, labels] of byTarget) parts.push(`${name(id)} gets ${labels.join(' but also ')}`);
   return parts.join(' and ');
 }
-export function ruleOffline(wishes, pilots, leaderId, heat) {
+export function ruleOffline(wishes, pilots, leaderId, heat, order = []) {
   const byName = (txt) => pilots.find((p) => new RegExp(`\\b${p.name.replace(/[^A-Z0-9-]/gi, '')}\\b`, 'i').test(txt));
   const raw = { headline: 'The Wish Comet streaks past and grants… some of it.', rulings: [] };
   for (const w of wishes) {
@@ -123,7 +123,9 @@ export function ruleOffline(wishes, pilots, leaderId, heat) {
     const hits = RULES.filter(([re]) => re.test(t)), buff = hits.find(([, , bad]) => !bad), harm = hits.find(([, , bad]) => bad);
     if (!buff && !harm) { raw.rulings.push({ by: w.byId, verdict: 'denied', effects: [] }); continue; }
     const named = byName(w.wish.replace(new RegExp(`^${w.by}\\b`, 'i'), '')), others = pilots.filter((p) => p.id !== w.byId);
-    const victim = named && named.id !== w.byId ? named.id : leaderId !== w.byId ? leaderId : others[0]?.id;
+    // Named target first; otherwise the leader; a leader's own hex goes to the runner-up (not just the first pilot listed).
+    const runnerUp = order.find((id) => id !== w.byId) || others[0]?.id;
+    const victim = named && named.id !== w.byId ? named.id : leaderId !== w.byId ? leaderId : runnerUp;
     const effects = [];
     if (buff) effects.push({ kind: buff[1], target: WISH_EFFECTS[buff[1]].on === 'all' ? 'all' : w.byId, mag: 2 });
     if (harm && victim) effects.push({ kind: harm[1], target: victim, mag: 2 });
@@ -134,6 +136,8 @@ export function ruleOffline(wishes, pilots, leaderId, heat) {
     raw.rulings.push({ by: w.byId, verdict, effects });
   }
   const decree = sanitizeDecree(raw, wishes, pilots, heat);
+  { const n = (v) => decree.rulings.filter((r) => r.verdict === v).length, g = n('granted'), t = n('twisted'), d = n('denied');
+    decree.headline = d === decree.rulings.length ? 'The Wish Comet streaks past and ignores everyone!' : !d && !t ? 'The Wish Comet is in a giving mood: every wish granted!' : t >= g ? 'The Wish Comet is feeling mischievous today…' : 'The Wish Comet streaks past and grants… most of it.'; }
   const DENY = ['The Comet squints at that wish and keeps flying.', 'Denied! The Comet is feeling contrary today.', 'The Comet pretends not to hear you.'];
   for (const r of decree.rulings) {
     const what = describeEffects(r.effects, pilots);

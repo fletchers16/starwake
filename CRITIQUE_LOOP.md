@@ -512,3 +512,7 @@ Also: SUBMISSION judge steps now match the landing (PLAY WITH FRIENDS / RACE THE
 - `done` Wish Comet in the story: heat recaps and season stories (OpenAI and offline) mention the rulings; COMET'S PET and CURSED season awards.
 - `done` Timed effect chips count down.
 - `skipped` Human-vs-human steal cap: zaps are the core interaction and humans already can't lose more than 30% of a heat to them.
+
+## Final pre-deploy review, Oct 22 (main d8eab60): Execution 4.5, Creativity 5, Usefulness 4.5, Polish 4
+0 errors anywhere. Blockers fixed before the final deploy: wish box moved under the standings (plus a subtitle nudge); wish input clears each heat (old text was glued onto new wishes); phone quick-chat and speech bubble moved below the effect chips; offline rulings aim a leader's hex at the runner-up, explain alien conversions, and pick the headline from the verdicts. Also: phone ENTERING caption below the nemesis chip.
+`later`: hub sticky launch width at 1280/1440, name prompt for room hosts, hub copy mention of the Comet, guest season button order.
